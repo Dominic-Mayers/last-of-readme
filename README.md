@@ -2,7 +2,7 @@
 
 > Resolve README to the last relevant commit based on npm version
 
-<!-- DOC-LINK-START -->[![README-last of pending](https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github)](https://<your-username>.github.io/<your-repo>/readme-resolver.html?mode=last&v=__VERSION__)<!-- DOC-LINK-END -->
+<!-- DOC-LINK-START -->[![README-last of pending](https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github)](https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&v=__VERSION__)<!-- DOC-LINK-END -->
 
 ---
 
