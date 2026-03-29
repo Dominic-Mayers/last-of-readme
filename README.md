@@ -1,10 +1,8 @@
 # Last of README
 
-> Resolve README to the last relevant commit based on npm version
+> Resolve README to the last relevant commit based on npm version.
 
-<!-- DOC-LINK-START -->
-[![README-last of pending](https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github)](https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&v=__VERSION__)
-<!-- DOC-LINK-END -->
+<!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&v=__VERSION__"><img alt="README-last of pending" src="https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github"></a><!-- DOC-LINK-END -->
 
 
 
@@ -28,26 +26,29 @@ Given a version `V`, the resolver computes:
 
     last(V) = next(V) if it exists, otherwise main
 
-- Uses **npm registry** to determine version ordering
-- Uses **GitHub tags** to locate the corresponding README
-- Falls back to `main` when no newer version exists
+- Uses **npm registry** to determine version ordering.
+- Uses GitHub tags to locate the corresponding repository state (where the README is displayed).
+- Falls back to `main` when no newer version exists.
 
 ---
 
-## 🔗 Example
+## 🔗 Example of readme-resolver.html
 
-    [![README-last of 0.1.9](...)](readme-resolver.html?mode=last&v=0.1.9)
+    readme-resolver.html?mode=last&v=0.1.9
 
-- If `0.1.10` exists → redirects to `v0.1.10`
+- If `0.1.10` exists → redirects to the repository at tag v0.1.10
 - Otherwise → redirects to `main`
 
 ---
 
 ## ⚙️ Setup
 
+Copy the block, copy the script, copy readme-resolver.html, add `prepublishOnly`, and push tags.
+
 ### 1. Add managed block to your README
 
-    <!-- DOC-LINK-START -->[![README-last of pending](https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github)](https://<your-username>.github.io/<your-repo>/readme-resolver.html?mode=last&v=__VERSION__)<!-- DOC-LINK-END -->
+    <!-- DOC-LINK-START --><a href="https://<your-username>.github.io/<your-repo>/readme-resolver.html?mode=last&v=__VERSION__"><img alt="README-last of pending" src="https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github"></a><!-- DOC-LINK-END -->
+
 
 Replace `<your-username>` and `<your-repo>`.
 
@@ -71,45 +72,58 @@ This script:
 
 ### 3. Hook into publish
 
+Add to `package.json`
+
     {
-      "scripts": {
-        "prepublishOnly": "node scripts/update-readme-link.cjs"
-      }
+        "scripts": {
+            "prepublishOnly": "node scripts/update-readme-link.cjs"
+        }
     }
 
 ---
 
 ### 4. Add resolver page
 
-1. Copy `readme-resolver.html` from this repository
-2. Place it in your project (e.g. `docs/readme-resolver.html`)
-3. Enable GitHub Pages for that folder
+1. Copy `readme-resolver.html` from this repository.
+2. Place it in your project (e.g. `docs/readme-resolver.html`).
+3. Enable GitHub Pages for that folder.
 
 The page will:
 
-- read the version from the URL
-- query the npm registry
-- redirect to the appropriate README
+- read the version from the URL.
+- query the npm registry.
+- redirect to the appropriate repository state on GitHub, where the README is displayed.
 
+---
+
+### 5. Push tags
+
+* After every `npm version ...`,  push commits and tags:
+
+         git push --follow-tags
+
+* You should consider automating it with `postversion`. For example:
+
+        {
+            "scripts": {
+                "postversion": "git push --follow-tags"
+            }
+        }
 ---
 
 ## ⚠️ Notes
 
-- Git tags must be pushed:
-
-    git push --follow-tags
-
-- The script must run at publish time
-- The README block is managed state
+- The script must run at publish time.
+- The README block is managed by the script.
 
 ---
 
 ## 🧩 Design principles
 
-- npm is the source of truth for versions
-- GitHub is the source of truth for content
-- no hidden automation
-- correctness enforced at publish time
+- npm is the source of truth for versions.
+- GitHub is the source of truth for content.
+- No hidden automation.
+- Correctness enforced at publish time.
 
 ---
 
