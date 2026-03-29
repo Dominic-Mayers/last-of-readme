@@ -1,0 +1,11 @@
+{
+  "name": "last-of-readme",
+  "version": "0.1.0",
+  "description": "Resolve README to last relevant commit based on npm version",
+  "license": "MIT",
+  "files": [
+    "scripts",
+    "docs",
+    "README.md"
+  ]
+}
