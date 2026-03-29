@@ -32,7 +32,7 @@ Given a version `V`, the resolver computes:
 
 ---
 
-## 🔗 Example of readme-resolver.html
+## 🔗 Example usage of readme-resolver.html
 
     readme-resolver.html?mode=last&v=0.1.9
 
@@ -109,13 +109,6 @@ The page will:
                 "postversion": "git push --follow-tags"
             }
         }
----
-
-## ⚠️ Notes
-
-- The script must run at publish time.
-- The README block is managed by the script.
-
 ---
 
 ## 🧩 Design principles
