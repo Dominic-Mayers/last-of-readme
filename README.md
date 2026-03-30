@@ -70,7 +70,9 @@ This will run the update script and stage the updated README.md whenever the pac
 ### 4. Install the documentation tag script
 
 A. Copy `scripts/tag-last-doc.cjs` from this repository.
+
 B. Place it in your project (e.g. `scripts/tag-last-doc.cjs`).
+
 C. Add to `package.json`:
 
     {
@@ -92,7 +94,9 @@ This tag marks the last commit whose README still matches version `X.Y.Z`. It sh
 ### 5. Add the resolver page
 
 A. Copy `docs/readme-resolver.html` from this repository.
+
 B. Place it in your project (e.g. `docs/readme-resolver.html`).
+
 C. Enable GitHub Pages for that folder.
 
 The page will:
