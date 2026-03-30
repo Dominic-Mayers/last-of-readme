@@ -2,13 +2,15 @@
 
 > Resolve README to the last relevant commit based on npm version.
 
-<!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.1"><img alt="README-last of 0.1.1" src="https://img.shields.io/badge/README-last%20of%200.1.1-blue?logo=github"></a><!-- DOC-LINK-END -->
+<!-- DOC-LINK-START --><!-- DOC-LINK-END -->
 
 <details>
 <summary>📋 Click to copy placeholder</summary>
 
 ```html
-<\!-- DOC-LINK-START --><\!-- DOC-LINK-END -->
+<!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io"><img alt="README-last of 0.1.1" src="https://img.shields.io"></a><!-- DOC-LINK-END -->
+
+
 
 ---
 
