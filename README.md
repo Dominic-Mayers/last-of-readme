@@ -157,7 +157,7 @@ It maps versions to repository states (commits) as follows:
 - The user may create Git tags to associate version identifiers with repository states (commits).
 - These tags operate entirely at the level of version identifiers and commits, relating the two sides above the dotted line.
 - A tag of the form `vX.Y.Z-last-doc` refines this association by marking the last commit whose README still matches version `X.Y.Z`.
-- The links inserted into README files rely on this association to resolve a version identifier to a commit, using explicit tags when available and otherwise falling back to npm version ordering.
+- The links inserted into README files rely on this association to resolve a version identifier to a commit, using explicit tags when available and otherwise falling back to npm version ordering (or to the main branch if no such tag exists).
 
 ---
 
