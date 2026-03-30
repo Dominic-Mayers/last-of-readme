@@ -2,7 +2,7 @@
 
 > Resolve README to the last relevant commit based on npm version.
 
-<!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&v=__VERSION__"><img alt="README-last of pending" src="https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github"></a><!-- DOC-LINK-END -->
+<!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.0"><img alt="README-last of 0.1.0" src="https://img.shields.io/badge/README-last%20of%200.1.0-blue?logo=github"></a><!-- DOC-LINK-END -->
 
 
 
@@ -47,12 +47,7 @@ Insert placeholder, copy the update script, copy readme-resolver.html, hook into
 
 ### 1. Add managed block placeholder to your README
 
-Add the following place holder
-
-    <!-- DOC-LINK-START --><!-- DOC-LINK-END -->
-
-
-where you want the documentation button to appear.
+Add in your README a DOC-LINK placeholder identical to the one used at the top of this README. Place it where you want the documentation button to appear. You do not have to keep the content inside the placeholder. The content will be replaced by the update script anyway.
 
 ---
 
