@@ -127,7 +127,7 @@ The page will:
 ---
 
 ## 🧩 Design principles
-
+```
 ┌────────────────────┐                                      ┌────────────────────┐
 │                    │                                      │                    │
 │  Version registry  │ ◄──────┐                     ┌──────►│     Git history    │
@@ -144,7 +144,7 @@ The page will:
 │ Published packages │    └─────────────────────────────┘   │ Repository content │
 │                    │                                      │ (code, README, …)  │
 └────────────────────┘                                      └────────────────────┘
-
+```
 Last of README maps versions to repository states (commits) as follows:
 
 - The version registry defines version identifiers and their relation to the published code.
