@@ -2,30 +2,25 @@
 
 > Resolve README to the last relevant commit based on npm version.
 
-<!-- DOC-LINK-START --><!-- DOC-LINK-END -->
-
-<details>
-<summary>📋 Click to copy placeholder</summary>
-
-```html
-<\!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io"><img alt="README-last of 0.1.1" src="https://img.shields.io"></a><\!-- DOC-LINK-END -->
-```
-
-</details>
+<!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.1"><img alt="README-last of 0.1.1" src="https://img.shields.io/badge/README-last%20of%200.1.1-blue?logo=github"></a><!-- DOC-LINK-END -->
 
 ---
 
 ## ⚙️ Setup
 
-Insert placeholder, copy the update script, copy readme-resolver.html, hook into version, and push tags.
+Insert the placeholder, copy the update script, copy the resolver page, hook into version, and push tags.
 
-### 1. Add managed block placeholder to your README
+### 1. Add the placeholder to your README
 
-Add in your README a DOC-LINK placeholder identical to the one used at the top of this README. Place it where you want the documentation button to appear. You do not have to keep the content inside the placeholder. The content will be replaced by the update script anyway.
+Add the following placeholder in your README:
+
+    <!-- DOC-LINK-START --><!-- DOC-LINK-END -->
+
+Place it where you want the documentation link to appear, before any further occurence of the placeholder. Only the first occurence is processed by the update script.
 
 ---
 
-### 2. Add update script and run it
+### 2. Add the update script and run it
 
 A. Copy `scripts/update-readme-link.cjs` from this repository and place it at the same location in your repository.
 
@@ -65,7 +60,7 @@ This will execute the update script and stage the updated README.md after each n
 
 ---
 
-### 4. Add resolver page
+### 4. Add the resolver page
 
 A. Copy `docs/readme-resolver.html` from this repository.
 B. Place it in your project (e.g. `docs/readme-resolver.html`).
@@ -97,28 +92,34 @@ The page will:
 
 ## 🧩 Design principles
 ```
-┌────────────────────┐                                      ┌────────────────────┐
-│                    │                                      │                    │
-│  Version registry  │ ◄──────┐                     ┌──────►│     Git history    │
-│                    │        │                     │       │                    │
-└────────────────────┘        │                     │       └────────────────────┘
-           ▲                  │                     │                 ▲           
- Relation  │                  ▼                     ▼                 │           
- to        │              ┌─────────────────────────────┐             │ Relation  
- published │              │                             │             │ to        
- code      │              │       Last of README        │             │ contents  
-           ▼              │ maps versions to repository │             ▼           
-┌────────────────────┐    │     states (commits)        │   ┌────────────────────┐
-│                    │    │                             │   │                    │
-│ Published packages │    └─────────────────────────────┘   │ Repository content │
-│                    │                                      │ (code, README, …)  │
-└────────────────────┘                                      └────────────────────┘
+  ┌────────────────────┐                            ┌────────────────────┐   
+  │                    │                            │                    │   
+  │  Version registry  │ ◄──────┐           ┌──────►│     Git history    │   
+  │                    │        │           │       │                    │   
+  └────────────────────┘        │           │       └────────────────────┘   
+             ▲                  │           │                  ▲             
+   Relation  │                  ▼           ▼                  │             
+   to        │         ┌─────────────────────────────┐         │ Relation    
+   published │         │                             │         │ to          
+   code      │         │       Last of README        │         │ contents    
+             │         │ maps versions to repository │         │             
+             │         │     states (commits)        │         │             
+             │         │                             │         │             
+             │         └─────────────────────────────┘         │             
+──   ──   ── │ ──   ──   ──   ──   ──   ──   ──   ──   ──   ── │ ──   ──   ──
+             ▼                                                 ▼             
+ ┌────────────────────┐                               ┌────────────────────┐ 
+ │                    │                               │                    │ 
+ │ Published packages │                               │ Repository content │ 
+ │                    │                               │ (code, README, …)  │ 
+ └────────────────────┘                               └────────────────────┘ 
 ```
 Last of README maps versions to repository states (commits) as follows:
 
 - The version registry defines version identifiers and their relation to the published code.
 - Git defines repository states (commits) and their relation to contents.
 - The user creates Git tags to associate versions with repository states.
+- The decoupling of versioning and publishing permitted by npm allows a user to set tags at the semantic end of versions.
 - The links inserted into README files leverage that association to point to the last commit associated with a given version.
 
 ---

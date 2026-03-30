@@ -14,10 +14,6 @@ function fail(message) {
   process.exit(1);
 }
 
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -49,14 +45,10 @@ function normalizeRepositoryUrl(repository) {
   }
 
   let match = url.match(/^https:\/\/github\.com\/([^/]+\/[^/]+)$/);
-  if (match) {
-    return match[1];
-  }
+  if (match) return match[1];
 
   match = url.match(/^git@github\.com:([^/]+\/[^/]+)$/);
-  if (match) {
-    return match[1];
-  }
+  if (match) return match[1];
 
   fail("repository.url must point to a GitHub repository");
 }
@@ -71,59 +63,49 @@ function main() {
   }
 
   const pkg = readJson(PACKAGE_PATH);
+
   const version = pkg.version;
   const npmPackage = pkg.name;
   const repo = normalizeRepositoryUrl(pkg.repository);
 
-  if (!version || typeof version !== "string") {
-    fail("package.json has no valid version field");
-  }
+  if (!version) fail("package.json has no version");
+  if (!npmPackage) fail("package.json has no name");
 
-  if (!npmPackage || typeof npmPackage !== "string") {
-    fail("package.json has no valid name field");
-  }
+  const [owner, repoName] = repo.split("/");
 
-  const siteUrl = `https://${repo.split("/")[0]}.github.io/${repo.split("/")[1]}/readme-resolver.html`;
+  const siteUrl = `https://${owner}.github.io/${repoName}/readme-resolver.html`;
+
+  const badge = `<a href="${siteUrl}?mode=last&pkg=${encodeURIComponent(
+    npmPackage
+  )}&repo=${encodeURIComponent(repo)}&v=${encodeURIComponent(version)}">` +
+    `<img alt="README-last of ${version}" src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(
+      version
+    )}-blue?logo=github">` +
+    `</a>`;
+
+  const managedBlock = `${START_MARKER}${badge}${END_MARKER}`;
 
   const readme = fs.readFileSync(README_PATH, "utf8");
 
-  const startCount =
-    (readme.match(new RegExp(escapeRegExp(START_MARKER), "g")) || []).length;
-  const endCount =
-    (readme.match(new RegExp(escapeRegExp(END_MARKER), "g")) || []).length;
+  const start = readme.indexOf(START_MARKER);
+  const end = readme.indexOf(END_MARKER);
 
-  if (startCount === 0 || endCount === 0) {
-    fail(
-      `Managed documentation block not found. Expected markers ${START_MARKER} and ${END_MARKER}`,
-    );
+  if (start === -1 || end === -1) {
+    fail("Placeholder not found");
   }
 
-  if (startCount !== 1 || endCount !== 1) {
-    fail("Managed documentation block markers must each appear exactly once");
+  if (end < start) {
+    fail("Invalid placeholder order");
   }
 
-  const blockRegex = new RegExp(
-    `${escapeRegExp(START_MARKER)}[\\s\\S]*?${escapeRegExp(END_MARKER)}`,
-    "m",
-  );
+  const before = readme.slice(0, start);
+  const after = readme.slice(end + END_MARKER.length);
 
-  const managedBlock =
-    `${START_MARKER}` +
-    `<a href="${siteUrl}?mode=last&pkg=${encodeURIComponent(npmPackage)}&repo=${encodeURIComponent(repo)}&v=${encodeURIComponent(version)}">` +
-    `<img alt="README-last of ${version}" src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(version)}-blue?logo=github">` +
-    `</a>` +
-    `${END_MARKER}`;
-
-  const updated = readme.replace(blockRegex, managedBlock);
-
-  if (updated === readme) {
-    fail("README.md was not updated");
-  }
+  const updated = before + managedBlock + after;
 
   fs.writeFileSync(README_PATH, updated);
-  console.log(`✅ README documentation badge updated to version ${version}`);
-  console.log(`   repo=${repo}`);
-  console.log(`   pkg=${npmPackage}`);
+
+  console.log(`✅ README updated for version ${version}`);
 }
 
 main();
