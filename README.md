@@ -8,12 +8,10 @@
 <summary>📋 Click to copy placeholder</summary>
 
 ```html
-<!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io"><img alt="README-last of 0.1.1" src="https://img.shields.io"></a><!-- DOC-LINK-END -->
+<\!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io"><img alt="README-last of 0.1.1" src="https://img.shields.io"></a><\!-- DOC-LINK-END -->
 ```
 
 </details>
-
-
 
 ---
 
