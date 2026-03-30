@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "Resolve README to last relevant commit based on npm version",
   "license": "MIT",
+  "scripts": {
+    "version": "node scripts/update-readme-link.cjs && git add README.md",
+    "postversion": "git push --follow-tags"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dominic-Mayers/last-of-readme"
+  },
   "files": [
     "scripts",
     "docs",

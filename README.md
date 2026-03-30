@@ -43,54 +43,68 @@ Given a version `V`, the resolver computes:
 
 ## ⚙️ Setup
 
-Copy the block, copy the script, copy readme-resolver.html, add `prepublishOnly`, and push tags.
+Insert placeholder, copy the update script, copy readme-resolver.html, hook into version, and push tags.
 
-### 1. Add managed block to your README
+### 1. Add managed block placeholder to your README
 
-    <!-- DOC-LINK-START --><a href="https://<your-username>.github.io/<your-repo>/readme-resolver.html?mode=last&v=__VERSION__"><img alt="README-last of pending" src="https://img.shields.io/badge/README-last%20of%20pending-blue?logo=github"></a><!-- DOC-LINK-END -->
+Add the following place holder
+
+    <!-- DOC-LINK-START --><!-- DOC-LINK-END -->
 
 
-Replace `<your-username>` and `<your-repo>`.
+where you want the documentation button to appear.
 
 ---
 
-### 2. Add update script
+### 2. Add update script and run it
 
-Create:
+A. Copy `scripts/update-readme-link.cjs` from this repository and place it at the same location in your repository.
 
-    scripts/update-readme-link.cjs
+B. Add the repository info in `package.json` (replace `<your-github-username>` and `<your-repo>`):
 
-Use the provided script from this repository.
+    {
+        "repository": {
+            "type": "git",
+            "url": "git+https://github.com/<your-github-username>/<your-repo>"
+        }
+    }
+
+
+C. Run the script
+
+    node scripts/update-readme-link.cjs
 
 This script:
 
-- reads `package.json.version`
-- updates the badge and link
-- replaces the managed block
+- reads metadata from `package.json`
+- generates a documentation badge and its link
+- inserts the badge into the placeholder
 
 ---
 
-### 3. Hook into publish
+### 3. Hook into version
 
 Add to `package.json`
 
     {
         "scripts": {
-            "prepublishOnly": "node scripts/update-readme-link.cjs"
+            "version": "node scripts/update-readme-link.cjs && git add README.md",
         }
     }
+
+This will execute the update script and stage the updated README.md after each new version.
 
 ---
 
 ### 4. Add resolver page
 
-1. Copy `readme-resolver.html` from this repository.
-2. Place it in your project (e.g. `docs/readme-resolver.html`).
-3. Enable GitHub Pages for that folder.
+A. Copy `docs/readme-resolver.html` from this repository.
+B. Place it in your project (e.g. `docs/readme-resolver.html`).
+C. Enable GitHub Pages for that folder.
 
 The page will:
 
-- read the version from the URL.
+- read the requested version from the URL.
 - query the npm registry.
 - redirect to the appropriate repository state on GitHub, where the README is displayed.
 
@@ -106,6 +120,7 @@ The page will:
 
         {
             "scripts": {
+                "version": "node scripts/update-readme-link.cjs && git add README.md",
                 "postversion": "git push --follow-tags"
             }
         }
@@ -113,10 +128,29 @@ The page will:
 
 ## 🧩 Design principles
 
-- npm is the source of truth for versions.
-- GitHub is the source of truth for content.
-- No hidden automation.
-- Correctness enforced at publish time.
+┌────────────────────┐                                      ┌────────────────────┐
+│                    │                                      │                    │
+│  Version registry  │ ◄──────┐                     ┌──────►│     Git history    │
+│                    │        │                     │       │                    │
+└────────────────────┘        │                     │       └────────────────────┘
+           ▲                  │                     │                 ▲           
+ Relation  │                  ▼                     ▼                 │           
+ to        │              ┌─────────────────────────────┐             │ Relation  
+ published │              │                             │             │ to        
+ code      │              │       Last of README        │             │ contents  
+           ▼              │ maps versions to repository │             ▼           
+┌────────────────────┐    │     states (commits)        │   ┌────────────────────┐
+│                    │    │                             │   │                    │
+│ Published packages │    └─────────────────────────────┘   │ Repository content │
+│                    │                                      │ (code, README, …)  │
+└────────────────────┘                                      └────────────────────┘
+
+Last of README maps versions to repository states (commits) as follows:
+
+- The version registry defines version identifiers and their relation to the published code.
+- Git defines repository states (commits) and their relation to contents.
+- The user creates Git tags to associate versions with repository states.
+- The links inserted into README files leverage that association to point to the last commit associated with a given version.
 
 ---
 

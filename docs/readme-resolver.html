@@ -8,8 +8,9 @@
     <p>Resolving documentation…</p>
 
     <script>
-      const repo = "dominic-mayers/last-of-readme";
-      const npmPackage = "@dominic.mayers/last-of-readme";
+      const params = new URLSearchParams(window.location.search);
+      const repo = params.get("repo");
+      const npmPackage = params.get("pkg");
 
       function compareVersions(a, b) {
         const pa = a.split(".").map(Number);
@@ -29,7 +30,7 @@
 
         // Placeholder or missing version → fallback to main
         if (!version || version === "__VERSION__") {
-          window.location.href = `https://github.com/${repo}/blob/main/README.md`;
+          window.location.href = `https://github.com/${repo}/tree/main`;
           return;
         }
 
@@ -42,86 +43,89 @@
           const data = await res.json();
           const versions = Object.keys(data.versions).sort(compareVersions);
 
-          if (!version || version === "__VERSION__") {
-            window.location.href = `https://github.com/${repo}/blob/main/README.md`;
-            return;
-          }
-
           if (mode === "last") {
+            if (!versions.includes(version)) {
+              document.body.innerHTML = `
+      <h2>Unknown version</h2>
+      <p>
+        The requested version <code>${version}</code> is not a published npm version of
+        <code>${npmPackage}</code>.
+      </p>
+      <ul>
+        <li><a href="https://github.com/${repo}/tree/main">Latest documentation</a></li>
+        <li><a href="https://www.npmjs.com/package/${encodeURIComponent(npmPackage)}">npm package page</a></li>
+      </ul>
+    `;
+              return;
+            }
+
             const nextVersion = versions.find(
               (v) => compareVersions(v, version) > 0,
             );
 
-            // Core rule: if the version ahead does not exist, redirect to main
             if (!nextVersion) {
-              window.location.href = `https://github.com/${repo}/blob/main/README.md`;
+              window.location.href = `https://github.com/${repo}/tree/main`;
               return;
             }
 
-            const githubReadmeUrl = `https://github.com/${repo}/blob/v${nextVersion}/README.md`;
+            const githubTreeUrl = `https://github.com/${repo}/tree/v${nextVersion}`;
             const githubRawReadmeUrl = `https://raw.githubusercontent.com/${repo}/v${nextVersion}/README.md`;
 
             const check = await fetch(githubRawReadmeUrl, { method: "HEAD" });
 
             if (check.ok) {
-              window.location.href = githubReadmeUrl;
+              window.location.href = githubTreeUrl;
               return;
             }
 
-            // Discrepancy only when npm has the version but GitHub does not
             document.body.innerHTML = `
-      <h2>Documentation discrepancy</h2>
-      <p>
-        The requested version <code>${version}</code> resolves to
-        <code>${nextVersion}</code> according to npm, but the corresponding
-        GitHub README could not be found.
-      </p>
-      <p>
-        This usually means that version <code>${nextVersion}</code> exists on npm
-        but the corresponding Git tag or README is missing on GitHub.
-      </p>
-      <ul>
-        <li><a href="${githubReadmeUrl}">Expected GitHub README target</a></li>
-        <li><a href="https://github.com/${repo}/tags">GitHub tags</a></li>
-        <li><a href="https://www.npmjs.com/package/${encodeURIComponent(npmPackage)}">npm package page</a></li>
-        <li><a href="https://github.com/${repo}/blob/main/README.md">Latest documentation</a></li>
-      </ul>
-    `;
+    <h2>Documentation discrepancy</h2>
+    <p>
+      The requested version <code>${version}</code> resolves to
+      <code>${nextVersion}</code> according to npm, but the corresponding
+      GitHub repository state could not be found.
+    </p>
+    <ul>
+      <li><a href="${githubTreeUrl}">Expected GitHub target</a></li>
+      <li><a href="https://github.com/${repo}/tags">GitHub tags</a></li>
+      <li><a href="https://www.npmjs.com/package/${encodeURIComponent(npmPackage)}">npm package page</a></li>
+      <li><a href="https://github.com/${repo}/tree/main">Latest documentation</a></li>
+    </ul>
+  `;
             return;
           }
-
           // Fallback when mode is missing or unknown: offer choices, no redirect.
           const nextVersion = versions.find(
             (v) => compareVersions(v, version) > 0,
           );
 
           const lastTarget = nextVersion
-            ? `https://github.com/${repo}/blob/v${nextVersion}/README.md`
-            : `https://github.com/${repo}/blob/main/README.md`;
+            ? `https://github.com/${repo}/tree/v${nextVersion}`
+            : `https://github.com/${repo}/tree/main`;
 
-          const exactTarget = `https://github.com/${repo}/blob/v${version}/README.md`;
-          const latestTarget = `https://github.com/${repo}/blob/main/README.md`;
+          const exactTarget = `https://github.com/${repo}/tree/v${version}`;
+          const latestTarget = `https://github.com/${repo}/tree/main`;
 
           document.body.innerHTML = `
-    <h2>Documentation options</h2>
-    <p>Missing or unknown mode parameter. Please choose:</p>
-    <ul>
-      <li><strong><a href="${lastTarget}">Documentation for this version (recommended)</a></strong></li>
-      <li><a href="${exactTarget}">Documentation at version ${version}</a></li>
-      <li><a href="${latestTarget}">Latest documentation</a></li>
-    </ul>
-  `;
+            <h2>Documentation options</h2>
+            <p>Missing or unknown mode parameter. Please choose:</p>
+            <ul>
+              <li><strong><a href="${lastTarget}">Documentation for this version (recommended)</a></strong></li>
+              <li><a href="${exactTarget}">Documentation at version ${version}</a></li>
+              <li><a href="${latestTarget}">Latest documentation</a></li>
+            </ul>
+          `;
         } catch (e) {
           console.error(e);
           document.body.innerHTML = `
-    <h2>Documentation resolver not ready</h2>
-    <p>
-      This package may not yet be published on npm, or its npm metadata is not yet available.
-    </p>
-    <p>
-      <a href="https://github.com/${repo}/blob/main/README.md">Latest documentation</a>
-    </p>
-  `;
+            <h2>Documentation resolver not ready</h2>
+            <p>
+              This package may not yet be published on npm, or its npm metadata is not yet available.
+            </p>
+            <p>
+              <a href="https://github.com/${repo}/tree/main">Latest documentation</a>
+            </p>
+          `;
         }
       }
 
