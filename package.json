@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "version": "node scripts/update-readme-link.cjs && git add README.md",
+    "tag:last-doc": "node scripts/tag-last-doc.cjs"
     "postversion": "git push --follow-tags"
   },
   "repository": {
