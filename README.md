@@ -4,41 +4,6 @@
 
 <!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.1"><img alt="README-last of 0.1.1" src="https://img.shields.io/badge/README-last%20of%200.1.1-blue?logo=github"></a><!-- DOC-LINK-END -->
 
-
-
----
-
-## ✨ Motivation
-
-When a package evolves, its README changes over time.
-
-For a given version `V`, the most relevant documentation is:
-
-> the last README commit before the next version is released
-
-This project provides a lightweight way to resolve that automatically.
-
----
-
-## 🧠 How it works
-
-Given a version `V`, the resolver computes:
-
-    last(V) = next(V) if it exists, otherwise main
-
-- Uses **npm registry** to determine version ordering.
-- Uses GitHub tags to locate the corresponding repository state (where the README is displayed).
-- Falls back to `main` when no newer version exists.
-
----
-
-## 🔗 Example usage of readme-resolver.html
-
-    readme-resolver.html?mode=last&v=0.1.9
-
-- If `0.1.10` exists → redirects to the repository at tag v0.1.10
-- Otherwise → redirects to `main`
-
 ---
 
 ## ⚙️ Setup
