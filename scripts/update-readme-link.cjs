@@ -75,11 +75,16 @@ function main() {
 
   const siteUrl = `https://${owner}.github.io/${repoName}/readme-resolver.html`;
 
-  const badge = `<a href="${siteUrl}?mode=last&pkg=${encodeURIComponent(
-    npmPackage
-  )}&repo=${encodeURIComponent(repo)}&v=${encodeURIComponent(version)}">` +
+  const docTagSuffix = pkg.lastOfReadme?.docTagSuffix || "-last-doc";
+
+  const badge =
+    `<a href="${siteUrl}?mode=last&pkg=${encodeURIComponent(
+      npmPackage,
+    )}&repo=${encodeURIComponent(repo)}&v=${encodeURIComponent(
+      version,
+    )}&docTagSuffix=${encodeURIComponent(docTagSuffix)}">` +
     `<img alt="README-last of ${version}" src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(
-      version
+      version,
     )}-blue?logo=github">` +
     `</a>`;
 
