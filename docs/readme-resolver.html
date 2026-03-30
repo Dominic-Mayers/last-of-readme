@@ -11,6 +11,7 @@
       const params = new URLSearchParams(window.location.search);
       const repo = params.get("repo");
       const npmPackage = params.get("pkg");
+      const docTagSuffix = params.get("docTagSuffix") || "-last-doc";
 
       function compareVersions(a, b) {
         const pa = a.split(".").map(Number);
@@ -23,94 +24,105 @@
         return 0;
       }
 
+      function githubTreeUrl(ref) {
+        return `https://github.com/${repo}/tree/${encodeURIComponent(ref)}`;
+      }
+
+      function githubRawReadmeUrl(ref) {
+        return `https://raw.githubusercontent.com/${repo}/${encodeURIComponent(ref)}/README.md`;
+      }
+
+      async function refExists(ref) {
+        const check = await fetch(githubRawReadmeUrl(ref), { method: "HEAD" });
+        return check.ok;
+      }
+
       async function resolve() {
         const params = new URLSearchParams(window.location.search);
         const version = params.get("v");
         const mode = params.get("mode");
 
-        // Placeholder or missing version → fallback to main
         if (!version || version === "__VERSION__") {
-          window.location.href = `https://github.com/${repo}/tree/main`;
+          window.location.href = githubTreeUrl("main");
           return;
         }
 
+        const exactRef = `v${version}`;
+        const docRef = `v${version}${docTagSuffix}`;
+
         try {
-          const res = await fetch(`https://registry.npmjs.org/${npmPackage}`);
-          if (!res.ok) {
-            throw new Error(`npm registry responded with status ${res.status}`);
-          }
-
-          const data = await res.json();
-          const versions = Object.keys(data.versions).sort(compareVersions);
-
           if (mode === "last") {
+            // 1. Prefer explicit doc tag.
+            if (await refExists(docRef)) {
+              window.location.href = githubTreeUrl(docRef);
+              return;
+            }
+
+            // 2. Fall back to current npm-based behavior.
+            const res = await fetch(`https://registry.npmjs.org/${npmPackage}`);
+            if (!res.ok) {
+              throw new Error(`npm registry responded with status ${res.status}`);
+            }
+
+            const data = await res.json();
+            const versions = Object.keys(data.versions).sort(compareVersions);
+
             if (!versions.includes(version)) {
               document.body.innerHTML = `
-      <h2>Unknown version</h2>
-      <p>
-        The requested version <code>${version}</code> is not a published npm version of
-        <code>${npmPackage}</code>.
-      </p>
-      <ul>
-        <li><a href="https://github.com/${repo}/tree/main">Latest documentation</a></li>
-        <li><a href="https://www.npmjs.com/package/${encodeURIComponent(npmPackage)}">npm package page</a></li>
-      </ul>
-    `;
+                <h2>Unknown version</h2>
+                <p>
+                  The requested version <code>${version}</code> is not a published npm version of
+                  <code>${npmPackage}</code>.
+                </p>
+                <ul>
+                  <li><a href="${githubTreeUrl("main")}">Latest documentation</a></li>
+                  <li><a href="https://www.npmjs.com/package/${encodeURIComponent(npmPackage)}">npm package page</a></li>
+                </ul>
+              `;
               return;
             }
 
             const nextVersion = versions.find(
-              (v) => compareVersions(v, version) > 0,
+              (v) => compareVersions(v, version) > 0
             );
 
             if (!nextVersion) {
-              window.location.href = `https://github.com/${repo}/tree/main`;
+              window.location.href = githubTreeUrl("main");
               return;
             }
 
-            const githubTreeUrl = `https://github.com/${repo}/tree/v${nextVersion}`;
-            const githubRawReadmeUrl = `https://raw.githubusercontent.com/${repo}/v${nextVersion}/README.md`;
+            const nextRef = `v${nextVersion}`;
 
-            const check = await fetch(githubRawReadmeUrl, { method: "HEAD" });
-
-            if (check.ok) {
-              window.location.href = githubTreeUrl;
+            if (await refExists(nextRef)) {
+              window.location.href = githubTreeUrl(nextRef);
               return;
             }
 
             document.body.innerHTML = `
-    <h2>Documentation discrepancy</h2>
-    <p>
-      The requested version <code>${version}</code> resolves to
-      <code>${nextVersion}</code> according to npm, but the corresponding
-      GitHub repository state could not be found.
-    </p>
-    <ul>
-      <li><a href="${githubTreeUrl}">Expected GitHub target</a></li>
-      <li><a href="https://github.com/${repo}/tags">GitHub tags</a></li>
-      <li><a href="https://www.npmjs.com/package/${encodeURIComponent(npmPackage)}">npm package page</a></li>
-      <li><a href="https://github.com/${repo}/tree/main">Latest documentation</a></li>
-    </ul>
-  `;
+              <h2>Documentation discrepancy</h2>
+              <p>
+                No explicit documentation tag <code>${docRef}</code> was found,
+                and the fallback target <code>${nextRef}</code> could not be resolved.
+              </p>
+              <ul>
+                <li><a href="${githubTreeUrl(nextRef)}">Expected GitHub target</a></li>
+                <li><a href="https://github.com/${repo}/tags">GitHub tags</a></li>
+                <li><a href="https://github.com/${repo}/tree/main">Latest documentation</a></li>
+              </ul>
+            `;
             return;
           }
-          // Fallback when mode is missing or unknown: offer choices, no redirect.
-          const nextVersion = versions.find(
-            (v) => compareVersions(v, version) > 0,
-          );
 
-          const lastTarget = nextVersion
-            ? `https://github.com/${repo}/tree/v${nextVersion}`
-            : `https://github.com/${repo}/tree/main`;
-
-          const exactTarget = `https://github.com/${repo}/tree/v${version}`;
-          const latestTarget = `https://github.com/${repo}/tree/main`;
+          // Existing exact/latest chooser can stay simple.
+          const latestTarget = githubTreeUrl("main");
+          const exactTarget = githubTreeUrl(exactRef);
+          const lastTarget = githubTreeUrl(docRef);
 
           document.body.innerHTML = `
             <h2>Documentation options</h2>
-            <p>Missing or unknown mode parameter. Please choose:</p>
+            <p>Please choose:</p>
             <ul>
-              <li><strong><a href="${lastTarget}">Documentation for this version (recommended)</a></strong></li>
+              <li><strong><a href="${lastTarget}">Documentation for this version (recommended if tag exists)</a></strong></li>
               <li><a href="${exactTarget}">Documentation at version ${version}</a></li>
               <li><a href="${latestTarget}">Latest documentation</a></li>
             </ul>
@@ -120,11 +132,10 @@
           document.body.innerHTML = `
             <h2>Documentation resolver not ready</h2>
             <p>
-              This package may not yet be published on npm, or its npm metadata is not yet available.
+              The resolver could not determine the target from the explicit documentation tag
+              or from npm metadata.
             </p>
-            <p>
-              <a href="https://github.com/${repo}/tree/main">Latest documentation</a>
-            </p>
+            <p><a href="${githubTreeUrl("main")}">Latest documentation</a></p>
           `;
         }
       }
