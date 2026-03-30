@@ -1,8 +1,13 @@
 # Last of README
 
-> Resolve README to the last relevant commit based on npm version.
-
 [![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.1&docTagSuffix=-last-doc"><img alt="README-last of 0.1.1" src="https://img.shields.io/badge/README-last%20of%200.1.1-blue?logo=github"></a><!-- DOC-LINK-END -->
+
+Resolve README links to the last commit that still documents a given version.
+
+The resolver:
+
+1. Use an explicit documentation tag (`vX.Y.Z-last-doc`) if it exists
+2. Otherwise, fall back to npm version ordering
 
 ---
 
@@ -41,8 +46,10 @@ C. Run the script
 This script:
 
 - reads metadata from `package.json`
-- generates a documentation badge and its link
+- generates a documentation badge and a resolver link for the current version
 - inserts the badge into the placeholder
+
+The link is resolved later by `readme-resolver.html`.
 
 ---
 
@@ -56,11 +63,33 @@ Add to `package.json`
         }
     }
 
-This will execute the update script and stage the updated README.md after each new version.
+This will run the update script and stage the updated README.md whenever the package version is updated.
 
 ---
 
-### 4. Add the resolver page
+### 4. Install the documentation tag script
+
+A. Copy `scripts/tag-last-doc.cjs` from this repository.
+B. Place it in your project (e.g. `scripts/tag-last-doc.cjs`).
+C. Add to `package.json`:
+
+    {
+        "scripts": {
+            "tag:last-doc": "node scripts/tag-last-doc.cjs"
+        }
+    }
+
+This script:
+
+- reads the current version from `package.json`
+- creates a tag of the form `vX.Y.Z-last-doc` pointing to the current commit
+- pushes the tag to the remote repository
+
+This tag marks the last commit whose README still matches version `X.Y.Z`. It should be created when the README starts to diverge from the current version of the package. If it is not present, the resolver falls back to the next version tag (or to the main branch if none exists).
+
+---
+
+### 5. Add the resolver page
 
 A. Copy `docs/readme-resolver.html` from this repository.
 B. Place it in your project (e.g. `docs/readme-resolver.html`).
@@ -69,14 +98,15 @@ C. Enable GitHub Pages for that folder.
 The page will:
 
 - read the requested version from the URL.
-- query the npm registry.
+- check for a corresponding documentation tag (`vX.Y.Z-last-doc`).
+- otherwise query the npm registry.
 - redirect to the appropriate repository state on GitHub, where the README is displayed.
 
 ---
 
-### 5. Push tags
+### 6. Push tags
 
-* After every `npm version ...`,  push commits and tags:
+* After every `npm version ...`, push commits and tags:
 
          git push --follow-tags
 
@@ -88,6 +118,9 @@ The page will:
                 "postversion": "git push --follow-tags"
             }
         }
+
+This also pushes any documentation tags (such as `vX.Y.Z-last-doc`) that point to commits on the current branch.
+
 ---
 
 ## 🧩 Design principles
@@ -114,13 +147,17 @@ The page will:
  │                    │                               │ (code, README, …)  │ 
  └────────────────────┘                               └────────────────────┘ 
 ```
-Last of README maps versions to repository states (commits) as follows:
+
+Last of README operates entirely above the dotted line, mapping version identifiers to commits without relying on relations to published artifacts or repository contents.
+
+It maps versions to repository states (commits) as follows:
 
 - The version registry defines version identifiers and their relation to the published code.
 - Git defines repository states (commits) and their relation to contents.
-- The user creates Git tags to associate versions with repository states.
-- The decoupling of versioning and publishing permitted by npm allows a user to set tags at the semantic end of versions.
-- The links inserted into README files leverage that association to point to the last commit associated with a given version.
+- The user may create Git tags to associate version identifiers with repository states (commits).
+- These tags operate entirely at the level of version identifiers and commits, relating the two sides above the dotted line.
+- A tag of the form `vX.Y.Z-last-doc` refines this association by marking the last commit whose README still matches version `X.Y.Z`.
+- The links inserted into README files rely on this association to resolve a version identifier to a commit, using explicit tags when available and otherwise falling back to npm version ordering.
 
 ---
 
