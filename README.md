@@ -77,9 +77,14 @@ C. Add to `package.json`:
 
     {
         "scripts": {
+            "version": "node scripts/update-readme-link.cjs && git add README.md",
             "tag:last-doc": "node scripts/tag-last-doc.cjs"
         }
     }
+
+The command to execute the script:
+
+    npm run tag:last-doc
 
 This script:
 
@@ -87,7 +92,9 @@ This script:
 - creates a tag of the form `vX.Y.Z-last-doc` pointing to the current commit
 - pushes the tag to the remote repository
 
-This tag marks the last commit whose README still matches version `X.Y.Z`. It should be created when the README starts to diverge from the current version of the package. If it is not present, the resolver falls back to the next version tag (or to the main branch if none exists).
+The script should be executed when the README starts to diverge from the current version of the package. The created tag marks the last commit whose README still matches version `X.Y.Z`.
+
+If no last-doc tag is  present, the resolver falls back to the next version tag (or to the main branch if none exists).
 
 ---
 
@@ -119,6 +126,7 @@ The page will:
         {
             "scripts": {
                 "version": "node scripts/update-readme-link.cjs && git add README.md",
+                "tag:last-doc": "node scripts/tag-last-doc.cjs"
                 "postversion": "git push --follow-tags"
             }
         }
