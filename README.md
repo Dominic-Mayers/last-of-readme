@@ -13,7 +13,7 @@ The resolver:
 
 ## ⚙️ Setup
 
-Insert the placeholder, copy the update script, copy the resolver page, hook into version, and push tags.
+Insert the placeholder, copy the update script, hook into version, install the documentation tag script, copy the resolver page, and push tags.
 
 ### 1. Add the placeholder to your README
 
@@ -91,7 +91,7 @@ This tag marks the last commit whose README still matches version `X.Y.Z`. It sh
 
 ---
 
-### 5. Add the resolver page
+### 5. Copy the resolver page
 
 A. Copy `docs/readme-resolver.html` from this repository.
 
