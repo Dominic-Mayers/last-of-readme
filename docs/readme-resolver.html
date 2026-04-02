@@ -70,6 +70,11 @@
         return res.ok;
       }
 
+      async function resolveCommitSha(ref) {
+        const data = await fetchJson(githubApiUrl(`/commits/${encodeURIComponent(ref)}`));
+        return data.sha;
+      }
+
       async function getRepoInfo() {
         return fetchJson(githubApiUrl(""));
       }
@@ -84,27 +89,27 @@
         );
       }
 
-      async function containingBranches(commitRef) {
+      async function containingBranches(commitSha) {
         const branches = await listBranches();
         const results = [];
 
         for (const branch of branches) {
           try {
-            const comparison = await compare(commitRef, branch.name);
+            const comparison = await compare(commitSha, branch.name);
             if (comparison.status === "behind" || comparison.status === "identical") {
               results.push(branch);
             }
           } catch (e) {
-            console.warn(`Could not compare ${commitRef} with branch ${branch.name}`, e);
+            console.warn(`Could not compare ${commitSha} with branch ${branch.name}`, e);
           }
         }
 
         return results;
       }
 
-      async function isReachableFrom(commitRef, branchName) {
+      async function isReachableFrom(commitSha, branchName) {
         try {
-          const comparison = await compare(commitRef, branchName);
+          const comparison = await compare(commitSha, branchName);
           return comparison.status === "behind" || comparison.status === "identical";
         } catch {
           return false;
@@ -143,9 +148,6 @@
         const lastDocTag = `v${version}${docTagSuffix}`;
         const nextDocTag = `v${version}${nextDocTagSuffix}`;
 
-        const versionCommitRef = `${versionTag}^{}`;
-        const nextDocCommitRef = `${nextDocTag}^{}`;
-
         if (await refExists(lastDocTag)) {
           window.location.href = githubTreeUrl(lastDocTag);
           return;
@@ -159,12 +161,14 @@
           throw new Error(`Version ref ${versionTag} was not found`);
         }
 
-        const branches = await containingBranches(versionCommitRef);
+        const versionCommitSha = await resolveCommitSha(versionTag);
+        const branches = await containingBranches(versionCommitSha);
 
         if (branches.length === 1) {
           const branch = branches[0];
           if (await refExists(nextDocTag)) {
-            const nextDocReachable = await isReachableFrom(nextDocCommitRef, branch.name);
+            const nextDocCommitSha = await resolveCommitSha(nextDocTag);
+            const nextDocReachable = await isReachableFrom(nextDocCommitSha, branch.name);
             if (nextDocReachable) {
               window.location.href = githubTreeUrl(nextDocTag);
               return;
