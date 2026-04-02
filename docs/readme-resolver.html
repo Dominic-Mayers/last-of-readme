@@ -1,263 +1,74 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Documentation redirect</title>
-  </head>
-  <body>
-    <p>Resolving documentation…</p>
+<head><meta charset="utf-8"><title>Resolver</title></head>
+<body>
+<p>Resolving…</p>
+<script>
+const params = new URLSearchParams(window.location.search);
+const repo = params.get("repo");
+const docTagSuffix = "-last-doc";
+const nextDocTagSuffix = "-next-doc";
 
-    <script>
-      const params = new URLSearchParams(window.location.search);
-      const repo = params.get("repo");
-      const docTagSuffix = params.get("docTagSuffix") || "-last-doc";
-      const nextDocTagSuffix = params.get("nextDocTagSuffix") || "-next-doc";
+function gh(ref){return `https://github.com/${repo}/tree/${encodeURIComponent(ref)}`;}
+function api(p){return `https://api.github.com/repos/${repo}${p}`;}
 
-      function githubTreeUrl(ref) {
-        return `https://github.com/${repo}/tree/${encodeURIComponent(ref)}`;
-      }
+async function j(u){const r=await fetch(u,{headers:{Accept:"application/vnd.github+json"}});if(!r.ok)throw new Error(u);return r.json();}
+async function exists(ref){const r=await fetch(api(`/commits/${encodeURIComponent(ref)}`));return r.ok;}
+async function sha(ref){return (await j(api(`/commits/${encodeURIComponent(ref)}`))).sha;}
+async function branches(){return j(api(`/branches`));}
+async function cmp(a,b){return j(api(`/compare/${encodeURIComponent(a)}...${encodeURIComponent(b)}`));}
 
-      function githubApiUrl(path) {
-        return `https://api.github.com/repos/${repo}${path}`;
-      }
+async function contains(commit){
+  const bs=await branches();const out=[];
+  for(const b of bs){
+    const c=await cmp(commit,b.name);
+    console.log("cmp",commit,b.name,c.status);
+    if(c.status==="ahead"||c.status==="identical") out.push(b);
+  }
+  return out;
+}
 
-      async function fetchJson(url) {
-        const res = await fetch(url, {
-          headers: {
-            Accept: "application/vnd.github+json",
-          },
-        });
+async function reachable(commit,branch){
+  const c=await cmp(commit,branch);
+  return c.status==="ahead"||c.status==="identical";
+}
 
-        if (!res.ok) {
-          throw new Error(`Request failed (${res.status}) for ${url}`);
-        }
+async function run(){
+  const v=params.get("v");
+  const info=await j(api(""));
+  const def=info.default_branch;
 
-        return res.json();
-      }
+  const vTag=`v${v}`;
+  const last=`${vTag}${docTagSuffix}`;
+  const next=`${vTag}${nextDocTagSuffix}`;
 
-      async function fetchAllPages(url) {
-        const items = [];
-        let nextUrl = url;
+  if(await exists(last)){location.href=gh(last);return;}
 
-        while (nextUrl) {
-          const res = await fetch(nextUrl, {
-            headers: {
-              Accept: "application/vnd.github+json",
-            },
-          });
+  const vSha=await sha(vTag);
+  const bs=await contains(vSha);
 
-          if (!res.ok) {
-            throw new Error(`Request failed (${res.status}) for ${nextUrl}`);
-          }
+  if(bs.length===1){
+    if(await exists(next)){
+      const nSha=await sha(next);
+      if(await reachable(nSha,bs[0].name)){location.href=gh(next);return;}
+    }
+    location.href=gh(bs[0].name);return;
+  }
 
-          const pageItems = await res.json();
-          items.push(...pageItems);
+  if(bs.length>1){
+    document.body.innerHTML="multiple branches";
+    return;
+  }
 
-          const link = res.headers.get("Link") || "";
-          const nextMatch = link.match(/<([^>]+)>;\s*rel="next"/);
-          nextUrl = nextMatch ? nextMatch[1] : null;
-        }
+  if(await exists(next)){
+    document.body.innerHTML="next-doc fallback";
+    return;
+  }
 
-        return items;
-      }
+  location.href=gh(def);
+}
 
-      async function refExists(ref) {
-        const res = await fetch(githubApiUrl(`/commits/${encodeURIComponent(ref)}`), {
-          headers: {
-            Accept: "application/vnd.github+json",
-          },
-        });
-        return res.ok;
-      }
-
-      async function resolveCommitSha(ref) {
-        const data = await fetchJson(githubApiUrl(`/commits/${encodeURIComponent(ref)}`));
-        return data.sha;
-      }
-
-      async function getRepoInfo() {
-        return fetchJson(githubApiUrl(""));
-      }
-
-      async function listBranches() {
-        console.log("Getting branches"); 
-        return fetchAllPages(githubApiUrl(`/branches?per_page=100`));
-      }
-
-      async function compare(base, head) {
-        console.log("Comparing ", base, " to ", head); 
-
-        return fetchJson(
-          githubApiUrl(`/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`)
-        );
-      }
-
-      async function containingBranches(commitSha) {
-        const branches = await listBranches();
-        const results = [];
-
-        for (const branch of branches) {
-          try {
-            const comparison = await compare(commitSha, branch.name);
-            if (comparison.status === "behind" || comparison.status === "identical") {
-              results.push(branch);
-            }
-          } catch (e) {
-            console.warn(`Could not compare ${commitSha} with branch ${branch.name}`, e);
-          }
-        }
-
-        return results;
-      }
-
-      async function isReachableFrom(commitSha, branchName) {
-        try {
-          const comparison = await compare(commitSha, branchName);
-          return comparison.status === "behind" || comparison.status === "identical";
-        } catch {
-          return false;
-        }
-      }
-
-      function renderOptions({ title, intro, nextDocTag, branches, fallbackRef }) {
-        const nextDocItem = nextDocTag
-          ? `<li><strong><a href="${githubTreeUrl(nextDocTag)}">Documentation continuation tag (${nextDocTag})</a></strong></li>`
-          : "";
-
-        const branchItems = branches
-          .map(
-            (branch) =>
-              `<li><a href="${githubTreeUrl(branch.name)}">Branch ${branch.name}</a></li>`
-          )
-          .join("");
-
-        const fallbackItem = fallbackRef
-          ? `<li><a href="${githubTreeUrl(fallbackRef)}">Repository fallback (${fallbackRef})</a></li>`
-          : "";
-
-        document.body.innerHTML = `
-          <h2>${title}</h2>
-          <p>${intro}</p>
-          <ul>
-            ${nextDocItem}
-            ${branchItems}
-            ${fallbackItem}
-          </ul>
-        `;
-      }
-
-      async function resolveLast(version, defaultBranch) {
-        const versionTag = `v${version}`;
-        const lastDocTag = `v${version}${docTagSuffix}`;
-        const nextDocTag = `v${version}${nextDocTagSuffix}`;
-
-        if (await refExists(lastDocTag)) {
-          window.location.href = githubTreeUrl(lastDocTag);
-          return;
-        }
-
-        if (!(await refExists(versionTag))) {
-          if (defaultBranch) {
-            window.location.href = githubTreeUrl(defaultBranch);
-            return;
-          }
-          throw new Error(`Version ref ${versionTag} was not found`);
-        }
-
-        const versionCommitSha = await resolveCommitSha(versionTag);
-        const branches = await containingBranches(versionCommitSha);
-
-        if (branches.length === 1) {
-          const branch = branches[0];
-          if (await refExists(nextDocTag)) {
-            const nextDocCommitSha = await resolveCommitSha(nextDocTag);
-            const nextDocReachable = await isReachableFrom(nextDocCommitSha, branch.name);
-            if (nextDocReachable) {
-              window.location.href = githubTreeUrl(nextDocTag);
-              return;
-            }
-          }
-
-          window.location.href = githubTreeUrl(branch.name);
-          return;
-        }
-
-        if (branches.length > 1) {
-          renderOptions({
-            title: "Documentation options",
-            intro: `The resolver found several possible continuations for version <code>${version}</code>.`,
-            nextDocTag: (await refExists(nextDocTag)) ? nextDocTag : null,
-            branches,
-            fallbackRef: defaultBranch,
-          });
-          return;
-        }
-
-        if (await refExists(nextDocTag)) {
-          renderOptions({
-            title: "Documentation options",
-            intro: `No containing branch was found for version <code>${version}</code>, but an explicit next-doc tag exists.`,
-            nextDocTag,
-            branches: [],
-            fallbackRef: defaultBranch,
-          });
-          return;
-        }
-
-        if (defaultBranch) {
-          window.location.href = githubTreeUrl(defaultBranch);
-          return;
-        }
-
-        throw new Error("No documentation target could be determined");
-      }
-
-      async function resolve() {
-        const params = new URLSearchParams(window.location.search);
-        const version = params.get("v");
-        const mode = params.get("mode");
-        const repoInfo = await getRepoInfo();
-        const defaultBranch = repoInfo.default_branch;
-
-        if (!version || version === "__VERSION__") {
-          window.location.href = githubTreeUrl(defaultBranch || "HEAD");
-          return;
-        }
-
-        try {
-          if (mode === "last") {
-            await resolveLast(version, defaultBranch);
-            return;
-          }
-
-          const exactRef = `v${version}`;
-          const lastTarget = `v${version}${docTagSuffix}`;
-          const nextTarget = `v${version}${nextDocTagSuffix}`;
-
-          document.body.innerHTML = `
-            <h2>Documentation options</h2>
-            <p>Please choose:</p>
-            <ul>
-              <li><strong><a href="${githubTreeUrl(lastTarget)}">Last matching documentation</a></strong></li>
-              <li><a href="${githubTreeUrl(nextTarget)}">Next documentation anchor</a></li>
-              <li><a href="${githubTreeUrl(exactRef)}">Documentation at version ${version}</a></li>
-              <li><a href="${githubTreeUrl(defaultBranch)}">Latest documentation</a></li>
-            </ul>
-          `;
-        } catch (e) {
-          console.error(e);
-          document.body.innerHTML = `
-            <h2>Documentation resolver not ready</h2>
-            <p>
-              The resolver could not determine the target from documentation tags
-              and repository structure.
-            </p>
-            <p><a href="${githubTreeUrl(defaultBranch || "HEAD")}">Latest documentation</a></p>
-          `;
-        }
-      }
-
-      resolve();
-    </script>
-  </body>
+run();
+</script>
+</body>
 </html>
