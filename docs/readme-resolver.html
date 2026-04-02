@@ -84,36 +84,36 @@
         );
       }
 
-      async function containingBranches(ref) {
+      async function containingBranches(commitRef) {
         const branches = await listBranches();
         const results = [];
 
         for (const branch of branches) {
           try {
-            const comparison = await compare(ref, branch.name);
+            const comparison = await compare(commitRef, branch.name);
             if (comparison.status === "behind" || comparison.status === "identical") {
               results.push(branch);
             }
           } catch (e) {
-            console.warn(`Could not compare ${ref} with branch ${branch.name}`, e);
+            console.warn(`Could not compare ${commitRef} with branch ${branch.name}`, e);
           }
         }
 
         return results;
       }
 
-      async function isReachableFrom(ref, branchName) {
+      async function isReachableFrom(commitRef, branchName) {
         try {
-          const comparison = await compare(ref, branchName);
+          const comparison = await compare(commitRef, branchName);
           return comparison.status === "behind" || comparison.status === "identical";
         } catch {
           return false;
         }
       }
 
-      function renderOptions({ version, nextDocRef, branches, fallbackRef }) {
-        const nextDocItem = nextDocRef
-          ? `<li><strong><a href="${githubTreeUrl(nextDocRef)}">Documentation continuation tag (${nextDocRef})</a></strong></li>`
+      function renderOptions({ title, intro, nextDocTag, branches, fallbackRef }) {
+        const nextDocItem = nextDocTag
+          ? `<li><strong><a href="${githubTreeUrl(nextDocTag)}">Documentation continuation tag (${nextDocTag})</a></strong></li>`
           : "";
 
         const branchItems = branches
@@ -128,8 +128,8 @@
           : "";
 
         document.body.innerHTML = `
-          <h2>Documentation options</h2>
-          <p>The resolver found several possible continuations for version <code>${version}</code>.</p>
+          <h2>${title}</h2>
+          <p>${intro}</p>
           <ul>
             ${nextDocItem}
             ${branchItems}
@@ -139,31 +139,34 @@
       }
 
       async function resolveLast(version, defaultBranch) {
-        const versionRef = `v${version}`;
-        const lastDocRef = `v${version}${docTagSuffix}`;
-        const nextDocRef = `v${version}${nextDocTagSuffix}`;
+        const versionTag = `v${version}`;
+        const lastDocTag = `v${version}${docTagSuffix}`;
+        const nextDocTag = `v${version}${nextDocTagSuffix}`;
 
-        if (await refExists(lastDocRef)) {
-          window.location.href = githubTreeUrl(lastDocRef);
+        const versionCommitRef = `${versionTag}^{}`;
+        const nextDocCommitRef = `${nextDocTag}^{}`;
+
+        if (await refExists(lastDocTag)) {
+          window.location.href = githubTreeUrl(lastDocTag);
           return;
         }
 
-        if (!(await refExists(versionRef))) {
+        if (!(await refExists(versionTag))) {
           if (defaultBranch) {
             window.location.href = githubTreeUrl(defaultBranch);
             return;
           }
-          throw new Error(`Version ref ${versionRef} was not found`);
+          throw new Error(`Version ref ${versionTag} was not found`);
         }
 
-        const branches = await containingBranches(versionRef);
+        const branches = await containingBranches(versionCommitRef);
 
         if (branches.length === 1) {
           const branch = branches[0];
-          if (await refExists(nextDocRef)) {
-            const nextDocReachable = await isReachableFrom(nextDocRef, branch.name);
+          if (await refExists(nextDocTag)) {
+            const nextDocReachable = await isReachableFrom(nextDocCommitRef, branch.name);
             if (nextDocReachable) {
-              window.location.href = githubTreeUrl(nextDocRef);
+              window.location.href = githubTreeUrl(nextDocTag);
               return;
             }
           }
@@ -174,18 +177,20 @@
 
         if (branches.length > 1) {
           renderOptions({
-            version,
-            nextDocRef: (await refExists(nextDocRef)) ? nextDocRef : null,
+            title: "Documentation options",
+            intro: `The resolver found several possible continuations for version <code>${version}</code>.`,
+            nextDocTag: (await refExists(nextDocTag)) ? nextDocTag : null,
             branches,
             fallbackRef: defaultBranch,
           });
           return;
         }
 
-        if (await refExists(nextDocRef)) {
+        if (await refExists(nextDocTag)) {
           renderOptions({
-            version,
-            nextDocRef,
+            title: "Documentation options",
+            intro: `No containing branch was found for version <code>${version}</code>, but an explicit next-doc tag exists.`,
+            nextDocTag,
             branches: [],
             fallbackRef: defaultBranch,
           });
