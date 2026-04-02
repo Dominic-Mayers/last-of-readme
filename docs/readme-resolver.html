@@ -80,10 +80,13 @@
       }
 
       async function listBranches() {
+        console.log("Getting branches"); 
         return fetchAllPages(githubApiUrl(`/branches?per_page=100`));
       }
 
       async function compare(base, head) {
+        console.log("Comparing ", base, " to ", head); 
+
         return fetchJson(
           githubApiUrl(`/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`)
         );
