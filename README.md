@@ -86,6 +86,8 @@ The command to execute the script:
 
     npm run tag:last-doc
 
+D. When to use the script
+
 This script:
 
 - reads the current version from `package.json`
