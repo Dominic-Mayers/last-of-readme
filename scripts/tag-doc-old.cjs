@@ -5,7 +5,7 @@ const path = require("path");
 const cp = require("child_process");
 
 const PACKAGE_PATH = path.join(process.cwd(), "package.json");
-const DOC_TAG_SUFFIX = "-last-doc";
+const ALLOWED_KINDS = new Set(["last-doc", "next-doc"]);
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -45,6 +45,24 @@ function ensureGitRepo() {
   }
 }
 
+function parseArgs(argv) {
+  const args = argv.slice(2);
+  const push = !args.includes("--no-push");
+  const positional = args.filter((arg) => !arg.startsWith("--"));
+
+  if (positional.length !== 1) {
+    fail("Usage: node scripts/tag-doc.cjs <last-doc|next-doc> [--no-push]");
+  }
+
+  const kind = positional[0];
+
+  if (!ALLOWED_KINDS.has(kind)) {
+    fail(`Unknown doc tag kind: ${kind}`);
+  }
+
+  return { kind, push };
+}
+
 function main() {
   ensureGitRepo();
 
@@ -52,6 +70,7 @@ function main() {
     fail("package.json not found");
   }
 
+  const { kind, push } = parseArgs(process.argv);
   const pkg = readJson(PACKAGE_PATH);
   const version = pkg.version;
 
@@ -59,14 +78,16 @@ function main() {
     fail("package.json has no version");
   }
 
-  const push = !process.argv.includes("--no-push");
-  const tag = `v${version}${DOC_TAG_SUFFIX}`;
+  const tag = `v${version}-${kind}`;
 
   if (gitTagExists(tag)) {
     fail(`Tag already exists: ${tag}`);
   }
 
-  const message = `Last README commit for version ${version}`;
+  const message =
+    kind === "last-doc"
+      ? `Last README commit for version ${version}`
+      : `Next README anchor for version ${version}`;
 
   cp.execSync(
     `git tag -a ${JSON.stringify(tag)} -m ${JSON.stringify(message)}`,
@@ -81,7 +102,7 @@ function main() {
     });
     console.log(`✅ Pushed tag ${tag}`);
   } else {
-    console.log(`ℹ️ Tag not pushed`);
+    console.log("ℹ️ Tag not pushed");
   }
 }
 
