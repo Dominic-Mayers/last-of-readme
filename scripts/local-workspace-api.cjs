@@ -6,9 +6,6 @@ const cp = require('child_process');
 
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
-const README_PATH = path.join(WORKSPACE_ROOT, 'README.md');
-const START_MARKER = '<!-- DOC-LINK-START -->';
-const END_MARKER = '<!-- DOC-LINK-END -->';
 
 function fail(message) {
   const error = new Error(message);
@@ -22,6 +19,13 @@ function run(command, options = {}) {
     stdio: ['ignore', 'pipe', 'pipe'],
     ...options,
   }).trim();
+}
+
+function resolveWorkspacePath(relativePath) {
+  if (!relativePath) {
+    fail('Path is required');
+  }
+  return path.join(WORKSPACE_ROOT, relativePath);
 }
 
 function ensureFile(filePath, label) {
@@ -104,37 +108,23 @@ function currentRepository() {
   return normalizeRepositoryUrl(pkg.repository);
 }
 
-function packageSetting(pathSegments, fallbackValue) {
-  const pkg = readPackageJson();
-  let cursor = pkg;
-  for (const segment of pathSegments) {
-    if (!cursor || typeof cursor !== 'object' || !(segment in cursor)) {
-      return fallbackValue;
-    }
-    cursor = cursor[segment];
+function readFile(relativePath) {
+  const filePath = resolveWorkspacePath(relativePath);
+  ensureFile(filePath, relativePath);
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    fail(`Could not read ${relativePath}: ${err.message}`);
   }
-  return cursor;
 }
 
-function replaceDocumentationLink(linkHtml) {
-  ensureFile(README_PATH, 'README.md');
-
-  const readme = fs.readFileSync(README_PATH, 'utf8');
-  const start = readme.indexOf(START_MARKER);
-  const end = readme.indexOf(END_MARKER);
-
-  if (start === -1 || end === -1) {
-    fail('Placeholder not found');
+function writeFile(relativePath, content) {
+  const filePath = resolveWorkspacePath(relativePath);
+  try {
+    fs.writeFileSync(filePath, content);
+  } catch (err) {
+    fail(`Could not write ${relativePath}: ${err.message}`);
   }
-
-  if (end < start) {
-    fail('Invalid placeholder order');
-  }
-
-  const managedBlock = `${START_MARKER}${linkHtml}${END_MARKER}`;
-  const before = readme.slice(0, start);
-  const after = readme.slice(end + END_MARKER.length);
-  fs.writeFileSync(README_PATH, before + managedBlock + after);
 }
 
 function setTag(tag, repoNode, annotation) {
@@ -167,8 +157,8 @@ module.exports = {
   currentPackageVersion,
   currentPackageName,
   currentRepository,
-  packageSetting,
-  replaceDocumentationLink,
+  readFile,
+  writeFile,
   setTag,
   publishTag,
 };

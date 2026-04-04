@@ -5,7 +5,7 @@
   "author": "Dominic Mayers",
   "license": "MIT",
   "scripts": {
-    "version": "node scripts/update-readme-link.cjs && git add README.md && node scripts/tag-doc.cjs next-doc --no-push",
+    "version": "node scripts/update-readme-link.cjs README.md -last-doc && git add README.md && node scripts/tag-doc.cjs next-doc --no-push",
     "postversion": "git push --follow-tags",
     "tag:last-doc": "node scripts/tag-doc.cjs last-doc"
   },
