@@ -4,71 +4,95 @@
 <body>
 <p>Resolving…</p>
 <script>
-const params = new URLSearchParams(window.location.search);
-const repo = params.get("repo");
-const docTagSuffix = "-last-doc";
-const nextDocTagSuffix = "-next-doc";
+(async () => {
+  const p = new URLSearchParams(location.search);
+  const repo = p.get("repo");
+  const v = p.get("v");
 
-function gh(ref){return `https://github.com/${repo}/tree/${encodeURIComponent(ref)}`;}
-function api(p){return `https://api.github.com/repos/${repo}${p}`;}
-
-async function j(u){const r=await fetch(u,{headers:{Accept:"application/vnd.github+json"}});if(!r.ok)throw new Error(u);return r.json();}
-async function exists(ref){const r=await fetch(api(`/commits/${encodeURIComponent(ref)}`));return r.ok;}
-async function sha(ref){return (await j(api(`/commits/${encodeURIComponent(ref)}`))).sha;}
-async function branches(){return j(api(`/branches`));}
-async function cmp(a,b){return j(api(`/compare/${encodeURIComponent(a)}...${encodeURIComponent(b)}`));}
-
-async function contains(commit){
-  const bs=await branches();const out=[];
-  for(const b of bs){
-    const c=await cmp(commit,b.name);
-    console.log("cmp",commit,b.name,c.status);
-    if(c.status==="ahead"||c.status==="identical") out.push(b);
+  if (!repo || !v) {
+    document.body.innerText = "missing params";
+    return;
   }
-  return out;
-}
 
-async function reachable(commit,branch){
-  const c=await cmp(commit,branch);
-  return c.status==="ahead"||c.status==="identical";
-}
+  const api = (path) => `https://api.github.com/repos/${repo}${path}`;
+  const gh = (ref) => `https://github.com/${repo}/tree/${ref}`;
 
-async function run(){
-  const v=params.get("v");
-  const info=await j(api(""));
-  const def=info.default_branch;
+  async function sha(ref) {
+    const r = await fetch(api(`/commits/${encodeURIComponent(ref)}`));
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j.sha;
+  }
 
-  const vTag=`v${v}`;
-  const last=`${vTag}${docTagSuffix}`;
-  const next=`${vTag}${nextDocTagSuffix}`;
+  async function exists(ref) {
+    return (await sha(ref)) !== null;
+  }
 
-  if(await exists(last)){location.href=gh(last);return;}
+  async function branches() {
+    const r = await fetch(api(`/branches`));
+    if (!r.ok) return [];
+    const j = await r.json();
+    return j.map(b => b.name);
+  }
 
-  const vSha=await sha(vTag);
-  const bs=await contains(vSha);
+  async function cmp(a, b) {
+    const r = await fetch(api(`/compare/${encodeURIComponent(a)}...${encodeURIComponent(b)}`));
+    if (!r.ok) return null;
+    return await r.json();
+  }
 
-  if(bs.length===1){
-    if(await exists(next)){
-      const nSha=await sha(next);
-      if(await reachable(nSha,bs[0].name)){location.href=gh(next);return;}
+  async function reachable(commit, branch) {
+    const j = await cmp(commit, branch);
+    if (!j) return false;
+    return j.status === "ahead" || j.status === "identical";
+  }
+
+  const base = `v${v}`;
+  const last = `${base}-last-doc`;
+  const next = `${base}-next-doc`;
+
+  // 1. last-doc
+  if (await exists(last)) {
+    location.href = gh(last);
+    return;
+  }
+
+  // 2. next-doc
+  if (await exists(next)) {
+    location.href = gh(next);
+    return;
+  }
+
+  // resolve base
+  const baseSha = await sha(base);
+  if (!baseSha) {
+    document.body.innerText = "version tag not found";
+    return;
+  }
+
+  // compute containing branches
+  const bs = await branches();
+  const containing = [];
+  for (const b of bs) {
+    if (await reachable(baseSha, b)) {
+      containing.push(b);
     }
-    location.href=gh(bs[0].name);return;
   }
 
-  if(bs.length>1){
-    document.body.innerHTML="multiple branches";
+  // 3. unique containing branch → HEAD
+  if (containing.length === 1) {
+    location.href = gh(containing[0]);
     return;
   }
 
-  if(await exists(next)){
-    document.body.innerHTML="next-doc fallback";
+  // 4. many containing branches → options
+  if (containing.length > 1) {
+    document.body.innerText = "multiple branches: " + containing.join(", ");
     return;
   }
 
-  location.href=gh(def);
-}
-
-run();
-</script>
-</body>
+  // 5. no containing branch → base version
+  location.href = gh(base);
+})();
+</script></body>
 </html>
