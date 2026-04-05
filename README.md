@@ -1,6 +1,6 @@
 # Last of README
 
-[![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.8&docTagSuffix=-last-doc"><img alt="README-last of 0.1.8" src="https://img.shields.io/badge/README-last%20of%200.1.8-blue?logo=github"></a><!-- DOC-LINK-END -->
+[![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.9&docTagSuffix=-last-doc"><img alt="README-last of 0.1.9" src="https://img.shields.io/badge/README-last%20of%200.1.9-blue?logo=github"></a><!-- DOC-LINK-END -->
 
 Resolve README links to the last commit that still documents a given version.
 
