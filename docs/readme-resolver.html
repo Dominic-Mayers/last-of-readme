@@ -3,96 +3,59 @@
 <head><meta charset="utf-8"><title>Resolver</title></head>
 <body>
 <p>Resolving…</p>
+<script src="./remote-repository-api.js"></script>
 <script>
 (async () => {
   const p = new URLSearchParams(location.search);
-  const repo = p.get("repo");
-  const v = p.get("v");
+  const repository = p.get("repo");
+  const version = p.get("v");
 
-  if (!repo || !v) {
+  if (!repository || !version) {
     document.body.innerText = "missing params";
     return;
   }
 
-  const api = (path) => `https://api.github.com/repos/${repo}${path}`;
-  const gh = (ref) => `https://github.com/${repo}/tree/${ref}`;
+  const remoteRepository = createGitHubRemoteRepositoryAPI(repository);
 
-  async function sha(ref) {
-    const r = await fetch(api(`/commits/${encodeURIComponent(ref)}`));
-    if (!r.ok) return null;
-    const j = await r.json();
-    return j.sha;
-  }
-
-  async function exists(ref) {
-    return (await sha(ref)) !== null;
-  }
-
-  async function branches() {
-    const r = await fetch(api(`/branches`));
-    if (!r.ok) return [];
-    const j = await r.json();
-    return j.map(b => b.name);
-  }
-
-  async function cmp(a, b) {
-    const r = await fetch(api(`/compare/${encodeURIComponent(a)}...${encodeURIComponent(b)}`));
-    if (!r.ok) return null;
-    return await r.json();
-  }
-
-  async function reachable(commit, branch) {
-    const j = await cmp(commit, branch);
-    if (!j) return false;
-    return j.status === "ahead" || j.status === "identical";
-  }
-
-  const base = `v${v}`;
+  const base = `v${version}`;
   const last = `${base}-last-doc`;
   const next = `${base}-next-doc`;
 
   // 1. last-doc
-  if (await exists(last)) {
-    location.href = gh(last);
+  if (await remoteRepository.resolveTag(last)) {
+    location.href = remoteRepository.browseDocumentation(last);
     return;
   }
 
   // 2. next-doc
-  if (await exists(next)) {
-    location.href = gh(next);
+  if (await remoteRepository.resolveTag(next)) {
+    location.href = remoteRepository.browseDocumentation(next);
     return;
   }
 
   // resolve base
-  const baseSha = await sha(base);
-  if (!baseSha) {
+  const baseRepoNode = await remoteRepository.resolveTag(base);
+  if (!baseRepoNode) {
     document.body.innerText = "version tag not found";
     return;
   }
 
-  // compute containing branches
-  const bs = await branches();
-  const containing = [];
-  for (const b of bs) {
-    if (await reachable(baseSha, b)) {
-      containing.push(b);
-    }
-  }
+  // 3-4. structural fallback
+  const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
 
-  // 3. unique containing branch → HEAD
-  if (containing.length === 1) {
-    location.href = gh(containing[0]);
+  if (containingBranches.length === 1) {
+    location.href = remoteRepository.browseDocumentation(containingBranches[0]);
     return;
   }
 
-  // 4. many containing branches → options
-  if (containing.length > 1) {
-    document.body.innerText = "multiple branches: " + containing.join(", ");
+  if (containingBranches.length > 1) {
+    document.body.innerText = "multiple branches: " + containingBranches.join(", ");
     return;
   }
 
   // 5. no containing branch → base version
-  location.href = gh(base);
+  location.href = remoteRepository.browseDocumentation(base);
 })();
-</script></body>
+</script>
+</body>
 </html>
