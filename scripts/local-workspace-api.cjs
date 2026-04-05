@@ -95,7 +95,7 @@ function currentPackageVersion() {
   return pkg.version;
 }
 
-function currentPackageName() {
+function packageName() {
   const pkg = readPackageJson();
   if (!pkg.name) {
     fail('package.json has no name');
@@ -103,7 +103,7 @@ function currentPackageName() {
   return pkg.name;
 }
 
-function currentRepository() {
+function remoteRepository() {
   const pkg = readPackageJson();
   return normalizeRepositoryUrl(pkg.repository);
 }
@@ -155,8 +155,8 @@ function publishTag(tag, remote = 'origin') {
 module.exports = {
   currentRepoNode,
   currentPackageVersion,
-  currentPackageName,
-  currentRepository,
+  packageName,
+  remoteRepository,
   readFile,
   writeFile,
   setTag,

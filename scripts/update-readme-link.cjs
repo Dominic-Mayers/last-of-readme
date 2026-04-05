@@ -17,8 +17,8 @@ function usage() {
 
 function buildResolverLink(docTagSuffix) {
   const version = workspace.currentPackageVersion();
-  const packageName = workspace.currentPackageName();
-  const repository = workspace.currentRepository();
+  const packageName = workspace.packageName();
+  const repository = workspace.remoteRepository();
 
   const [owner, repoName] = repository.split('/');
   const siteUrl = `https://${owner}.github.io/${repoName}/readme-resolver.html`;
