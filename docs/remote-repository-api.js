@@ -1,4 +1,4 @@
-export function createRemoteRepositoryAPI(repository) {
+function createRemoteRepositoryAPI(repository) {
   const api = (path) => `https://api.github.com/repos/${repository}${path}`;
   const gh = (ref) => `https://github.com/${repository}/tree/${ref}`;
 

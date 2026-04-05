@@ -15,7 +15,7 @@
     return;
   }
 
-  const remoteRepository = createGitHubRemoteRepositoryAPI(repository);
+  const remoteRepository = createRemoteRepositoryAPI(repository);
 
   const base = `v${version}`;
   const last = `${base}-last-doc`;
