@@ -2,14 +2,46 @@
 
 [![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://Dominic-Mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&v=0.1.9&docTagSuffix=-last-doc"><img alt="README-last of 0.1.9" src="https://img.shields.io/badge/README-last%20of%200.1.9-blue?logo=github"></a><!-- DOC-LINK-END -->
 
-Resolve README links to the last commit that still documents a given version.
+By default, a package version is expected to contain its correct documentation, but in practice there is no guarantee that documentation is complete or even correct at release time.
 
-The resolver:
-
-1. Use an explicit documentation tag (`vX.Y.Z-last-doc`) if it exists
-2. Otherwise, fall back to npm version ordering
+Last of Readme helps maintainers make more realistic guarantees about their documentation.
 
 ---
+
+## 🔗 How it works
+
+Last of Readme connects:
+
+* a **package version**
+* a **repository state (commit)**
+
+This connection is established through a **README link**.
+
+The system relies on:
+
+* tags (explicit signals from maintainers)
+* repository structure (implicit signals)
+* a resolver that applies these rules
+
+At each version, a link is inserted into the README.
+This link points to a resolver, which redirects to the repository state that satisfies the maintainer’s guarantees.
+
+---
+
+## 📐 Resolution strategy (last-of contract)
+
+Different contracts are planned for future versions of Last of Readme. This implementation offers the **last-of contract**:
+
+> A more complete and possibly corrected documentation for the package will appear *after* the version is released.
+
+Resolution order:
+
+1. `vX.Y.Z-last-doc` tag → explicitly designated last valid documentation
+2. `vX.Y.Z-next-doc` tag → same as last-doc, but automatically asserted by a newer version
+3. A unique branch contains the version → use its HEAD
+4. Multiple branches contain the version → present options
+5. No branch contains the version → fall back to the version itself
+6. Otherwise → not found
 
 ## ⚙️ Setup
 
@@ -134,44 +166,6 @@ The page will:
         }
 
 This also pushes any documentation tags (such as `vX.Y.Z-last-doc`) that point to commits on the current branch.
-
----
-
-## 🧩 Design principles
-```
-  ┌────────────────────┐                            ┌────────────────────┐   
-  │                    │                            │                    │   
-  │  Version registry  │ ◄──────┐           ┌──────►│     Git history    │   
-  │                    │        │           │       │                    │   
-  └────────────────────┘        │           │       └────────────────────┘   
-             ▲                  │           │                  ▲             
-   Relation  │                  ▼           ▼                  │             
-   to        │         ┌─────────────────────────────┐         │ Relation    
-   published │         │                             │         │ to          
-   code      │         │       Last of README        │         │ contents    
-             │         │ maps versions to repository │         │             
-             │         │     states (commits)        │         │             
-             │         │                             │         │             
-             │         └─────────────────────────────┘         │             
-──   ──   ── │ ──   ──   ──   ──   ──   ──   ──   ──   ──   ── │ ──   ──   ──
-             ▼                                                 ▼             
- ┌────────────────────┐                               ┌────────────────────┐ 
- │                    │                               │                    │ 
- │ Published packages │                               │ Repository content │ 
- │                    │                               │ (code, README, …)  │ 
- └────────────────────┘                               └────────────────────┘ 
-```
-
-Last of README operates entirely above the dotted line, mapping version identifiers to commits without relying on relations to published artifacts or repository contents.
-
-It maps versions to repository states (commits) as follows:
-
-- The version registry defines version identifiers and their relation to the published code.
-- Git defines repository states (commits) and their relation to contents.
-- The user may create Git tags to associate version identifiers with repository states (commits).
-- These tags operate entirely at the level of version identifiers and commits, relating the two sides above the dotted line.
-- A tag of the form `vX.Y.Z-last-doc` refines this association by marking the last commit whose README still matches version `X.Y.Z`.
-- The links inserted into README files rely on this association to resolve a version identifier to a commit, using explicit tags when available and otherwise falling back to npm version ordering (or to the main branch if no such tag exists).
 
 ---
 
