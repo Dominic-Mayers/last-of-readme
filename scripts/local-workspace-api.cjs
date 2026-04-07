@@ -153,12 +153,12 @@ function publishTag(tag, remote = 'origin') {
 }
 
 module.exports = {
-  currentRepoNode,
-  currentPackageVersion,
-  packageName,
   remoteRepository,
+  currentRepoNode,
   readFile,
   writeFile,
   setTag,
   publishTag,
+  packageName,
+  currentPackageVersion
 };
