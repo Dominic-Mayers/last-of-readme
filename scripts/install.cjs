@@ -2,6 +2,7 @@
 
 const { checkCommonRequirements } = require ('./install-common-requirements.cjs');
 const { collectUserInput } = require('./collect-user-input.cjs');
+const { checkRemoteRequirements } = require('./install_remote.cjs');
 const {
   checkDocLinkRequirements,
   checkDocLinkPackageJsonRequirements,
@@ -10,6 +11,7 @@ const {
 } = require('./install-doc-link.cjs');
 
 function checkRequirements(config) {
+  checkRemoteRequirements(config);
   checkDocLinkRequirements(config);
   checkDocLinkPackageJsonRequirements(config);
 }

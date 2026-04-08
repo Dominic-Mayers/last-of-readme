@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 
-const workspace = require('./local-workspace-api.cjs');
+// Phase 1: centralized resolver (try-it mode)
+// Must NOT depend on target repository hosting
+const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
+
+const workspace = require('./local-workspace-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
@@ -23,10 +27,9 @@ function buildResolverLink(docTagSuffix) {
   const repository = workspace.remoteRepository();
 
   const [owner, repoName] = repository.split('/');
-  const siteUrl = `https://${owner}.github.io/${repoName}/readme-resolver.html`;
-
+ 
   return (
-    `<a href="${siteUrl}?mode=last&pkg=${encodeURIComponent(packageName)}` +
+    `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(packageName)}` +
     `&repo=${encodeURIComponent(repository)}&v=${encodeURIComponent(version)}` +
     `&docTagSuffix=${encodeURIComponent(docTagSuffix)}">` +
     `<img alt="README-last of ${version}" ` +

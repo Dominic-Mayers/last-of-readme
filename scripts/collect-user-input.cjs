@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { listRemoteChoices } = require('./install_remote.cjs');
 
 function loadPackageJson() {
   const packageJsonPath = path.resolve(process.cwd(), 'package.json');
@@ -59,15 +60,80 @@ function parseBooleanAnswer(value, defaultValue) {
   throw new Error('Please answer yes or no');
 }
 
+function chooseDefaultRemoteName(remoteChoices) {
+  if (remoteChoices.length === 1) {
+    return remoteChoices[0].name;
+  }
+
+  return '';
+}
+
+function formatRemoteChoices(remoteChoices) {
+  if (remoteChoices.length === 0) {
+    return '  (no Git remotes found)';
+  }
+
+  return remoteChoices
+    .map(({ name, url }, index) => `  ${index + 1}. ${name} (${url})`)
+    .join('\n');
+}
+
+function resolveRemoteSelection(answer, remoteChoices, defaultRemoteName) {
+  const trimmed = String(answer || '').trim();
+  const value = trimmed || defaultRemoteName;
+
+  if (!value) {
+    return null;
+  }
+
+  if (['none', 'no', 'skip'].includes(value.toLowerCase())) {
+    return null;
+  }
+
+  if (/^\d+$/.test(value)) {
+    const index = Number(value) - 1;
+    if (index >= 0 && index < remoteChoices.length) {
+      return remoteChoices[index].name;
+    }
+    throw new Error('Please choose a listed remote by number or by name');
+  }
+
+  const byName = remoteChoices.find(({ name }) => name === value);
+  if (byName) {
+    return byName.name;
+  }
+
+  throw new Error('Please choose a listed remote by number or by name');
+}
+
 async function collectUserInput() {
   const packageJson = loadPackageJson();
   const previousDocLinkPath =
     parseDocLinkPathFromVersionScript(packageJson?.scripts?.version) || null;
   const defaultDocLinkPath = previousDocLinkPath || 'README.md';
 
+  const remoteChoices = listRemoteChoices();
+  const defaultRemoteName = chooseDefaultRemoteName(remoteChoices);
+
   const rl = createInterface();
 
   try {
+    console.log('Git remotes:');
+    console.log(formatRemoteChoices(remoteChoices));
+    console.log('Select a remote by number or by name. Enter none to stop.');
+
+    const remoteAnswer = await ask(
+      rl,
+      defaultRemoteName
+        ? `Remote [${defaultRemoteName}]: `
+        : 'Remote: '
+    );
+    const remoteName = resolveRemoteSelection(
+      remoteAnswer,
+      remoteChoices,
+      defaultRemoteName
+    );
+
     const pathAnswer = await ask(
       rl,
       `Doc-link file path [${defaultDocLinkPath}]: `
@@ -91,6 +157,7 @@ async function collectUserInput() {
 
     return {
       config: {
+        remoteName,
         docLinkPath,
         createMinimal,
         previousDocLinkPath,
