@@ -21,7 +21,7 @@ function usage() {
   process.exit(1);
 }
 
-function buildResolverLink() {
+function buildResolverLink(docTagSuffix) {
   const version = workspace.currentPackageVersion();
   const packageName = workspace.packageName();
   const repository = workspace.remoteRepository();
@@ -30,7 +30,7 @@ function buildResolverLink() {
  
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(packageName)}` +
-    `&repo=${encodeURIComponent(repository)}&v=${encodeURIComponent(version)}` +
+    `&repo=${encodeURIComponent(repository)}&v=${encodeURIComponent(version)}">` +
     `<img alt="README-last of ${version}" ` +
     `src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(version)}-blue?logo=github">` +
     `</a>`
@@ -87,13 +87,14 @@ function replaceManagedBlock(content, replacement) {
 
 function main() {
   const documentationPath = process.argv[2];
+  const docTagSuffix = process.argv[3];
 
-  if (!documentationPath) {
+  if (!documentationPath || !docTagSuffix) {
     usage();
   }
 
   try {
-    const link = buildResolverLink();
+    const link = buildResolverLink(docTagSuffix);
     const content = workspace.readFile(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
     workspace.writeFile(documentationPath, updatedContent);
