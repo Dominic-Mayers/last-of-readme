@@ -17,11 +17,11 @@ function fail(message) {
 }
 
 function usage() {
-  console.error('Usage: node update-readme-link.cjs <documentation-path>');
+  console.error('Usage: node update-readme-link.cjs <documentation-path> ');
   process.exit(1);
 }
 
-function buildResolverLink(docTagSuffix) {
+function buildResolverLink() {
   const version = workspace.currentPackageVersion();
   const packageName = workspace.packageName();
   const repository = workspace.remoteRepository();
@@ -87,14 +87,13 @@ function replaceManagedBlock(content, replacement) {
 
 function main() {
   const documentationPath = process.argv[2];
-  const docTagSuffix = process.argv[3];
 
-  if (!documentationPath || !docTagSuffix) {
+  if (!documentationPath) {
     usage();
   }
 
   try {
-    const link = buildResolverLink(docTagSuffix);
+    const link = buildResolverLink();
     const content = workspace.readFile(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
     workspace.writeFile(documentationPath, updatedContent);
