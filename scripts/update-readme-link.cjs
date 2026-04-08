@@ -17,11 +17,11 @@ function fail(message) {
 }
 
 function usage() {
-  console.error('Usage: node update-readme-link.cjs <documentation-path> <doc-tag-suffix>');
+  console.error('Usage: node update-readme-link.cjs <documentation-path>');
   process.exit(1);
 }
 
-function buildResolverLink(docTagSuffix) {
+function buildResolverLink() {
   const version = workspace.currentPackageVersion();
   const packageName = workspace.packageName();
   const repository = workspace.remoteRepository();
@@ -31,7 +31,6 @@ function buildResolverLink(docTagSuffix) {
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(packageName)}` +
     `&repo=${encodeURIComponent(repository)}&v=${encodeURIComponent(version)}` +
-    `&docTagSuffix=${encodeURIComponent(docTagSuffix)}">` +
     `<img alt="README-last of ${version}" ` +
     `src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(version)}-blue?logo=github">` +
     `</a>`
@@ -88,14 +87,13 @@ function replaceManagedBlock(content, replacement) {
 
 function main() {
   const documentationPath = process.argv[2];
-  const docTagSuffix = process.argv[3];
 
-  if (!documentationPath || !docTagSuffix) {
+  if (!documentationPath) {
     usage();
   }
 
   try {
-    const link = buildResolverLink(docTagSuffix);
+    const link = buildResolverLink();
     const content = workspace.readFile(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
     workspace.writeFile(documentationPath, updatedContent);
