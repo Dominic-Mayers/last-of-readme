@@ -9,13 +9,14 @@
   const p = new URLSearchParams(location.search);
   const repository = p.get("repo");
   const version = p.get("v");
+  const urlPath = p.get("urlPath") || "";
 
   if (!repository || !version) {
     document.body.innerText = "missing params";
     return;
   }
 
-  const remoteRepository = createRemoteRepositoryAPI(repository);
+  const remoteRepository = createRemoteRepositoryAPI(repository, urlPath);
 
   const base = `v${version}`;
   const last = `${base}-last-doc`;

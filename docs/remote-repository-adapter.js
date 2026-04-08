@@ -1,6 +1,11 @@
-function createRemoteRepositoryAPI(repository) {
+function createRemoteRepositoryAPI(repository, urlPath = "") {
   const api = (path) => `https://api.github.com/repos/${repository}${path}`;
-  const gh = (ref) => `https://github.com/${repository}/tree/${ref}`;
+
+  function browseDocumentation(target) {
+    const baseUrl = `https://github.com/${repository}/tree/${encodeURIComponent(target)}`;
+    const normalizedPath = String(urlPath || "").replace(/^\/+/, "");
+    return normalizedPath ? `${baseUrl}/${normalizedPath}` : baseUrl;
+  }
 
   async function resolveTag(tag) {
     const r = await fetch(api(`/commits/${encodeURIComponent(tag)}`));
@@ -29,10 +34,6 @@ function createRemoteRepositoryAPI(repository) {
     }
 
     return result;
-  }
-
-  function browseDocumentation(target) {
-    return gh(target);
   }
 
   return {
