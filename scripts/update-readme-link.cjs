@@ -88,7 +88,7 @@ function main() {
   const documentationPath = process.argv[2];
   const urlPath = process.argv[3] || "";
 
-  if (!documentationPath || !urlPath) {
+  if (!documentationPath) {
     usage();
   }
 
