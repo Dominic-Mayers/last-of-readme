@@ -17,18 +17,20 @@ function fail(message) {
 }
 
 function usage() {
-  console.error('Usage: node update-readme-link.cjs <documentation-path> <url-path>');
+  console.error('Usage: node update-readme-link.cjs <documentation-path> [url-path]');
   process.exit(1);
 }
 
-function buildResolverLink(urlPath) {
+function buildResolverLink(urlPath = '') {
   const version = workspace.currentPackageVersion();
   const packageName = workspace.packageName();
-  const repository = workspace.remoteRepository();
+  const remote = workspace.remoteConfiguration();
 
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(packageName)}` +
-    `&repo=${encodeURIComponent(repository)}&v=${encodeURIComponent(version)}` +
+    `&repo=${encodeURIComponent(remote.repository)}` +
+    `&host=${encodeURIComponent(remote.host)}` +
+    `&v=${encodeURIComponent(version)}` +
     `&urlPath=${encodeURIComponent(urlPath)}">` +
     `<img alt="README-last of ${version}" ` +
     `src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(version)}-blue?logo=github">` +
@@ -86,7 +88,7 @@ function replaceManagedBlock(content, replacement) {
 
 function main() {
   const documentationPath = process.argv[2];
-  const urlPath = process.argv[3] || "";
+  const urlPath = process.argv[3] || '';
 
   if (!documentationPath) {
     usage();

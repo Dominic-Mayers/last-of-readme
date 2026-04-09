@@ -65,11 +65,20 @@ function normalizeRepositoryUrl(repository) {
     url = url.slice(0, -4);
   }
 
-  let match = url.match(/^https:\/\/github\.com\/([^/]+\/[^/]+)$/);
-  if (match) return match[1];
+  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
+  if (match) {
+    return { kind: 'github', host: match[1], repository: match[2] };
+  }
 
-  match = url.match(/^git@github\.com:([^/]+\/[^/]+)$/);
-  if (match) return match[1];
+  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
+  if (match) {
+    return { kind: 'github', host: match[1], repository: match[2] };
+  }
+
+  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
+  if (match) {
+    return { kind: 'github', host: match[1], repository: match[2] };
+  }
 
   fail('repository.url must point to a GitHub repository');
 }
@@ -103,9 +112,38 @@ function packageName() {
   return pkg.name;
 }
 
-function remoteRepository() {
+function remoteConfiguration() {
   const pkg = readPackageJson();
+  const cfg = pkg.lastOfReadme && pkg.lastOfReadme.remote;
+
+  if (cfg && typeof cfg === 'object') {
+    if (cfg.kind !== 'github') {
+      fail('package.json lastOfReadme.remote.kind must be "github"');
+    }
+    if (!cfg.host || !cfg.repository) {
+      fail('package.json lastOfReadme.remote must include host and repository');
+    }
+    return {
+      kind: 'github',
+      host: String(cfg.host),
+      repository: String(cfg.repository),
+    };
+  }
+
   return normalizeRepositoryUrl(pkg.repository);
+}
+
+function remoteName() {
+  const pkg = readPackageJson();
+  const configuredRemoteName = pkg.lastOfReadme && pkg.lastOfReadme.remoteName;
+  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
+    return configuredRemoteName;
+  }
+  return 'origin';
+}
+
+function remoteRepository() {
+  return remoteConfiguration().repository;
 }
 
 function readFile(relativePath) {
@@ -145,7 +183,7 @@ function setTag(tag, repoNode, annotation) {
   );
 }
 
-function publishTag(tag, remote = 'origin') {
+function publishTag(tag, remote = remoteName()) {
   ensureGitWorkspace();
   cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
     stdio: 'inherit',
@@ -153,6 +191,7 @@ function publishTag(tag, remote = 'origin') {
 }
 
 module.exports = {
+  remoteConfiguration,
   remoteRepository,
   currentRepoNode,
   readFile,
@@ -160,5 +199,6 @@ module.exports = {
   setTag,
   publishTag,
   packageName,
-  currentPackageVersion
+  currentPackageVersion,
+  remoteName,
 };

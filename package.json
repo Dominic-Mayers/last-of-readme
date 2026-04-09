@@ -18,5 +18,13 @@
     "scripts",
     "docs",
     "README.md"
-  ]
+  ],
+  "lastOfReadme": {
+    "remoteName": "origin",
+    "remote": {
+      "kind": "github",
+      "host": "github.com",
+      "repository": "Dominic-Mayers/last-of-readme"
+    }
+  }
 }

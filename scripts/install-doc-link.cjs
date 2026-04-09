@@ -176,9 +176,10 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
-function buildVersionScript(docLinkPath) {
+function buildVersionScript(docLinkPath, urlPath) {
   const quotedPath = shellQuote(docLinkPath);
-  return `node scripts/update-readme-link.cjs ${quotedPath} -last-doc && git add ${quotedPath}`;
+  const quotedUrlPath = shellQuote(urlPath || '');
+  return `node scripts/update-readme-link.cjs ${quotedPath} ${quotedUrlPath} && git add ${quotedPath}`;
 }
 
 function checkDocLinkPackageJsonRequirements() {
@@ -200,7 +201,7 @@ function checkDocLinkPackageJsonRequirements() {
 function installDocLinkPackageJson(config) {
   const pkg = readPackageJson();
   pkg.scripts = pkg.scripts || {};
-  pkg.scripts.version = buildVersionScript(config.docLinkPath);
+  pkg.scripts.version = buildVersionScript(config.docLinkPath, config.urlPath);
 
   if (Array.isArray(pkg.files)) {
     if (!pkg.files.includes(config.docLinkPath)) {
@@ -221,6 +222,7 @@ function installDocLinkPackageJson(config) {
   return {
     path: 'package.json',
     docLinkPath: config.docLinkPath,
+    urlPath: config.urlPath || '',
   };
 }
 

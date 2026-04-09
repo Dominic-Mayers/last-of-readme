@@ -31,6 +31,18 @@ function parseDocLinkPathFromVersionScript(versionScript) {
   return match ? (match[1] || match[2] || match[3]) : null;
 }
 
+function parseUrlPathFromVersionScript(versionScript) {
+  if (typeof versionScript !== 'string') {
+    return null;
+  }
+
+  const match = versionScript.match(
+    /node\s+scripts\/update-readme-link\.cjs\s+(?:'[^']+'|"[^"]+"|[^\s]+)\s+(?:'([^']*)'|"([^"]*)"|([^\s]+))/
+  );
+
+  return match ? (match[1] || match[2] || match[3] || '') : null;
+}
+
 function createInterface() {
   return readline.createInterface({
     input: process.stdin,
@@ -110,7 +122,10 @@ async function collectUserInput() {
   const packageJson = loadPackageJson();
   const previousDocLinkPath =
     parseDocLinkPathFromVersionScript(packageJson?.scripts?.version) || null;
+  const previousUrlPath =
+    parseUrlPathFromVersionScript(packageJson?.scripts?.version);
   const defaultDocLinkPath = previousDocLinkPath || 'README.md';
+  const defaultUrlPath = previousUrlPath === null ? '' : previousUrlPath;
 
   const remoteChoices = listRemoteChoices();
   const defaultRemoteName = chooseDefaultRemoteName(remoteChoices);
@@ -125,8 +140,8 @@ async function collectUserInput() {
     const remoteAnswer = await ask(
       rl,
       defaultRemoteName
-        ? `Remote [${defaultRemoteName}]: `
-        : 'Remote: '
+        ? `Remote to use for Last of Readme [${defaultRemoteName}]: `
+        : 'Remote to use for Last of Readme: '
     );
     const remoteName = resolveRemoteSelection(
       remoteAnswer,
@@ -134,15 +149,36 @@ async function collectUserInput() {
       defaultRemoteName
     );
 
-    const pathAnswer = await ask(
+    const filePathAnswer = await ask(
       rl,
-      `Doc-link file path [${defaultDocLinkPath}]: `
+      `Package file to update [${defaultDocLinkPath}]: `
     );
-    const docLinkPath = String(pathAnswer || '').trim() || defaultDocLinkPath;
+    const docLinkPath = String(filePathAnswer || '').trim() || defaultDocLinkPath;
+
+    const urlPathQuestion = defaultUrlPath
+      ? `URL path to open after resolution [${defaultUrlPath}]: `
+      : 'URL path to open after resolution (empty for the repository URL without a path): ';
+    const urlPathAnswer = await ask(rl, urlPathQuestion);
+    const urlPath = urlPathAnswer === '' ? defaultUrlPath : String(urlPathAnswer).trim();
+
+    if (!urlPath) {
+      console.log(`
+ℹ️ Using the repository URL without a path.
+
+GitHub uses specific rules to select which README to display at such URLs.
+
+To avoid a collision with your package README.md,
+you can place a separate GitHub README at:
+  .github/README.md
+
+Learn more:
+  https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes
+`);
+    }
 
     const createMinimalAnswer = await ask(
       rl,
-      'Create a minimal file if it does not exist? [no]: '
+      'Create a minimal package file if it does not exist? [no]: '
     );
     const createMinimal = parseBooleanAnswer(createMinimalAnswer, false);
 
@@ -150,7 +186,7 @@ async function collectUserInput() {
     if (previousDocLinkPath && previousDocLinkPath !== docLinkPath) {
       const removeAnswer = await ask(
         rl,
-        `Remove previous doc-link file ${previousDocLinkPath} from package.json.files? [no]: `
+        `Remove previous package file ${previousDocLinkPath} from package.json.files? [no]: `
       );
       removePreviousDocLinkFromFiles = parseBooleanAnswer(removeAnswer, false);
     }
@@ -159,6 +195,7 @@ async function collectUserInput() {
       config: {
         remoteName,
         docLinkPath,
+        urlPath,
         createMinimal,
         previousDocLinkPath,
         removePreviousDocLinkFromFiles,
@@ -173,4 +210,5 @@ module.exports = {
   collectUserInput,
   loadPackageJson,
   parseDocLinkPathFromVersionScript,
+  parseUrlPathFromVersionScript,
 };

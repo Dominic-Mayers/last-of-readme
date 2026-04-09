@@ -1,11 +1,15 @@
-function createRemoteRepositoryAPI(repository, urlPath = "") {
-  const api = (path) => `https://api.github.com/repos/${repository}${path}`;
-
-  function browseDocumentation(target) {
-    const baseUrl = `https://github.com/${repository}/tree/${encodeURIComponent(target)}`;
-    const normalizedPath = String(urlPath || "").replace(/^\/+/, "");
-    return normalizedPath ? `${baseUrl}/${normalizedPath}` : baseUrl;
+function createRemoteRepositoryAPI(remote, urlPath = '') {
+  if (!remote || remote.kind !== 'github' || !remote.host || !remote.repository) {
+    throw new Error('A GitHub remote with host and repository is required');
   }
+
+  const webBase = `https://${remote.host}`;
+  const apiBase =
+    remote.host === 'github.com'
+      ? 'https://api.github.com'
+      : `${webBase}/api/v3`;
+
+  const api = (path) => `${apiBase}/repos/${remote.repository}${path}`;
 
   async function resolveTag(tag) {
     const r = await fetch(api(`/commits/${encodeURIComponent(tag)}`));
@@ -28,12 +32,18 @@ function createRemoteRepositoryAPI(repository, urlPath = "") {
       if (!cmp.ok) continue;
 
       const j = await cmp.json();
-      if (j.status === "ahead" || j.status === "identical") {
+      if (j.status === 'ahead' || j.status === 'identical') {
         result.push(b.name);
       }
     }
 
     return result;
+  }
+
+  function browseDocumentation(target) {
+    const baseUrl = `${webBase}/${remote.repository}/tree/${encodeURIComponent(target)}`;
+    const normalizedPath = String(urlPath || '').replace(/^\/+/, '');
+    return normalizedPath ? `${baseUrl}/${normalizedPath}` : baseUrl;
   }
 
   return {

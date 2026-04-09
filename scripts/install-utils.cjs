@@ -44,7 +44,7 @@ function gitRemoteUrl(remoteName) {
   }).trim();
 }
 
-function normalizeGitHubRepository(url) {
+function normalizeGitHubRemote(url) {
   if (!url || typeof url !== 'string') {
     throw new Error('A GitHub remote URL is required');
   }
@@ -59,17 +59,34 @@ function normalizeGitHubRepository(url) {
     normalized = normalized.slice(0, -4);
   }
 
-  let match = normalized.match(/^https:\/\/github\.com\/([^/]+\/[^/]+)$/);
+  let match = normalized.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
   if (match) {
-    return match[1];
+    return {
+      kind: 'github',
+      host: match[1],
+      repository: match[2],
+    };
   }
 
-  match = normalized.match(/^git@github\.com:([^/]+\/[^/]+)$/);
+  match = normalized.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
   if (match) {
-    return match[1];
+    return {
+      kind: 'github',
+      host: match[1],
+      repository: match[2],
+    };
   }
 
-  throw new Error('Remote URL must point to a GitHub repository');
+  match = normalized.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
+  if (match) {
+    return {
+      kind: 'github',
+      host: match[1],
+      repository: match[2],
+    };
+  }
+
+  throw new Error('Remote URL must point to a GitHub or GitHub Enterprise repository');
 }
 
 module.exports = {
@@ -78,5 +95,5 @@ module.exports = {
   gitTopLevel,
   gitRemoteNames,
   gitRemoteUrl,
-  normalizeGitHubRepository,
+  normalizeGitHubRemote,
 };

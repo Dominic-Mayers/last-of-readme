@@ -7,41 +7,42 @@
 <script>
 (async () => {
   const p = new URLSearchParams(location.search);
-  const repository = p.get("repo");
-  const version = p.get("v");
-  const urlPath = p.get("urlPath") || "";
+  const repository = p.get('repo');
+  const host = p.get('host') || 'github.com';
+  const version = p.get('v');
+  const urlPath = p.get('urlPath') || '';
 
   if (!repository || !version) {
-    document.body.innerText = "missing params";
+    document.body.innerText = 'missing params';
     return;
   }
 
-  const remoteRepository = createRemoteRepositoryAPI(repository, urlPath);
+  const remoteRepository = createRemoteRepositoryAPI({
+    kind: 'github',
+    host,
+    repository,
+  }, urlPath);
 
   const base = `v${version}`;
   const last = `${base}-last-doc`;
   const next = `${base}-next-doc`;
 
-  // 1. last-doc
   if (await remoteRepository.resolveTag(last)) {
     location.href = remoteRepository.browseDocumentation(last);
     return;
   }
 
-  // 2. next-doc
   if (await remoteRepository.resolveTag(next)) {
     location.href = remoteRepository.browseDocumentation(next);
     return;
   }
 
-  // resolve base
   const baseRepoNode = await remoteRepository.resolveTag(base);
   if (!baseRepoNode) {
-    document.body.innerText = "version tag not found";
+    document.body.innerText = 'version tag not found';
     return;
   }
 
-  // 3-4. structural fallback
   const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
 
   if (containingBranches.length === 1) {
@@ -50,11 +51,10 @@
   }
 
   if (containingBranches.length > 1) {
-    document.body.innerText = "multiple branches: " + containingBranches.join(", ");
+    document.body.innerText = 'multiple branches: ' + containingBranches.join(', ');
     return;
   }
 
-  // 5. no containing branch → base version
   location.href = remoteRepository.browseDocumentation(base);
 })();
 </script>
