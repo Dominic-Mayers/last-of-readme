@@ -118,21 +118,21 @@ function resolveRemoteSelection(answer, remoteChoices, defaultRemoteName) {
   throw new Error('Please choose a listed remote by number or by name');
 }
 
-async function collectUserInput() {
-  const packageJson = loadPackageJson();
-  const previousDocLinkPath =
-    parseDocLinkPathFromVersionScript(packageJson?.scripts?.version) || null;
-  const previousUrlPath =
-    parseUrlPathFromVersionScript(packageJson?.scripts?.version);
-  const defaultDocLinkPath = previousDocLinkPath || 'README.md';
-  const defaultUrlPath = previousUrlPath === null ? '' : previousUrlPath;
-
-  const remoteChoices = listRemoteChoices();
-  const defaultRemoteName = chooseDefaultRemoteName(remoteChoices);
-
+async function withInterface(work) {
   const rl = createInterface();
 
   try {
+    return await work(rl);
+  } finally {
+    rl.close();
+  }
+}
+
+async function collectRemoteInput(config = {}) {
+  const remoteChoices = listRemoteChoices();
+  const defaultRemoteName = chooseDefaultRemoteName(remoteChoices);
+
+  return withInterface(async (rl) => {
     console.log('Git remotes:');
     console.log(formatRemoteChoices(remoteChoices));
     console.log('Select a remote by number or by name. Enter none to stop.');
@@ -143,12 +143,42 @@ async function collectUserInput() {
         ? `Remote to use for Last of Readme [${defaultRemoteName}]: `
         : 'Remote to use for Last of Readme: '
     );
+
     const remoteName = resolveRemoteSelection(
       remoteAnswer,
       remoteChoices,
       defaultRemoteName
     );
 
+    return {
+      ...config,
+      remoteName,
+    };
+  });
+}
+
+function readDocLinkDefaults() {
+  const packageJson = loadPackageJson();
+  const previousDocLinkPath =
+    parseDocLinkPathFromVersionScript(packageJson?.scripts?.version) || null;
+  const previousUrlPath =
+    parseUrlPathFromVersionScript(packageJson?.scripts?.version);
+
+  return {
+    previousDocLinkPath,
+    defaultDocLinkPath: previousDocLinkPath || 'README.md',
+    defaultUrlPath: previousUrlPath === null ? '' : previousUrlPath,
+  };
+}
+
+async function collectDocLinkInput(config = {}) {
+  const {
+    previousDocLinkPath,
+    defaultDocLinkPath,
+    defaultUrlPath,
+  } = readDocLinkDefaults();
+
+  return withInterface(async (rl) => {
     const filePathAnswer = await ask(
       rl,
       `Package file to update [${defaultDocLinkPath}]: `
@@ -192,22 +222,28 @@ Learn more:
     }
 
     return {
-      config: {
-        remoteName,
-        docLinkPath,
-        urlPath,
-        createMinimal,
-        previousDocLinkPath,
-        removePreviousDocLinkFromFiles,
-      },
+      ...config,
+      docLinkPath,
+      urlPath,
+      createMinimal,
+      previousDocLinkPath,
+      removePreviousDocLinkFromFiles,
     };
-  } finally {
-    rl.close();
-  }
+  });
+}
+
+async function collectUserInput() {
+  let config = {};
+  config = await collectRemoteInput(config);
+  config = await collectDocLinkInput(config);
+
+  return { config };
 }
 
 module.exports = {
   collectUserInput,
+  collectRemoteInput,
+  collectDocLinkInput,
   loadPackageJson,
   parseDocLinkPathFromVersionScript,
   parseUrlPathFromVersionScript,

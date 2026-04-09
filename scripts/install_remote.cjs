@@ -22,25 +22,48 @@ function checkRemoteRequirements(config) {
     throw new Error('A Git remote must be selected for Last of Readme');
   }
 
-  let url;
+  let remoteUrl;
   try {
-    url = gitRemoteUrl(remoteName);
+    remoteUrl = gitRemoteUrl(remoteName);
   } catch (error) {
     throw new Error(`Selected Git remote does not exist: ${remoteName}`);
   }
 
+  let remote;
   try {
-    const remote = normalizeGitHubRemote(url);
-    return {
-      remoteName,
-      remoteUrl: url,
-      remote,
-    };
+    remote = normalizeGitHubRemote(remoteUrl);
   } catch (error) {
     throw new Error(
-      `Selected Git remote must point to GitHub or GitHub Enterprise for phase 1: ${remoteName} (${url})`
+      `Selected Git remote must point to GitHub or GitHub Enterprise for phase 1: ${remoteName} (${remoteUrl})`
     );
   }
+
+  return {
+    ...config,
+    remoteRequirement: {
+      remoteName,
+      remoteUrl,
+      remote,
+    },
+  };
+}
+
+function writeRemoteState(config) {
+  const requirement = config && config.remoteRequirement;
+
+  if (!requirement) {
+    throw new Error('remoteRequirement is required before writing remote state');
+  }
+
+  return {
+    ...config,
+    remote: {
+      name: requirement.remoteName,
+      url: requirement.remoteUrl,
+      repository: requirement.remote,
+      provider: 'github',
+    },
+  };
 }
 
 function getPackageJsonPath() {
@@ -65,24 +88,30 @@ function writePackageJson(pkg) {
 }
 
 function installRemotePackageJson(config) {
-  const requirement = checkRemoteRequirements(config);
+  const remoteState = config && config.remote;
+
+  if (!remoteState || !remoteState.name || !remoteState.repository) {
+    throw new Error('Remote state must be prepared before automated installation');
+  }
+
   const pkg = readPackageJson();
 
   pkg.lastOfReadme = pkg.lastOfReadme || {};
-  pkg.lastOfReadme.remoteName = requirement.remoteName;
-  pkg.lastOfReadme.remote = requirement.remote;
+  pkg.lastOfReadme.remoteName = remoteState.name;
+  pkg.lastOfReadme.remote = remoteState.repository;
 
   writePackageJson(pkg);
 
   return {
     path: 'package.json',
-    remoteName: requirement.remoteName,
-    remote: requirement.remote,
+    remoteName: remoteState.name,
+    remote: remoteState.repository,
   };
 }
 
 module.exports = {
   listRemoteChoices,
   checkRemoteRequirements,
+  writeRemoteState,
   installRemotePackageJson,
 };

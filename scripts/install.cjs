@@ -1,36 +1,19 @@
 #!/usr/bin/env node
 
 const { checkCommonRequirements } = require('./install-common-requirements.cjs');
-const { collectUserInput } = require('./collect-user-input.cjs');
-const {
-  checkRemoteRequirements,
-  installRemotePackageJson,
-} = require('./install_remote.cjs');
-const {
-  checkDocLinkRequirements,
-  checkDocLinkPackageJsonRequirements,
-  installDocLink,
-  installDocLinkPackageJson,
-} = require('./install-doc-link.cjs');
-
-function checkRequirements(config) {
-  checkRemoteRequirements(config);
-  checkDocLinkRequirements(config);
-  checkDocLinkPackageJsonRequirements(config);
-}
-
-function automatedInstall(config) {
-  installDocLink(config);
-  installRemotePackageJson(config);
-  installDocLinkPackageJson(config);
-}
+const { runRemoteCycle } = require('./remote-cycle.cjs');
+const { runRemainingMixedCycle } = require('./remaining-mixed-cycle.cjs');
+const { automatedInstall } = require('./automated-install.cjs');
 
 async function main() {
   checkCommonRequirements();
   console.log('✔ Common requirements satisfied');
-  const session = await collectUserInput();
-  checkRequirements(session.config);
-  automatedInstall(session.config);
+
+  let config = {};
+  config = await runRemoteCycle(config);
+  config = await runRemainingMixedCycle(config);
+
+  automatedInstall(config);
 }
 
 main().catch((error) => {
