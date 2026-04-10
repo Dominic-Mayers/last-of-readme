@@ -19,7 +19,7 @@ function loadPackageJson() {
   }
 }
 
-function parseDocLinkPathFromVersionScript(versionScript) {
+function parsePackageFilePathFromVersionScript(versionScript) {
   if (typeof versionScript !== 'string') {
     return null;
   }
@@ -31,7 +31,7 @@ function parseDocLinkPathFromVersionScript(versionScript) {
   return match ? (match[1] || match[2] || match[3]) : null;
 }
 
-function parseUrlPathFromVersionScript(versionScript) {
+function parseRepositoryUrlPathFromVersionScript(versionScript) {
   if (typeof versionScript !== 'string') {
     return null;
   }
@@ -118,21 +118,12 @@ function resolveRemoteSelection(answer, remoteChoices, defaultRemoteName) {
   throw new Error('Please choose a listed remote by number or by name');
 }
 
-async function withInterface(work) {
-  const rl = createInterface();
-
-  try {
-    return await work(rl);
-  } finally {
-    rl.close();
-  }
-}
-
 async function collectRemoteInput(config = {}) {
   const remoteChoices = listRemoteChoices();
   const defaultRemoteName = chooseDefaultRemoteName(remoteChoices);
+  const rl = createInterface();
 
-  return withInterface(async (rl) => {
+  try {
     console.log('Git remotes:');
     console.log(formatRemoteChoices(remoteChoices));
     console.log('Select a remote by number or by name. Enter none to stop.');
@@ -144,7 +135,7 @@ async function collectRemoteInput(config = {}) {
         : 'Remote to use for Last of Readme: '
     );
 
-    const remoteName = resolveRemoteSelection(
+    const localName = resolveRemoteSelection(
       remoteAnswer,
       remoteChoices,
       defaultRemoteName
@@ -152,46 +143,44 @@ async function collectRemoteInput(config = {}) {
 
     return {
       ...config,
-      remoteName,
+      remote: {
+        ...(config.remote || {}),
+        localName,
+      },
     };
-  });
-}
-
-function readDocLinkDefaults() {
-  const packageJson = loadPackageJson();
-  const previousDocLinkPath =
-    parseDocLinkPathFromVersionScript(packageJson?.scripts?.version) || null;
-  const previousUrlPath =
-    parseUrlPathFromVersionScript(packageJson?.scripts?.version);
-
-  return {
-    previousDocLinkPath,
-    defaultDocLinkPath: previousDocLinkPath || 'README.md',
-    defaultUrlPath: previousUrlPath === null ? '' : previousUrlPath,
-  };
+  } finally {
+    rl.close();
+  }
 }
 
 async function collectDocLinkInput(config = {}) {
-  const {
-    previousDocLinkPath,
-    defaultDocLinkPath,
-    defaultUrlPath,
-  } = readDocLinkDefaults();
+  const packageJson = loadPackageJson();
+  const previousPackageFilePath =
+    parsePackageFilePathFromVersionScript(packageJson?.scripts?.version) || null;
+  const previousRepositoryUrlPath =
+    parseRepositoryUrlPathFromVersionScript(packageJson?.scripts?.version);
+  const defaultPackageFilePath = previousPackageFilePath || 'README.md';
+  const defaultRepositoryUrlPath =
+    previousRepositoryUrlPath === null ? '' : previousRepositoryUrlPath;
 
-  return withInterface(async (rl) => {
+  const rl = createInterface();
+
+  try {
     const filePathAnswer = await ask(
       rl,
-      `Package file to update [${defaultDocLinkPath}]: `
+      `Package file to update [${defaultPackageFilePath}]: `
     );
-    const docLinkPath = String(filePathAnswer || '').trim() || defaultDocLinkPath;
+    const packageFilePath =
+      String(filePathAnswer || '').trim() || defaultPackageFilePath;
 
-    const urlPathQuestion = defaultUrlPath
-      ? `URL path to open after resolution [${defaultUrlPath}]: `
-      : 'URL path to open after resolution (empty for the repository URL without a path): ';
+    const urlPathQuestion = defaultRepositoryUrlPath
+      ? `Repository URL path to open after resolution [${defaultRepositoryUrlPath}]: `
+      : 'Repository URL path to open after resolution (empty for the repository URL without a path): ';
     const urlPathAnswer = await ask(rl, urlPathQuestion);
-    const urlPath = urlPathAnswer === '' ? defaultUrlPath : String(urlPathAnswer).trim();
+    const repositoryUrlPath =
+      urlPathAnswer === '' ? defaultRepositoryUrlPath : String(urlPathAnswer).trim();
 
-    if (!urlPath) {
+    if (!repositoryUrlPath) {
       console.log(`
 ℹ️ Using the repository URL without a path.
 
@@ -210,41 +199,37 @@ Learn more:
       rl,
       'Create a minimal package file if it does not exist? [no]: '
     );
-    const createMinimal = parseBooleanAnswer(createMinimalAnswer, false);
+    const shouldCreateMinimalFile = parseBooleanAnswer(createMinimalAnswer, false);
 
-    let removePreviousDocLinkFromFiles = false;
-    if (previousDocLinkPath && previousDocLinkPath !== docLinkPath) {
+    let removePreviousPackageFileFromFiles = false;
+    if (previousPackageFilePath && previousPackageFilePath !== packageFilePath) {
       const removeAnswer = await ask(
         rl,
-        `Remove previous package file ${previousDocLinkPath} from package.json.files? [no]: `
+        `Remove previous package file ${previousPackageFilePath} from package.json.files? [no]: `
       );
-      removePreviousDocLinkFromFiles = parseBooleanAnswer(removeAnswer, false);
+      removePreviousPackageFileFromFiles = parseBooleanAnswer(removeAnswer, false);
     }
 
     return {
       ...config,
-      docLinkPath,
-      urlPath,
-      createMinimal,
-      previousDocLinkPath,
-      removePreviousDocLinkFromFiles,
+      docLink: {
+        ...(config.docLink || {}),
+        packageFilePath,
+        repositoryUrlPath,
+        shouldCreateMinimalFile,
+        previousPackageFilePath,
+        removePreviousPackageFileFromFiles,
+      },
     };
-  });
-}
-
-async function collectUserInput() {
-  let config = {};
-  config = await collectRemoteInput(config);
-  config = await collectDocLinkInput(config);
-
-  return { config };
+  } finally {
+    rl.close();
+  }
 }
 
 module.exports = {
-  collectUserInput,
   collectRemoteInput,
   collectDocLinkInput,
   loadPackageJson,
-  parseDocLinkPathFromVersionScript,
-  parseUrlPathFromVersionScript,
+  parsePackageFilePathFromVersionScript,
+  parseRepositoryUrlPathFromVersionScript,
 };

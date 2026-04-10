@@ -15,53 +15,35 @@ function listRemoteChoices() {
   }));
 }
 
-function checkRemoteRequirements(config) {
-  const remoteName = config && config.remoteName;
+function checkRemoteRequirements(config = {}) {
+  const localName = config?.remote?.localName;
 
-  if (!remoteName || typeof remoteName !== 'string') {
+  if (!localName || typeof localName !== 'string') {
     throw new Error('A Git remote must be selected for Last of Readme');
   }
 
-  let remoteUrl;
+  let repositoryUrl;
   try {
-    remoteUrl = gitRemoteUrl(remoteName);
+    repositoryUrl = gitRemoteUrl(localName);
   } catch (error) {
-    throw new Error(`Selected Git remote does not exist: ${remoteName}`);
+    throw new Error(`Selected Git remote does not exist: ${localName}`);
   }
 
-  let remote;
+  let normalizedRemote;
   try {
-    remote = normalizeGitHubRemote(remoteUrl);
+    normalizedRemote = normalizeGitHubRemote(repositoryUrl);
   } catch (error) {
     throw new Error(
-      `Selected Git remote must point to GitHub or GitHub Enterprise for phase 1: ${remoteName} (${remoteUrl})`
+      `Selected Git remote must point to GitHub or GitHub Enterprise for phase 1: ${localName} (${repositoryUrl})`
     );
   }
 
   return {
     ...config,
-    remoteRequirement: {
-      remoteName,
-      remoteUrl,
-      remote,
-    },
-  };
-}
-
-function writeRemoteState(config) {
-  const requirement = config && config.remoteRequirement;
-
-  if (!requirement) {
-    throw new Error('remoteRequirement is required before writing remote state');
-  }
-
-  return {
-    ...config,
     remote: {
-      name: requirement.remoteName,
-      url: requirement.remoteUrl,
-      repository: requirement.remote,
-      provider: 'github',
+      localName,
+      repositoryUrl,
+      ...normalizedRemote,
     },
   };
 }
@@ -87,31 +69,39 @@ function writePackageJson(pkg) {
   fs.writeFileSync(getPackageJsonPath(), JSON.stringify(pkg, null, 2) + '\n', 'utf8');
 }
 
-function installRemotePackageJson(config) {
-  const remoteState = config && config.remote;
+function installRemotePackageJson(config = {}) {
+  const remote = config.remote;
 
-  if (!remoteState || !remoteState.name || !remoteState.repository) {
-    throw new Error('Remote state must be prepared before automated installation');
+  if (!remote || !remote.localName || !remote.repositoryUrl) {
+    throw new Error('Remote installation requires resolved remote cycle state');
   }
 
   const pkg = readPackageJson();
 
   pkg.lastOfReadme = pkg.lastOfReadme || {};
-  pkg.lastOfReadme.remoteName = remoteState.name;
-  pkg.lastOfReadme.remote = remoteState.repository;
+  // Backward-compatible persisted format.
+  pkg.lastOfReadme.remoteName = remote.localName;
+  pkg.lastOfReadme.remote = {
+    kind: remote.kind,
+    host: remote.host,
+    repository: remote.repository,
+  };
 
   writePackageJson(pkg);
 
   return {
     path: 'package.json',
-    remoteName: remoteState.name,
-    remote: remoteState.repository,
+    remote: {
+      localName: remote.localName,
+      kind: remote.kind,
+      host: remote.host,
+      repository: remote.repository,
+    },
   };
 }
 
 module.exports = {
   listRemoteChoices,
   checkRemoteRequirements,
-  writeRemoteState,
   installRemotePackageJson,
 };

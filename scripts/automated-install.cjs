@@ -1,10 +1,7 @@
 #!/usr/bin/env node
 
+const { installDocLink, installDocLinkPackageJson } = require('./install-doc-link.cjs');
 const { installRemotePackageJson } = require('./install_remote.cjs');
-const {
-  installDocLink,
-  installDocLinkPackageJson,
-} = require('./install-doc-link.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);

@@ -8,25 +8,23 @@ const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
-function resolveWorkspacePath(relativePath) {
-  if (!relativePath || typeof relativePath !== 'string') {
-    throw new Error('docLinkPath is required');
+function resolvePackageFilePath(packageFilePath) {
+  if (!packageFilePath || typeof packageFilePath !== 'string') {
+    throw new Error('packageFilePath is required');
   }
 
-  const workspaceRoot = process.cwd();
-  const absolutePath = path.resolve(workspaceRoot, relativePath);
-  const relativeToRoot = path.relative(workspaceRoot, absolutePath);
+  const normalizedPath = path.normalize(packageFilePath);
 
   if (
-    relativeToRoot === '' ||
-    relativeToRoot === '..' ||
-    relativeToRoot.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relativeToRoot)
+    normalizedPath === '.' ||
+    normalizedPath === '..' ||
+    normalizedPath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(normalizedPath)
   ) {
-    throw new Error('docLinkPath must point to a file inside the current workspace');
+    throw new Error('packageFilePath must point to a file inside the current repository');
   }
 
-  return absolutePath;
+  return normalizedPath;
 }
 
 function findManagedPlaceholder(content) {
@@ -79,73 +77,112 @@ function findManagedPlaceholder(content) {
   return null;
 }
 
-function validateExistingDocLinkFile(absolutePath, relativePath) {
-  const stats = fs.statSync(absolutePath);
+function validateExistingDocLinkFile(packageFilePath) {
+  const stats = fs.statSync(packageFilePath);
   if (!stats.isFile()) {
-    throw new Error(`${relativePath} exists but is not a regular file`);
+    throw new Error(`${packageFilePath} exists but is not a regular file`);
   }
 
-  fs.accessSync(absolutePath, fs.constants.R_OK | fs.constants.W_OK);
+  fs.accessSync(packageFilePath, fs.constants.R_OK | fs.constants.W_OK);
 
-  const content = fs.readFileSync(absolutePath, 'utf8');
+  const content = fs.readFileSync(packageFilePath, 'utf8');
   const managedPlaceholder = findManagedPlaceholder(content);
 
   if (!managedPlaceholder) {
     throw new Error(
-      `${relativePath} does not contain a managed placeholder outside example regions`
+      `${packageFilePath} does not contain a managed placeholder outside example regions`
     );
   }
 
   return {
     mode: 'existing-file',
-    path: relativePath,
     managedPlaceholder,
   };
 }
 
-function checkDocLinkRequirements(config) {
-  const docLinkPath = config && config.docLinkPath;
-  const createMinimal = Boolean(config && config.createMinimal);
-  const absolutePath = resolveWorkspacePath(docLinkPath);
+function checkDocLinkRequirements(config = {}) {
+  const input = config.docLink || {};
+  const packageFilePath = resolvePackageFilePath(input.packageFilePath);
+  const repositoryUrlPath = input.repositoryUrlPath || '';
+  const shouldCreateMinimalFile = Boolean(input.shouldCreateMinimalFile);
+  const previousPackageFilePath = input.previousPackageFilePath || null;
+  const removePreviousPackageFileFromFiles = Boolean(
+    input.removePreviousPackageFileFromFiles
+  );
 
-  if (fs.existsSync(absolutePath)) {
-    return validateExistingDocLinkFile(absolutePath, docLinkPath);
+  if (fs.existsSync(packageFilePath)) {
+    const validation = validateExistingDocLinkFile(packageFilePath);
+    return {
+      ...config,
+      docLink: {
+        packageFilePath,
+        repositoryUrlPath,
+        mode: validation.mode,
+        shouldCreateMinimalFile,
+        previousPackageFilePath,
+        removePreviousPackageFileFromFiles,
+      },
+    };
   }
 
-  if (!createMinimal) {
+  if (!shouldCreateMinimalFile) {
     throw new Error(
-      `${docLinkPath} does not exist. Select minimal-file creation to allow installation.`
+      `${packageFilePath} does not exist. Select minimal-file creation to allow installation.`
     );
   }
 
-  const parentDir = path.dirname(absolutePath);
-  fs.mkdirSync(parentDir, { recursive: true });
-  fs.accessSync(parentDir, fs.constants.W_OK);
+  let writableBaseDir = path.dirname(packageFilePath);
+  while (writableBaseDir && writableBaseDir !== '.' && !fs.existsSync(writableBaseDir)) {
+    const next = path.dirname(writableBaseDir);
+    if (next === writableBaseDir) {
+      break;
+    }
+    writableBaseDir = next;
+  }
+
+  if (writableBaseDir && writableBaseDir !== '.') {
+    fs.accessSync(writableBaseDir, fs.constants.W_OK);
+  }
 
   return {
-    mode: 'create-minimal-file',
-    path: docLinkPath,
+    ...config,
+    docLink: {
+      packageFilePath,
+      repositoryUrlPath,
+      mode: 'create-minimal-file',
+      shouldCreateMinimalFile,
+      previousPackageFilePath,
+      removePreviousPackageFileFromFiles,
+    },
   };
 }
 
-function installDocLink(config) {
-  const requirement = checkDocLinkRequirements(config);
+function installDocLink(config = {}) {
+  const docLink = config.docLink;
 
-  if (requirement.mode === 'existing-file') {
+  if (!docLink || !docLink.packageFilePath || !docLink.mode) {
+    throw new Error('Doc-link installation requires resolved doc-link cycle state');
+  }
+
+  if (docLink.mode === 'existing-file') {
     return {
       mode: 'existing-file',
-      path: requirement.path,
+      path: docLink.packageFilePath,
       changed: false,
     };
   }
 
-  const absolutePath = resolveWorkspacePath(config.docLinkPath);
+  const parentDir = path.dirname(docLink.packageFilePath);
+  if (parentDir && parentDir !== '.') {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
+
   const minimalContent = `Last of Readme : ${START_MARKER}${END_MARKER}\n`;
-  fs.writeFileSync(absolutePath, minimalContent, { flag: 'wx' });
+  fs.writeFileSync(docLink.packageFilePath, minimalContent, { flag: 'wx' });
 
   return {
     mode: 'created-minimal-file',
-    path: config.docLinkPath,
+    path: docLink.packageFilePath,
     changed: true,
   };
 }
@@ -176,9 +213,9 @@ function shellQuote(value) {
   return `'${String(value).replace(/'/g, `'\\''`)}'`;
 }
 
-function buildVersionScript(docLinkPath, urlPath) {
-  const quotedPath = shellQuote(docLinkPath);
-  const quotedUrlPath = shellQuote(urlPath || '');
+function buildVersionScript(packageFilePath, repositoryUrlPath) {
+  const quotedPath = shellQuote(packageFilePath);
+  const quotedUrlPath = shellQuote(repositoryUrlPath || '');
   return `node scripts/update-readme-link.cjs ${quotedPath} ${quotedUrlPath} && git add ${quotedPath}`;
 }
 
@@ -198,22 +235,33 @@ function checkDocLinkPackageJsonRequirements() {
   return { path: packageJsonPath };
 }
 
-function installDocLinkPackageJson(config) {
+function installDocLinkPackageJson(config = {}) {
+  const docLink = config.docLink;
+
+  if (!docLink || !docLink.packageFilePath) {
+    throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
+  }
+
   const pkg = readPackageJson();
   pkg.scripts = pkg.scripts || {};
-  pkg.scripts.version = buildVersionScript(config.docLinkPath, config.urlPath);
+  pkg.scripts.version = buildVersionScript(
+    docLink.packageFilePath,
+    docLink.repositoryUrlPath
+  );
 
   if (Array.isArray(pkg.files)) {
-    if (!pkg.files.includes(config.docLinkPath)) {
-      pkg.files.push(config.docLinkPath);
+    if (!pkg.files.includes(docLink.packageFilePath)) {
+      pkg.files.push(docLink.packageFilePath);
     }
 
     if (
-      config.removePreviousDocLinkFromFiles &&
-      config.previousDocLinkPath &&
-      config.previousDocLinkPath !== config.docLinkPath
+      docLink.removePreviousPackageFileFromFiles &&
+      docLink.previousPackageFilePath &&
+      docLink.previousPackageFilePath !== docLink.packageFilePath
     ) {
-      pkg.files = pkg.files.filter((item) => item !== config.previousDocLinkPath);
+      pkg.files = pkg.files.filter(
+        (item) => item !== docLink.previousPackageFilePath
+      );
     }
   }
 
@@ -221,8 +269,8 @@ function installDocLinkPackageJson(config) {
 
   return {
     path: 'package.json',
-    docLinkPath: config.docLinkPath,
-    urlPath: config.urlPath || '',
+    packageFilePath: docLink.packageFilePath,
+    repositoryUrlPath: docLink.repositoryUrlPath || '',
   };
 }
 
@@ -231,7 +279,7 @@ module.exports = {
   END_MARKER,
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
-  resolveWorkspacePath,
+  resolvePackageFilePath,
   findManagedPlaceholder,
   checkDocLinkRequirements,
   installDocLink,

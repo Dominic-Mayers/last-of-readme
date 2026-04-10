@@ -2,7 +2,7 @@
 
 const { checkCommonRequirements } = require('./install-common-requirements.cjs');
 const { runRemoteCycle } = require('./remote-cycle.cjs');
-const { runRemainingMixedCycle } = require('./remaining-mixed-cycle.cjs');
+const { runDocLinkCycle } = require('./doc-link-cycle.cjs');
 const { automatedInstall } = require('./automated-install.cjs');
 
 async function main() {
@@ -11,7 +11,7 @@ async function main() {
 
   let config = {};
   config = await runRemoteCycle(config);
-  config = await runRemainingMixedCycle(config);
+  config = await runDocLinkCycle(config);
 
   automatedInstall(config);
 }
