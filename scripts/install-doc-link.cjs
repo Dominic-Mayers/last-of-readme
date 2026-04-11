@@ -100,61 +100,80 @@ function validateExistingDocLinkFile(packageFilePath) {
   };
 }
 
-function checkDocLinkRequirements(config = {}) {
+function findNearestExistingParentDir(targetPath) {
+  let current = path.dirname(targetPath);
+
+  while (current && current !== '.' && !fs.existsSync(current)) {
+    const next = path.dirname(current);
+    if (next === current) {
+      break;
+    }
+    current = next;
+  }
+
+  return current;
+}
+
+function collectDocLinkInputs(config = {}) {
   const input = config.docLink || {};
-  const packageFilePath = resolvePackageFilePath(input.packageFilePath);
-  const repositoryUrlPath = input.repositoryUrlPath || '';
-  const shouldCreateMinimalFile = Boolean(input.shouldCreateMinimalFile);
-  const previousPackageFilePath = input.previousPackageFilePath || null;
-  const removePreviousPackageFileFromFiles = Boolean(
-    input.removePreviousPackageFileFromFiles
-  );
+
+  return {
+    packageFilePath: resolvePackageFilePath(input.packageFilePath),
+    repositoryUrlPath: input.repositoryUrlPath || '',
+    shouldCreateMinimalFile: Boolean(input.shouldCreateMinimalFile),
+    previousPackageFilePath: input.previousPackageFilePath || null,
+    removePreviousPackageFileFromFiles: Boolean(
+      input.removePreviousPackageFileFromFiles
+    ),
+  };
+}
+
+function checkCollectedDocLinkInputs(collected) {
+  const packageFilePath = collected.packageFilePath;
 
   if (fs.existsSync(packageFilePath)) {
     const validation = validateExistingDocLinkFile(packageFilePath);
     return {
-      ...config,
-      docLink: {
-        packageFilePath,
-        repositoryUrlPath,
-        mode: validation.mode,
-        shouldCreateMinimalFile,
-        previousPackageFilePath,
-        removePreviousPackageFileFromFiles,
-      },
+      mode: validation.mode,
+      managedPlaceholder: validation.managedPlaceholder,
     };
   }
 
-  if (!shouldCreateMinimalFile) {
+  if (!collected.shouldCreateMinimalFile) {
     throw new Error(
       `${packageFilePath} does not exist. Select minimal-file creation to allow installation.`
     );
   }
 
-  let writableBaseDir = path.dirname(packageFilePath);
-  while (writableBaseDir && writableBaseDir !== '.' && !fs.existsSync(writableBaseDir)) {
-    const next = path.dirname(writableBaseDir);
-    if (next === writableBaseDir) {
-      break;
-    }
-    writableBaseDir = next;
-  }
-
+  const writableBaseDir = findNearestExistingParentDir(packageFilePath);
   if (writableBaseDir && writableBaseDir !== '.') {
     fs.accessSync(writableBaseDir, fs.constants.W_OK);
   }
 
   return {
+    mode: 'create-minimal-file',
+  };
+}
+
+function commitDocLinkConfig(config = {}, collected, checked) {
+  return {
     ...config,
     docLink: {
-      packageFilePath,
-      repositoryUrlPath,
-      mode: 'create-minimal-file',
-      shouldCreateMinimalFile,
-      previousPackageFilePath,
-      removePreviousPackageFileFromFiles,
+      packageFilePath: collected.packageFilePath,
+      repositoryUrlPath: collected.repositoryUrlPath,
+      mode: checked.mode,
+      shouldCreateMinimalFile: collected.shouldCreateMinimalFile,
+      previousPackageFilePath: collected.previousPackageFilePath,
+      removePreviousPackageFileFromFiles:
+        collected.removePreviousPackageFileFromFiles,
     },
   };
+}
+
+function checkDocLinkRequirements(config = {}) {
+  const collected = collectDocLinkInputs(config);
+  const checked = checkCollectedDocLinkInputs(collected);
+  return commitDocLinkConfig(config, collected, checked);
 }
 
 function installDocLink(config = {}) {
@@ -281,6 +300,10 @@ module.exports = {
   EXAMPLE_END_MARKER,
   resolvePackageFilePath,
   findManagedPlaceholder,
+  validateExistingDocLinkFile,
+  collectDocLinkInputs,
+  checkCollectedDocLinkInputs,
+  commitDocLinkConfig,
   checkDocLinkRequirements,
   installDocLink,
   checkDocLinkPackageJsonRequirements,
