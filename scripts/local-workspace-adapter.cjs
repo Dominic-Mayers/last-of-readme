@@ -186,11 +186,19 @@ function packageFilePath() {
 }
 
 function repositoryUrlPath() {
-  const value = getPackageJsonField('lastOfReadme.repositoryUrlPath', { allowEmpty: true });
-  if (value === undefined || value === null) {
-    fail('package.json has no lastOfReadme.repositoryUrlPath');
+  const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+
+  if (!config || typeof config !== 'object') {
+    fail('package.json has no lastOfReadme configuration');
   }
-  return String(value);
+
+  const value = config.repositoryUrlPath;
+
+  if (typeof value !== 'string') {
+    fail('package.json has no valid lastOfReadme.repositoryUrlPath');
+  }
+
+  return value;
 }
 
 function readFile(relativePath) {
@@ -235,6 +243,36 @@ function publishTag(tag, remote = remoteName()) {
   cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
     stdio: 'inherit',
   });
+}
+
+function runNpmPkg(args, { allowEmpty = false } = {}) {
+  const { spawnSync } = require('child_process');
+
+  const result = spawnSync('npm', ['pkg', ...args], {
+    cwd: WORKSPACE_ROOT,
+    encoding: 'utf8',
+  });
+
+  if (result.error) {
+    fail(`Could not run npm pkg ${args.join(' ')}: ${result.error.message}`);
+  }
+
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || '').trim();
+    fail(`npm pkg ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`);
+  }
+
+  const raw = result.stdout ?? '';
+  if (raw === '') {
+    if (allowEmpty) return undefined;
+    fail(`npm pkg ${args.join(' ')} returned no output`);
+  }
+
+  try {
+    return JSON.parse(raw.trim());
+  } catch (err) {
+    fail(`Could not parse npm pkg ${args.join(' ')} output: ${err.message}`);
+  }
 }
 
 module.exports = {
