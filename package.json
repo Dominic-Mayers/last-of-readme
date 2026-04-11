@@ -25,6 +25,8 @@
       "kind": "github",
       "host": "github.com",
       "repository": "Dominic-Mayers/last-of-readme"
-    }
+    },
+    "packageFilePath": "README.md",
+    "repositoryUrlPath": ""
   }
 }

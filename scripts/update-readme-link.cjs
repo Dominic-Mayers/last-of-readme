@@ -21,6 +21,23 @@ function usage() {
   process.exit(1);
 }
 
+function resolveInputs() {
+  const cliDocumentationPath = process.argv[2];
+  const cliUrlPath = process.argv[3] || '';
+
+  if (cliDocumentationPath) {
+    return {
+      documentationPath: cliDocumentationPath,
+      urlPath: cliUrlPath,
+    };
+  }
+
+  return {
+    documentationPath: workspace.packageFilePath(),
+    urlPath: workspace.repositoryUrlPath(),
+  };
+}
+
 function buildResolverLink(urlPath = '') {
   const version = workspace.currentPackageVersion();
   const packageName = workspace.packageName();
@@ -87,12 +104,7 @@ function replaceManagedBlock(content, replacement) {
 }
 
 function main() {
-  const documentationPath = process.argv[2];
-  const urlPath = process.argv[3] || '';
-
-  if (!documentationPath) {
-    usage();
-  }
+  const { documentationPath, urlPath } = resolveInputs();
 
   try {
     const link = buildResolverLink(urlPath);

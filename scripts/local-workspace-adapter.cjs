@@ -37,7 +37,8 @@ function ensureFile(filePath, label) {
 function readPackageJson() {
   ensureFile(PACKAGE_PATH, 'package.json');
   try {
-    return JSON.parse(fs.readFileSync(PACKAGE_PATH, 'utf8'));
+        const result = runNpmPkg(['get', '--json']);
+        return Array.isArray(result) && result.length === 1 ? result[0] : result; 
   } catch (err) {
     fail(`Could not read package.json: ${err.message}`);
   }

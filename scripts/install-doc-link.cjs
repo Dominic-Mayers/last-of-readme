@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
@@ -188,67 +188,41 @@ function installDocLink(config = {}) {
   };
 }
 
-function runNpmPkg(args, errorPrefix) {
-  try {
-    return execFileSync('npm', ['pkg', ...args], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
-  } catch (error) {
-    const details = [error.stderr, error.stdout]
-      .filter(Boolean)
-      .map((value) => String(value).trim())
-      .find(Boolean);
+function runNpmPkg(args, failureMessage) {
+  const result = spawnSync('npm', ['pkg', ...args], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  });
 
-    throw new Error(
-      details ? `${errorPrefix}: ${details}` : `${errorPrefix}: ${error.message}`
-    );
+  if (result.error) {
+    throw new Error(`${failureMessage}: ${result.error.message}`);
   }
-}
 
-function readPackageJson() {
-  const raw = runNpmPkg(['get', '--json'], 'Could not read package.json');
-
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`Could not parse package.json content from npm pkg get: ${error.message}`);
+  if (result.status !== 0) {
+    const suffix = (result.stderr || result.stdout || '').trim();
+    throw new Error(`${failureMessage}${suffix ? `: ${suffix}` : ''}`);
   }
+
+  return (result.stdout || '').trim();
 }
 
 function getPackageJsonField(field) {
   const raw = runNpmPkg(['get', field, '--json'], `Could not read package.json field "${field}"`);
 
-  if (!raw || raw === 'undefined') {
-    return undefined;
-  }
-
-  let parsed;
   try {
-    parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length === 1 ? parsed[0] : parsed;
   } catch (error) {
     throw new Error(
       `Could not parse package.json field "${field}" from npm pkg get: ${error.message}`
     );
   }
-
-  if (
-    parsed &&
-    typeof parsed === 'object' &&
-    !Array.isArray(parsed) &&
-    Object.prototype.hasOwnProperty.call(parsed, field)
-  ) {
-    return parsed[field];
-  }
-
-  return parsed;
 }
 
-function setPackageJsonFields(updates) {
-  const assignments = Object.entries(updates).map(
-    ([key, value]) => `${key}=${JSON.stringify(value)}`
-  );
+function setPackageJsonFields(assignments) {
+  if (!Array.isArray(assignments) || assignments.length === 0) {
+    return;
+  }
 
   runNpmPkg(['set', '--json', ...assignments], 'Could not update package.json');
 }
@@ -274,20 +248,20 @@ function installDocLinkPackageJson(config = {}) {
     throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
   }
 
-  const updates = {
-    'scripts.version': buildVersionScript(
-      docLink.packageFilePath,
-      docLink.repositoryUrlPath
-    ),
-  };
+  const assignments = [
+    `lastOfReadme.packageFilePath=${JSON.stringify(docLink.packageFilePath)}`,
+    `lastOfReadme.repositoryUrlPath=${JSON.stringify(docLink.repositoryUrlPath || '')}`,
+    `scripts.version=${JSON.stringify(
+      buildVersionScript(docLink.packageFilePath, docLink.repositoryUrlPath)
+    )}`,
+  ];
+
+  setPackageJsonFields(assignments);
 
   const files = getPackageJsonField('files');
-  if (files !== undefined) {
-    if (!Array.isArray(files)) {
-      throw new Error('package.json.files must be an array when present');
-    }
-
+  if (Array.isArray(files)) {
     const nextFiles = [...files];
+
     if (!nextFiles.includes(docLink.packageFilePath)) {
       nextFiles.push(docLink.packageFilePath);
     }
@@ -297,15 +271,14 @@ function installDocLinkPackageJson(config = {}) {
       docLink.previousPackageFilePath &&
       docLink.previousPackageFilePath !== docLink.packageFilePath
     ) {
-      updates.files = nextFiles.filter(
+      const filteredFiles = nextFiles.filter(
         (item) => item !== docLink.previousPackageFilePath
       );
-    } else {
-      updates.files = nextFiles;
+      setPackageJsonFields([`files=${JSON.stringify(filteredFiles)}`]);
+    } else if (nextFiles.length !== files.length) {
+      setPackageJsonFields([`files=${JSON.stringify(nextFiles)}`]);
     }
   }
-
-  setPackageJsonFields(updates);
 
   return {
     path: 'package.json',
@@ -325,6 +298,6 @@ module.exports = {
   installDocLink,
   checkDocLinkPackageJsonRequirements,
   installDocLinkPackageJson,
-  readPackageJson,
+  getPackageJsonField,
   buildVersionScript,
 };

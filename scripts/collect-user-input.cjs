@@ -1,22 +1,65 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const { execFileSync } = require('child_process');
 const readline = require('readline');
 const { listRemoteChoices } = require('./install-remote.cjs');
 
+function runNpmPkg(args, { allowFailure = false } = {}) {
+  try {
+    return execFileSync('npm', ['pkg', ...args], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    if (allowFailure) {
+      return null;
+    }
+
+    const stderr = String(error.stderr || '').trim();
+    const suffix = stderr ? `: ${stderr}` : '';
+    throw new Error(`Could not access package.json through npm pkg${suffix}`);
+  }
+}
+
+function getPackageJsonField(fieldPath) {
+  const raw = runNpmPkg(['get', fieldPath, '--json'], { allowFailure: true });
+  if (raw === null || raw === '') {
+    return undefined;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`Could not parse npm pkg output for ${fieldPath}: ${error.message}`);
+  }
+
+  return getNestedValue(parsed, fieldPath);
+}
+
+function getNestedValue(value, fieldPath) {
+  return fieldPath
+    .split('.')
+    .reduce(
+      (current, key) =>
+        current && typeof current === 'object' && key in current ? current[key] : undefined,
+      value
+    );
+}
+
 function loadPackageJson() {
-  const packageJsonPath = path.resolve(process.cwd(), 'package.json');
-  if (!fs.existsSync(packageJsonPath)) {
+  const versionScript = getPackageJsonField('scripts.version');
+
+  if (typeof versionScript === 'undefined') {
     return null;
   }
 
-  try {
-    const raw = fs.readFileSync(packageJsonPath, 'utf8');
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`Could not read package.json: ${error.message}`);
-  }
+  return {
+    scripts: {
+      version: versionScript,
+    },
+  };
 }
 
 function parsePackageFilePathFromVersionScript(versionScript) {
@@ -28,7 +71,7 @@ function parsePackageFilePathFromVersionScript(versionScript) {
     /node\s+scripts\/update-readme-link\.cjs\s+(?:'([^']+)'|"([^"]+)"|([^\s]+))/
   );
 
-  return match ? (match[1] || match[2] || match[3]) : null;
+  return match ? match[1] || match[2] || match[3] : null;
 }
 
 function parseRepositoryUrlPathFromVersionScript(versionScript) {
@@ -40,7 +83,7 @@ function parseRepositoryUrlPathFromVersionScript(versionScript) {
     /node\s+scripts\/update-readme-link\.cjs\s+(?:'[^']+'|"[^"]+"|[^\s]+)\s+(?:'([^']*)'|"([^"]*)"|([^\s]+))/
   );
 
-  return match ? (match[1] || match[2] || match[3] || '') : null;
+  return match ? match[1] || match[2] || match[3] || '' : null;
 }
 
 function createInterface() {
@@ -232,4 +275,6 @@ module.exports = {
   loadPackageJson,
   parsePackageFilePathFromVersionScript,
   parseRepositoryUrlPathFromVersionScript,
+  runNpmPkg,
+  getPackageJsonField,
 };
