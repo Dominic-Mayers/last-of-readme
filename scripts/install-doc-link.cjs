@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -100,80 +101,61 @@ function validateExistingDocLinkFile(packageFilePath) {
   };
 }
 
-function findNearestExistingParentDir(targetPath) {
-  let current = path.dirname(targetPath);
-
-  while (current && current !== '.' && !fs.existsSync(current)) {
-    const next = path.dirname(current);
-    if (next === current) {
-      break;
-    }
-    current = next;
-  }
-
-  return current;
-}
-
-function collectDocLinkInputs(config = {}) {
+function checkDocLinkRequirements(config = {}) {
   const input = config.docLink || {};
-
-  return {
-    packageFilePath: resolvePackageFilePath(input.packageFilePath),
-    repositoryUrlPath: input.repositoryUrlPath || '',
-    shouldCreateMinimalFile: Boolean(input.shouldCreateMinimalFile),
-    previousPackageFilePath: input.previousPackageFilePath || null,
-    removePreviousPackageFileFromFiles: Boolean(
-      input.removePreviousPackageFileFromFiles
-    ),
-  };
-}
-
-function checkCollectedDocLinkInputs(collected) {
-  const packageFilePath = collected.packageFilePath;
+  const packageFilePath = resolvePackageFilePath(input.packageFilePath);
+  const repositoryUrlPath = input.repositoryUrlPath || '';
+  const shouldCreateMinimalFile = Boolean(input.shouldCreateMinimalFile);
+  const previousPackageFilePath = input.previousPackageFilePath || null;
+  const removePreviousPackageFileFromFiles = Boolean(
+    input.removePreviousPackageFileFromFiles
+  );
 
   if (fs.existsSync(packageFilePath)) {
     const validation = validateExistingDocLinkFile(packageFilePath);
     return {
-      mode: validation.mode,
-      managedPlaceholder: validation.managedPlaceholder,
+      ...config,
+      docLink: {
+        packageFilePath,
+        repositoryUrlPath,
+        mode: validation.mode,
+        shouldCreateMinimalFile,
+        previousPackageFilePath,
+        removePreviousPackageFileFromFiles,
+      },
     };
   }
 
-  if (!collected.shouldCreateMinimalFile) {
+  if (!shouldCreateMinimalFile) {
     throw new Error(
       `${packageFilePath} does not exist. Select minimal-file creation to allow installation.`
     );
   }
 
-  const writableBaseDir = findNearestExistingParentDir(packageFilePath);
+  let writableBaseDir = path.dirname(packageFilePath);
+  while (writableBaseDir && writableBaseDir !== '.' && !fs.existsSync(writableBaseDir)) {
+    const next = path.dirname(writableBaseDir);
+    if (next === writableBaseDir) {
+      break;
+    }
+    writableBaseDir = next;
+  }
+
   if (writableBaseDir && writableBaseDir !== '.') {
     fs.accessSync(writableBaseDir, fs.constants.W_OK);
   }
 
   return {
-    mode: 'create-minimal-file',
-  };
-}
-
-function commitDocLinkConfig(config = {}, collected, checked) {
-  return {
     ...config,
     docLink: {
-      packageFilePath: collected.packageFilePath,
-      repositoryUrlPath: collected.repositoryUrlPath,
-      mode: checked.mode,
-      shouldCreateMinimalFile: collected.shouldCreateMinimalFile,
-      previousPackageFilePath: collected.previousPackageFilePath,
-      removePreviousPackageFileFromFiles:
-        collected.removePreviousPackageFileFromFiles,
+      packageFilePath,
+      repositoryUrlPath,
+      mode: 'create-minimal-file',
+      shouldCreateMinimalFile,
+      previousPackageFilePath,
+      removePreviousPackageFileFromFiles,
     },
   };
-}
-
-function checkDocLinkRequirements(config = {}) {
-  const collected = collectDocLinkInputs(config);
-  const checked = checkCollectedDocLinkInputs(collected);
-  return commitDocLinkConfig(config, collected, checked);
 }
 
 function installDocLink(config = {}) {
@@ -206,26 +188,69 @@ function installDocLink(config = {}) {
   };
 }
 
-function getPackageJsonPath() {
-  return path.resolve(process.cwd(), 'package.json');
+function runNpmPkg(args, errorPrefix) {
+  try {
+    return execFileSync('npm', ['pkg', ...args], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    const details = [error.stderr, error.stdout]
+      .filter(Boolean)
+      .map((value) => String(value).trim())
+      .find(Boolean);
+
+    throw new Error(
+      details ? `${errorPrefix}: ${details}` : `${errorPrefix}: ${error.message}`
+    );
+  }
 }
 
 function readPackageJson() {
-  const packageJsonPath = getPackageJsonPath();
-  if (!fs.existsSync(packageJsonPath)) {
-    throw new Error('package.json was not found in the current workspace');
-  }
+  const raw = runNpmPkg(['get', '--json'], 'Could not read package.json');
 
   try {
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return JSON.parse(raw);
   } catch (error) {
-    throw new Error(`Could not read package.json: ${error.message}`);
+    throw new Error(`Could not parse package.json content from npm pkg get: ${error.message}`);
   }
 }
 
-function writePackageJson(pkg) {
-  const packageJsonPath = getPackageJsonPath();
-  fs.writeFileSync(packageJsonPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+function getPackageJsonField(field) {
+  const raw = runNpmPkg(['get', field, '--json'], `Could not read package.json field "${field}"`);
+
+  if (!raw || raw === 'undefined') {
+    return undefined;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (error) {
+    throw new Error(
+      `Could not parse package.json field "${field}" from npm pkg get: ${error.message}`
+    );
+  }
+
+  if (
+    parsed &&
+    typeof parsed === 'object' &&
+    !Array.isArray(parsed) &&
+    Object.prototype.hasOwnProperty.call(parsed, field)
+  ) {
+    return parsed[field];
+  }
+
+  return parsed;
+}
+
+function setPackageJsonFields(updates) {
+  const assignments = Object.entries(updates).map(
+    ([key, value]) => `${key}=${JSON.stringify(value)}`
+  );
+
+  runNpmPkg(['set', '--json', ...assignments], 'Could not update package.json');
 }
 
 function shellQuote(value) {
@@ -239,19 +264,7 @@ function buildVersionScript(packageFilePath, repositoryUrlPath) {
 }
 
 function checkDocLinkPackageJsonRequirements() {
-  const packageJsonPath = getPackageJsonPath();
-  if (!fs.existsSync(packageJsonPath)) {
-    throw new Error('package.json was not found in the current workspace');
-  }
-
-  fs.accessSync(packageJsonPath, fs.constants.R_OK | fs.constants.W_OK);
-  const pkg = readPackageJson();
-
-  if (pkg.files !== undefined && !Array.isArray(pkg.files)) {
-    throw new Error('package.json.files must be an array when present');
-  }
-
-  return { path: packageJsonPath };
+  return { path: 'package.json' };
 }
 
 function installDocLinkPackageJson(config = {}) {
@@ -261,16 +274,22 @@ function installDocLinkPackageJson(config = {}) {
     throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
   }
 
-  const pkg = readPackageJson();
-  pkg.scripts = pkg.scripts || {};
-  pkg.scripts.version = buildVersionScript(
-    docLink.packageFilePath,
-    docLink.repositoryUrlPath
-  );
+  const updates = {
+    'scripts.version': buildVersionScript(
+      docLink.packageFilePath,
+      docLink.repositoryUrlPath
+    ),
+  };
 
-  if (Array.isArray(pkg.files)) {
-    if (!pkg.files.includes(docLink.packageFilePath)) {
-      pkg.files.push(docLink.packageFilePath);
+  const files = getPackageJsonField('files');
+  if (files !== undefined) {
+    if (!Array.isArray(files)) {
+      throw new Error('package.json.files must be an array when present');
+    }
+
+    const nextFiles = [...files];
+    if (!nextFiles.includes(docLink.packageFilePath)) {
+      nextFiles.push(docLink.packageFilePath);
     }
 
     if (
@@ -278,13 +297,15 @@ function installDocLinkPackageJson(config = {}) {
       docLink.previousPackageFilePath &&
       docLink.previousPackageFilePath !== docLink.packageFilePath
     ) {
-      pkg.files = pkg.files.filter(
+      updates.files = nextFiles.filter(
         (item) => item !== docLink.previousPackageFilePath
       );
+    } else {
+      updates.files = nextFiles;
     }
   }
 
-  writePackageJson(pkg);
+  setPackageJsonFields(updates);
 
   return {
     path: 'package.json',
@@ -300,10 +321,6 @@ module.exports = {
   EXAMPLE_END_MARKER,
   resolvePackageFilePath,
   findManagedPlaceholder,
-  validateExistingDocLinkFile,
-  collectDocLinkInputs,
-  checkCollectedDocLinkInputs,
-  commitDocLinkConfig,
   checkDocLinkRequirements,
   installDocLink,
   checkDocLinkPackageJsonRequirements,

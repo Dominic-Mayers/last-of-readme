@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { listRemoteChoices } = require('./install_remote.cjs');
+const { listRemoteChoices } = require('./install-remote.cjs');
 
 function loadPackageJson() {
   const packageJsonPath = path.resolve(process.cwd(), 'package.json');

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const { execFileSync } = require('child_process');
 const {
   gitRemoteNames,
   gitRemoteUrl,
@@ -48,25 +47,41 @@ function checkRemoteRequirements(config = {}) {
   };
 }
 
-function getPackageJsonPath() {
-  return path.resolve(process.cwd(), 'package.json');
+function runNpmPkg(args, errorPrefix) {
+  try {
+    return execFileSync('npm', ['pkg', ...args], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    const details = [error.stderr, error.stdout]
+      .filter(Boolean)
+      .map((value) => String(value).trim())
+      .find(Boolean);
+
+    throw new Error(
+      details ? `${errorPrefix}: ${details}` : `${errorPrefix}: ${error.message}`
+    );
+  }
 }
 
 function readPackageJson() {
-  const packageJsonPath = getPackageJsonPath();
-  if (!fs.existsSync(packageJsonPath)) {
-    throw new Error('package.json was not found in the current workspace');
-  }
+  const raw = runNpmPkg(['get', '--json'], 'Could not read package.json');
 
   try {
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    return JSON.parse(raw);
   } catch (error) {
-    throw new Error(`Could not read package.json: ${error.message}`);
+    throw new Error(`Could not parse package.json content from npm pkg get: ${error.message}`);
   }
 }
 
-function writePackageJson(pkg) {
-  fs.writeFileSync(getPackageJsonPath(), JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+function setPackageJsonFields(updates) {
+  const assignments = Object.entries(updates).map(
+    ([key, value]) => `${key}=${JSON.stringify(value)}`
+  );
+
+  runNpmPkg(['set', '--json', ...assignments], 'Could not update package.json');
 }
 
 function installRemotePackageJson(config = {}) {
@@ -76,18 +91,12 @@ function installRemotePackageJson(config = {}) {
     throw new Error('Remote installation requires resolved remote cycle state');
   }
 
-  const pkg = readPackageJson();
-
-  pkg.lastOfReadme = pkg.lastOfReadme || {};
-  // Backward-compatible persisted format.
-  pkg.lastOfReadme.remoteName = remote.localName;
-  pkg.lastOfReadme.remote = {
-    kind: remote.kind,
-    host: remote.host,
-    repository: remote.repository,
-  };
-
-  writePackageJson(pkg);
+  setPackageJsonFields({
+    'lastOfReadme.remoteName': remote.localName,
+    'lastOfReadme.remote.kind': remote.kind,
+    'lastOfReadme.remote.host': remote.host,
+    'lastOfReadme.remote.repository': remote.repository,
+  });
 
   return {
     path: 'package.json',
@@ -104,4 +113,5 @@ module.exports = {
   listRemoteChoices,
   checkRemoteRequirements,
   installRemotePackageJson,
+  readPackageJson,
 };
