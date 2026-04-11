@@ -21,6 +21,44 @@ function run(command, options = {}) {
   }).trim();
 }
 
+function runNpmPkg(args) {
+  const result = cp.spawnSync('npm', ['pkg', ...args], {
+    cwd: WORKSPACE_ROOT,
+    encoding: 'utf8',
+  });
+
+  if (result.error) {
+    fail(`Could not run npm pkg ${args.join(' ')}: ${result.error.message}`);
+  }
+
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || '').trim();
+    fail(`npm pkg ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`);
+  }
+
+  const stdout = (result.stdout || '').trim();
+  if (!stdout) {
+    fail(`npm pkg ${args.join(' ')} returned no output`);
+  }
+
+  try {
+    return JSON.parse(stdout);
+  } catch (err) {
+    fail(`Could not parse npm pkg ${args.join(' ')} output: ${err.message}`);
+  }
+}
+
+function getPackageJsonField(field, { allowEmpty = false } = {}) {
+  const value = runNpmPkg(['get', field, '--json']);
+  const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
+
+  if ((normalized === undefined || normalized === null || normalized === '') && !allowEmpty) {
+    fail(`package.json has no ${field}`);
+  }
+
+  return normalized;
+}
+
 function resolveWorkspacePath(relativePath) {
   if (!relativePath) {
     fail('Path is required');
@@ -37,8 +75,8 @@ function ensureFile(filePath, label) {
 function readPackageJson() {
   ensureFile(PACKAGE_PATH, 'package.json');
   try {
-        const result = runNpmPkg(['get', '--json']);
-        return Array.isArray(result) && result.length === 1 ? result[0] : result; 
+    const result = runNpmPkg(['get', '--json']);
+    return Array.isArray(result) && result.length === 1 ? result[0] : result;
   } catch (err) {
     fail(`Could not read package.json: ${err.message}`);
   }
@@ -98,45 +136,37 @@ function currentRepoNode() {
 }
 
 function currentPackageVersion() {
-  const pkg = readPackageJson();
-  if (!pkg.version) {
-    fail('package.json has no version');
-  }
-  return pkg.version;
+  return String(getPackageJsonField('version'));
 }
 
 function packageName() {
-  const pkg = readPackageJson();
-  if (!pkg.name) {
-    fail('package.json has no name');
-  }
-  return pkg.name;
+  return String(getPackageJsonField('name'));
 }
 
 function remoteConfiguration() {
-  const pkg = readPackageJson();
-  const cfg = pkg.lastOfReadme && pkg.lastOfReadme.remote;
+  const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
+  const host = getPackageJsonField('lastOfReadme.remote.host', { allowEmpty: true });
+  const repository = getPackageJsonField('lastOfReadme.remote.repository', { allowEmpty: true });
 
-  if (cfg && typeof cfg === 'object') {
-    if (cfg.kind !== 'github') {
+  if (kind !== undefined && kind !== null && kind !== '') {
+    if (kind !== 'github') {
       fail('package.json lastOfReadme.remote.kind must be "github"');
     }
-    if (!cfg.host || !cfg.repository) {
+    if (!host || !repository) {
       fail('package.json lastOfReadme.remote must include host and repository');
     }
     return {
       kind: 'github',
-      host: String(cfg.host),
-      repository: String(cfg.repository),
+      host: String(host),
+      repository: String(repository),
     };
   }
 
-  return normalizeRepositoryUrl(pkg.repository);
+  return normalizeRepositoryUrl(getPackageJsonField('repository'));
 }
 
 function remoteName() {
-  const pkg = readPackageJson();
-  const configuredRemoteName = pkg.lastOfReadme && pkg.lastOfReadme.remoteName;
+  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', { allowEmpty: true });
   if (configuredRemoteName && typeof configuredRemoteName === 'string') {
     return configuredRemoteName;
   }
@@ -145,6 +175,22 @@ function remoteName() {
 
 function remoteRepository() {
   return remoteConfiguration().repository;
+}
+
+function packageFilePath() {
+  const value = getPackageJsonField('lastOfReadme.packageFilePath', { allowEmpty: true });
+  if (!value || typeof value !== 'string') {
+    fail('package.json has no lastOfReadme.packageFilePath');
+  }
+  return value;
+}
+
+function repositoryUrlPath() {
+  const value = getPackageJsonField('lastOfReadme.repositoryUrlPath', { allowEmpty: true });
+  if (value === undefined || value === null) {
+    fail('package.json has no lastOfReadme.repositoryUrlPath');
+  }
+  return String(value);
 }
 
 function readFile(relativePath) {
@@ -202,4 +248,6 @@ module.exports = {
   packageName,
   currentPackageVersion,
   remoteName,
+  packageFilePath,
+  repositoryUrlPath,
 };
