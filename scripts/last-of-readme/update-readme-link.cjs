@@ -4,7 +4,7 @@
 // Must NOT depend on target repository hosting
 const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
 
-const workspace = require('./last-of-readme/adapters/local-workspace-adapter.cjs');
+const workspace = require('./adapters/local-workspace-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
