@@ -5,7 +5,7 @@ const {
   gitRemoteNames,
   gitRemoteUrl,
   normalizeGitHubRemote,
-} = require('./install-utils.cjs');
+} = require('./utils.cjs');
 
 function listRemoteChoices() {
   return gitRemoteNames().map((name) => ({
@@ -47,27 +47,47 @@ function checkRemoteRequirements(config = {}) {
   };
 }
 
-function runNpmPkg(args, errorPrefix) {
-  try {
-    return execFileSync('npm', ['pkg', ...args], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
-  } catch (error) {
-    const details = [error.stderr, error.stdout]
-      .filter(Boolean)
-      .map((value) => String(value).trim())
-      .find(Boolean);
+function runNpmPkg(args, failureMessage, { expectJson = false } = {}) {
+  const { spawnSync } = require('child_process');
 
+  const result = spawnSync('npm', ['pkg', ...args], {
+    encoding: 'utf8',
+  });
+
+  if (result.error) {
+    throw new Error(`${failureMessage}: ${result.error.message}`);
+  }
+
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || '').trim();
     throw new Error(
-      details ? `${errorPrefix}: ${details}` : `${errorPrefix}: ${error.message}`
+      `${failureMessage}${detail ? `: ${detail}` : ''}`
     );
+  }
+
+  const raw = result.stdout ?? '';
+
+  if (!expectJson) {
+    return raw;
+  }
+
+  if (raw === '') {
+    throw new Error(`${failureMessage}: npm pkg ${args.join(' ')} returned no output`);
+  }
+
+  try {
+    return JSON.parse(raw.trim());
+  } catch (error) {
+    throw new Error(`${failureMessage}: ${error.message}`);
   }
 }
 
 function readPackageJson() {
-  const raw = runNpmPkg(['get', '--json'], 'Could not read package.json');
+  const raw = runNpmPkg(
+    ['get', field, '--json'],
+    `Could not read package.json field "${field}"`,
+    { expectJson: true }
+  );
 
   try {
     return JSON.parse(raw);

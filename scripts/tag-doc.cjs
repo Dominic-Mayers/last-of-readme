@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const workspace = require('./local-workspace-adapter.cjs');
+const workspace = require('./last-of-readme/adapters/local-workspace-adapter.cjs');
 
 const ALLOWED_KINDS = new Set(['last-doc', 'next-doc']);
 

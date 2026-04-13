@@ -2,7 +2,7 @@
 
 const { execFileSync } = require('child_process');
 const readline = require('readline');
-const { listRemoteChoices } = require('./install-remote.cjs');
+const { listRemoteChoices } = require('./remote.cjs');
 
 function runNpmPkg(args, { allowFailure = false } = {}) {
   try {
@@ -28,62 +28,41 @@ function getPackageJsonField(fieldPath) {
     return undefined;
   }
 
-  let parsed;
+  let value;
   try {
-    parsed = JSON.parse(raw);
+    value = JSON.parse(raw);
   } catch (error) {
     throw new Error(`Could not parse npm pkg output for ${fieldPath}: ${error.message}`);
   }
 
-  return getNestedValue(parsed, fieldPath);
+  return Array.isArray(value) && value.length === 1 ? value[0] : value;
 }
 
-function getNestedValue(value, fieldPath) {
-  return fieldPath
-    .split('.')
-    .reduce(
-      (current, key) =>
-        current && typeof current === 'object' && key in current ? current[key] : undefined,
-      value
-    );
-}
-
-function loadPackageJson() {
-  const versionScript = getPackageJsonField('scripts.version');
-
-  if (typeof versionScript === 'undefined') {
+function getCurrentInstalledPackageFilePath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme');
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
     return null;
   }
 
-  return {
-    scripts: {
-      version: versionScript,
-    },
-  };
+  return typeof lastOfReadme.packageFilePath === 'string'
+    ? lastOfReadme.packageFilePath
+    : null;
 }
 
-function parsePackageFilePathFromVersionScript(versionScript) {
-  if (typeof versionScript !== 'string') {
-    return null;
+function getCurrentRepositoryUrlPath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme');
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return '';
   }
 
-  const match = versionScript.match(
-    /node\s+scripts\/update-readme-link\.cjs\s+(?:'([^']+)'|"([^"]+)"|([^\s]+))/
-  );
-
-  return match ? match[1] || match[2] || match[3] : null;
+  return typeof lastOfReadme.repositoryUrlPath === 'string'
+    ? lastOfReadme.repositoryUrlPath
+    : '';
 }
 
-function parseRepositoryUrlPathFromVersionScript(versionScript) {
-  if (typeof versionScript !== 'string') {
-    return null;
-  }
-
-  const match = versionScript.match(
-    /node\s+scripts\/update-readme-link\.cjs\s+(?:'[^']+'|"[^"]+"|[^\s]+)\s+(?:'([^']*)'|"([^"]*)"|([^\s]+))/
-  );
-
-  return match ? match[1] || match[2] || match[3] || '' : null;
+function getCurrentFilesField() {
+  const files = getPackageJsonField('files');
+  return Array.isArray(files) ? files : null;
 }
 
 function createInterface() {
@@ -197,14 +176,11 @@ async function collectRemoteInput(config = {}) {
 }
 
 async function collectDocLinkInput(config = {}) {
-  const packageJson = loadPackageJson();
-  const previousPackageFilePath =
-    parsePackageFilePathFromVersionScript(packageJson?.scripts?.version) || null;
-  const previousRepositoryUrlPath =
-    parseRepositoryUrlPathFromVersionScript(packageJson?.scripts?.version);
+  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
+  const currentRepositoryUrlPath = getCurrentRepositoryUrlPath();
+  const currentFiles = getCurrentFilesField();
   const defaultPackageFilePath = previousPackageFilePath || 'README.md';
-  const defaultRepositoryUrlPath =
-    previousRepositoryUrlPath === null ? '' : previousRepositoryUrlPath;
+  const defaultRepositoryUrlPath = currentRepositoryUrlPath || '';
 
   const rl = createInterface();
 
@@ -245,7 +221,13 @@ Learn more:
     const shouldCreateMinimalFile = parseBooleanAnswer(createMinimalAnswer, false);
 
     let removePreviousPackageFileFromFiles = false;
-    if (previousPackageFilePath && previousPackageFilePath !== packageFilePath) {
+    const shouldAskToRemovePrevious =
+      Array.isArray(currentFiles) &&
+      typeof previousPackageFilePath === 'string' &&
+      previousPackageFilePath !== packageFilePath &&
+      currentFiles.includes(previousPackageFilePath);
+
+    if (shouldAskToRemovePrevious) {
       const removeAnswer = await ask(
         rl,
         `Remove previous package file ${previousPackageFilePath} from package.json.files? [no]: `
@@ -259,8 +241,8 @@ Learn more:
         ...(config.docLink || {}),
         packageFilePath,
         repositoryUrlPath,
-        shouldCreateMinimalFile,
         previousPackageFilePath,
+        shouldCreateMinimalFile,
         removePreviousPackageFileFromFiles,
       },
     };
@@ -272,9 +254,9 @@ Learn more:
 module.exports = {
   collectRemoteInput,
   collectDocLinkInput,
-  loadPackageJson,
-  parsePackageFilePathFromVersionScript,
-  parseRepositoryUrlPathFromVersionScript,
+  getCurrentInstalledPackageFilePath,
+  getCurrentRepositoryUrlPath,
+  getCurrentFilesField,
   runNpmPkg,
   getPackageJsonField,
 };

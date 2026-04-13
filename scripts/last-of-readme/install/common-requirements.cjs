@@ -7,7 +7,7 @@ const {
   currentWorkingDirectory,
   gitVersion,
   gitTopLevel,
-} = require('./install-utils.cjs');
+} = require('./utils.cjs');
 
 function assertGitAvailable() {
   try {

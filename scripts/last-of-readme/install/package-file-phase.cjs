@@ -4,7 +4,7 @@ const { collectDocLinkInput } = require('./collect-user-input.cjs');
 const {
   checkDocLinkRequirements,
   checkDocLinkPackageJsonRequirements,
-} = require('./install-doc-link.cjs');
+} = require('./doc-link.cjs');
 
 async function runDocLinkCycle(config = {}) {
   const withInput = await collectDocLinkInput(config);

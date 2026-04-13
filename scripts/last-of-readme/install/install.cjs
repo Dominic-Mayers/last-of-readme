@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { checkCommonRequirements } = require('./install-common-requirements.cjs');
-const { runRemoteCycle } = require('./remote-cycle.cjs');
-const { runDocLinkCycle } = require('./doc-link-cycle.cjs');
-const { automatedInstall } = require('./automated-install.cjs');
+const { checkCommonRequirements } = require('./common-requirements.cjs');
+const { runRemoteCycle } = require('./repository-url-phase.cjs');
+const { runDocLinkCycle } = require('./package-file-phase.cjs');
+const { automatedInstall } = require('./apply-installation.cjs');
 
 async function main() {
   checkCommonRequirements();

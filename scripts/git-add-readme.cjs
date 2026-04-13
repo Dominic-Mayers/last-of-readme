@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { spawnSync } = require('child_process');
-const workspace = require('./local-workspace-adapter.cjs');
+const workspace = require('./last-of-readme/adapters/local-workspace-adapter.cjs');
 
 function fail(message) {
   console.error(`❌ ${message}`);
