@@ -6,16 +6,15 @@ const readline = require('readline');
 const { listRemoteChoices } = require('./remote.cjs');
 
 function getPackageJsonField(fieldPath) {
-  const raw = runNpmPkg(['get', fieldPath, '--json'], { allowFailure: true });
-  if (raw === null || raw === '') {
-    return undefined;
-  }
+  console.log('in getPackageJsonField');
 
-  let value;
-  try {
-    value = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`Could not parse npm pkg output for ${fieldPath}: ${error.message}`);
+  const value = runNpmPkg(
+    ['get', fieldPath, '--json'],
+    { allowFailure: true, expectJson: true, allowEmpty: true }
+  );
+
+  if (value === null || value === undefined) {
+    return undefined;
   }
 
   return Array.isArray(value) && value.length === 1 ? value[0] : value;
