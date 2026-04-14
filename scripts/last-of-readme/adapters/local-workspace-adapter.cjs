@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const { runNpmPkg } = require('../runNpmPkg.cjs'); 
 
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
@@ -21,34 +22,8 @@ function run(command, options = {}) {
   }).trim();
 }
 
-function runNpmPkg(args) {
-  const result = cp.spawnSync('npm', ['pkg', ...args], {
-    cwd: WORKSPACE_ROOT,
-    encoding: 'utf8',
-  });
-
-  if (result.error) {
-    fail(`Could not run npm pkg ${args.join(' ')}: ${result.error.message}`);
-  }
-
-  if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || '').trim();
-    fail(`npm pkg ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`);
-  }
-
-  const stdout = (result.stdout || '').trim();
-  if (!stdout) {
-    fail(`npm pkg ${args.join(' ')} returned no output`);
-  }
-
-  try {
-    return JSON.parse(stdout);
-  } catch (err) {
-    fail(`Could not parse npm pkg ${args.join(' ')} output: ${err.message}`);
-  }
-}
-
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
+  console.log('In getPackageJsonField'); 
   const value = runNpmPkg(['get', field, '--json']);
   const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
 
@@ -75,6 +50,7 @@ function ensureFile(filePath, label) {
 function readPackageJson() {
   ensureFile(PACKAGE_PATH, 'package.json');
   try {
+    console.log('In readPackageJson'); 
     const result = runNpmPkg(['get', '--json']);
     return Array.isArray(result) && result.length === 1 ? result[0] : result;
   } catch (err) {
@@ -243,36 +219,6 @@ function publishTag(tag, remote = remoteName()) {
   cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
     stdio: 'inherit',
   });
-}
-
-function runNpmPkg(args, { allowEmpty = false } = {}) {
-  const { spawnSync } = require('child_process');
-
-  const result = spawnSync('npm', ['pkg', ...args], {
-    cwd: WORKSPACE_ROOT,
-    encoding: 'utf8',
-  });
-
-  if (result.error) {
-    fail(`Could not run npm pkg ${args.join(' ')}: ${result.error.message}`);
-  }
-
-  if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || '').trim();
-    fail(`npm pkg ${args.join(' ')} failed${detail ? `: ${detail}` : ''}`);
-  }
-
-  const raw = result.stdout ?? '';
-  if (raw === '') {
-    if (allowEmpty) return undefined;
-    fail(`npm pkg ${args.join(' ')} returned no output`);
-  }
-
-  try {
-    return JSON.parse(raw.trim());
-  } catch (err) {
-    fail(`Could not parse npm pkg ${args.join(' ')} output: ${err.message}`);
-  }
 }
 
 module.exports = {

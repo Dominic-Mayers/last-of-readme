@@ -1,26 +1,9 @@
 #!/usr/bin/env node
 
 const { execFileSync } = require('child_process');
+const { runNpmPkg } = require('../runNpmPkg.cjs'); 
 const readline = require('readline');
 const { listRemoteChoices } = require('./remote.cjs');
-
-function runNpmPkg(args, { allowFailure = false } = {}) {
-  try {
-    return execFileSync('npm', ['pkg', ...args], {
-      cwd: process.cwd(),
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim();
-  } catch (error) {
-    if (allowFailure) {
-      return null;
-    }
-
-    const stderr = String(error.stderr || '').trim();
-    const suffix = stderr ? `: ${stderr}` : '';
-    throw new Error(`Could not access package.json through npm pkg${suffix}`);
-  }
-}
 
 function getPackageJsonField(fieldPath) {
   const raw = runNpmPkg(['get', fieldPath, '--json'], { allowFailure: true });
@@ -257,6 +240,5 @@ module.exports = {
   getCurrentInstalledPackageFilePath,
   getCurrentRepositoryUrlPath,
   getCurrentFilesField,
-  runNpmPkg,
   getPackageJsonField,
 };

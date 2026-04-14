@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const { runNpmPkg } = require('../runNpmPkg.cjs'); 
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -234,43 +235,12 @@ function getCurrentFilesField() {
   return Array.isArray(files) ? files : null;
 }
 
-function runNpmPkg(args, failureMessage, { expectJson = false } = {}) {
-  const result = spawnSync('npm', ['pkg', ...args], {
-    encoding: 'utf8',
-  });
-
-  if (result.error) {
-    throw new Error(`${failureMessage}: ${result.error.message}`);
-  }
-
-  if (result.status !== 0) {
-    const detail = (result.stderr || result.stdout || '').trim();
-    throw new Error(`${failureMessage}${detail ? `: ${detail}` : ''}`);
-  }
-
-  const raw = result.stdout ?? '';
-
-  if (!expectJson) {
-    return raw;
-  }
-
-  if (raw === '') {
-    throw new Error(`${failureMessage}: npm pkg ${args.join(' ')} returned no output`);
-  }
-
-  try {
-    return JSON.parse(raw.trim());
-  } catch (error) {
-    throw new Error(`${failureMessage}: ${error.message}`);
-  }
-}
-
 function setPackageJsonFields(assignments) {
   if (!Array.isArray(assignments) || assignments.length === 0) {
     return;
   }
 
-  runNpmPkg(['set', '--json', ...assignments], 'Could not update package.json');
+  runNpmPkg(['set', '--json', ...assignments], { allowEmpty: true });
 }
 
 function getPackageJsonField(field, { allowFailure = false } = {}) {
@@ -279,7 +249,6 @@ function getPackageJsonField(field, { allowFailure = false } = {}) {
   try {
     value = runNpmPkg(
       ['get', field, '--json'],
-      `Could not read package.json field "${field}"`,
       { expectJson: true }
     );
   } catch (error) {
