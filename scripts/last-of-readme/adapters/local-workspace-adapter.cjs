@@ -24,7 +24,7 @@ function run(command, options = {}) {
 
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
   console.log('In getPackageJsonField'); 
-  const value = runNpmPkg(['get', field, '--json']);
+  const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
   const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
 
   if ((normalized === undefined || normalized === null || normalized === '') && !allowEmpty) {
@@ -51,7 +51,7 @@ function readPackageJson() {
   ensureFile(PACKAGE_PATH, 'package.json');
   try {
     console.log('In readPackageJson'); 
-    const result = runNpmPkg(['get', '--json']);
+    const result = runNpmPkg(['get', '--json'] );
     return Array.isArray(result) && result.length === 1 ? result[0] : result;
   } catch (err) {
     fail(`Could not read package.json: ${err.message}`);
