@@ -47,17 +47,6 @@ function ensureFile(filePath, label) {
   }
 }
 
-function readPackageJson() {
-  ensureFile(PACKAGE_PATH, 'package.json');
-  try {
-    console.log('In readPackageJson'); 
-    const result = runNpmPkg(['get', '--json'] );
-    return Array.isArray(result) && result.length === 1 ? result[0] : result;
-  } catch (err) {
-    fail(`Could not read package.json: ${err.message}`);
-  }
-}
-
 function normalizeRepositoryUrl(repository) {
   let url =
     typeof repository === 'string'

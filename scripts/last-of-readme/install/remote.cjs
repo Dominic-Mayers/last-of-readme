@@ -48,21 +48,7 @@ function checkRemoteRequirements(config = {}) {
   };
 }
 
-function readPackageJson() {
-  const raw = runNpmPkg(
-    ['get', field, '--json'],
-    { expectJson: true }
-  );
-
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(`Could not parse package.json content from npm pkg get: ${error.message}`);
-  }
-}
-
 module.exports = {
   listRemoteChoices,
   checkRemoteRequirements,
-  readPackageJson,
 };
