@@ -6,7 +6,6 @@ const readline = require('readline');
 const { listRemoteChoices } = require('./remote.cjs');
 
 function getPackageJsonField(fieldPath) {
-  console.log('in getPackageJsonField');
 
   const value = runNpmPkg(
     ['get', fieldPath, '--json'],

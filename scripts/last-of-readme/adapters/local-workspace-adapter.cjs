@@ -23,7 +23,7 @@ function run(command, options = {}) {
 }
 
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
-  console.log('In getPackageJsonField'); 
+
   const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
   const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
 
