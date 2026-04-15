@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+const fs = require('fs');
+const path = require('path');
 const { runNpmPkg } = require('../runNpmPkg.cjs');
-const { installDocLink } = require('./package-file-requirements.cjs');
+const { START_MARKER, END_MARKER } = require('./package-file-requirements.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);
@@ -80,6 +82,37 @@ function installDocLinkPackageJson(config = {}) {
     path: 'package.json',
     packageFilePath: docLink.packageFilePath,
     filesChanged: updatedFiles !== null,
+  };
+}
+
+// TODO: The return value is not currently used by the installer.
+// Decide whether installation steps should report results in a structured way.
+function installDocLink(config = {}) {
+  const docLink = config.docLink;
+  if (!docLink || !docLink.packageFilePath || !docLink.mode) {
+    throw new Error('Doc-link installation requires resolved doc-link cycle state');
+  }
+
+  if (docLink.mode === 'existing-file') {
+    return {
+      mode: 'existing-file',
+      path: docLink.packageFilePath,
+      changed: false,
+    };
+  }
+
+  const parentDir = path.dirname(docLink.packageFilePath);
+  if (parentDir && parentDir !== '.') {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
+
+  const minimalContent = `Last of Readme : ${START_MARKER}${END_MARKER}\n`;
+  fs.writeFileSync(docLink.packageFilePath, minimalContent, { flag: 'wx' });
+
+  return {
+    mode: 'created-minimal-file',
+    path: docLink.packageFilePath,
+    changed: true,
   };
 }
 

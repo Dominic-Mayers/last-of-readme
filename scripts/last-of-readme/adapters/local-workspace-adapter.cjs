@@ -211,16 +211,16 @@ function publishTag(tag, remote = remoteName()) {
 }
 
 module.exports = {
-  remoteConfiguration,
-  remoteRepository,
-  currentRepoNode,
-  readFile,
-  writeFile,
-  setTag,
-  publishTag,
-  packageName,
-  currentPackageVersion,
-  remoteName,
-  packageFilePath,
-  repositoryUrlPath,
+    repositoryUrlPath,
+    packageFilePath,
+    remoteName,
+    remoteConfiguration,
+    remoteRepository,
+    currentRepoNode,
+    readFile,
+    writeFile,
+    setTag,
+    publishTag,
+    packageName,
+    currentPackageVersion
 };

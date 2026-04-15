@@ -2,8 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
-const { resolvePackageFilePath } = require('./collect-user-input.cjs');
+const { normalizePackageFilePath } = require('./collect-user-input.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
@@ -12,7 +11,8 @@ const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
 function checkDocLinkRequirements(config = {}) {
   const input = config.docLink || {};
-  const packageFilePath = resolvePackageFilePath(input.packageFilePath);
+  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+  checkPackageFilePathRequirements(packageFilePath);
   const shouldCreateMinimalFile = Boolean(input.shouldCreateMinimalFile);
   const removePreviousPackageFileFromFiles = Boolean(
     input.removePreviousPackageFileFromFiles
@@ -65,6 +65,17 @@ function checkDocLinkRequirements(config = {}) {
       removePreviousPackageFileFromFiles,
     },
   };
+}
+
+function checkPackageFilePathRequirements(packageFilePath) {
+  if (
+    packageFilePath === '.' ||
+    packageFilePath === '..' ||
+    packageFilePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(packageFilePath)
+  ) {
+    throw new Error('packageFilePath must point to a file inside the current repository');
+  }
 }
 
 function validateExistingDocLinkFile(packageFilePath) {
@@ -140,46 +151,13 @@ function findManagedPlaceholder(content) {
   return null;
 }
 
-function checkDocLinkPackageJsonRequirements() {
-  return { path: 'package.json' };
-}
-
-function installDocLink(config = {}) {
-  const docLink = config.docLink;
-  if (!docLink || !docLink.packageFilePath || !docLink.mode) {
-    throw new Error('Doc-link installation requires resolved doc-link cycle state');
-  }
-
-  if (docLink.mode === 'existing-file') {
-    return {
-      mode: 'existing-file',
-      path: docLink.packageFilePath,
-      changed: false,
-    };
-  }
-
-  const parentDir = path.dirname(docLink.packageFilePath);
-  if (parentDir && parentDir !== '.') {
-    fs.mkdirSync(parentDir, { recursive: true });
-  }
-
-  const minimalContent = `Last of Readme : ${START_MARKER}${END_MARKER}\n`;
-  fs.writeFileSync(docLink.packageFilePath, minimalContent, { flag: 'wx' });
-
-  return {
-    mode: 'created-minimal-file',
-    path: docLink.packageFilePath,
-    changed: true,
-  };
-}
-
 module.exports = {
   START_MARKER,
   END_MARKER,
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
   findManagedPlaceholder,
+  checkPackageFilePathRequirements,
   checkDocLinkRequirements,
-  installDocLink,
-  checkDocLinkPackageJsonRequirements,
+  validateExistingDocLinkFile,
 };
