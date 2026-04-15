@@ -21,8 +21,16 @@ function ask(rl, question) {
   return new Promise((resolve) => rl.question(question, resolve));
 }
 
+function normalizeOptionalText(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim();
+}
+
 function parseBooleanAnswer(value, defaultValue) {
-  const normalized = String(value || '').trim().toLowerCase();
+  const normalized = normalizeOptionalText(value).toLowerCase();
 
   if (!normalized) {
     return defaultValue;
@@ -40,11 +48,13 @@ function parseBooleanAnswer(value, defaultValue) {
 }
 
 function normalizePackageFilePath(packageFilePath) {
-  if (!packageFilePath || typeof packageFilePath !== 'string') {
+  const normalized = normalizeOptionalText(packageFilePath);
+
+  if (!normalized) {
     throw new Error('packageFilePath is required');
   }
 
-  return path.normalize(packageFilePath);
+  return path.normalize(normalized);
 }
 
 function listRemoteChoices() {
@@ -73,7 +83,7 @@ function formatRemoteChoices(remoteChoices) {
 }
 
 function resolveRemoteSelection(answer, remoteChoices, defaultRemoteName) {
-  const trimmed = String(answer || '').trim();
+  const trimmed = normalizeOptionalText(answer);
   const value = trimmed || defaultRemoteName;
 
   if (!value) {
@@ -86,13 +96,16 @@ function resolveRemoteSelection(answer, remoteChoices, defaultRemoteName) {
 
   if (/^\d+$/.test(value)) {
     const index = Number(value) - 1;
+
     if (index >= 0 && index < remoteChoices.length) {
       return remoteChoices[index].name;
     }
+
     throw new Error('Please choose a listed remote by number or by name');
   }
 
   const byName = remoteChoices.find(({ name }) => name === value);
+
   if (byName) {
     return byName.name;
   }
@@ -135,32 +148,46 @@ async function collectRemoteInput(config = {}) {
   }
 }
 
-async function collectDocLinkInput(config = {}) {
-  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
-  const currentRepositoryUrlPath = getCurrentRepositoryUrlPath();
-  const currentFiles = getCurrentFilesField();
-  const defaultPackageFilePath = previousPackageFilePath || 'README.md';
-  const defaultRepositoryUrlPath = currentRepositoryUrlPath || '';
+function getDefaultPackageFilePath() {
+  return getCurrentInstalledPackageFilePath() || 'README.md';
+}
 
-  const rl = createInterface();
+function getDefaultRepositoryUrlPath() {
+  return getCurrentRepositoryUrlPath() || '';
+}
 
-  try {
-    const filePathAnswer = await ask(
-      rl,
-      `Package file to update [${defaultPackageFilePath}]: `
-    );
-    const packageFilePath =
-      String(filePathAnswer || '').trim() || defaultPackageFilePath;
+function shouldAskToRemovePreviousPackageFile({
+  previousPackageFilePath,
+  nextPackageFilePath,
+  currentFiles,
+}) {
+  return (
+    Array.isArray(currentFiles) &&
+    typeof previousPackageFilePath === 'string' &&
+    previousPackageFilePath.length > 0 &&
+    previousPackageFilePath !== nextPackageFilePath &&
+    currentFiles.includes(previousPackageFilePath)
+  );
+}
 
-    const urlPathQuestion = defaultRepositoryUrlPath
-      ? `Repository URL path to open after resolution [${defaultRepositoryUrlPath}]: `
-      : 'Repository URL path to open after resolution (empty for the repository URL without a path): ';
-    const urlPathAnswer = await ask(rl, urlPathQuestion);
-    const repositoryUrlPath =
-      urlPathAnswer === '' ? defaultRepositoryUrlPath : String(urlPathAnswer).trim();
+function buildPackageFilePathPrompt(defaultPackageFilePath) {
+  return `Package file to update [${defaultPackageFilePath}]: `;
+}
 
-    if (!repositoryUrlPath) {
-      console.log(`
+function buildRepositoryUrlPathPrompt(defaultRepositoryUrlPath) {
+  if (defaultRepositoryUrlPath) {
+    return `Repository URL path to open after resolution [${defaultRepositoryUrlPath}]: `;
+  }
+
+  return 'Repository URL path to open after resolution (empty for the repository URL without a path): ';
+}
+
+function printRepositoryUrlPathInformation(repositoryUrlPath) {
+  if (repositoryUrlPath) {
+    return;
+  }
+
+  console.log(`
 ℹ️ Using the repository URL without a path.
 
 GitHub uses specific rules to select which README to display at such URLs.
@@ -172,27 +199,51 @@ you can place a separate GitHub README at:
 Learn more:
   https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes
 `);
-    }
+}
 
-    const createMinimalAnswer = await ask(
+async function collectPackageFilePathInput(config = {}) {
+  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
+  const currentFiles = getCurrentFilesField();
+  const defaultPackageFilePath = getDefaultPackageFilePath();
+  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
+
+  const rl = createInterface();
+
+  try {
+    const packageFilePathAnswer = await ask(
       rl,
-      'Create a minimal package file if it does not exist? [no]: '
+      buildPackageFilePathPrompt(defaultPackageFilePath)
     );
-    const shouldCreateMinimalFile = parseBooleanAnswer(createMinimalAnswer, false);
+    const packageFilePath =
+      normalizeOptionalText(packageFilePathAnswer) || defaultPackageFilePath;
+
+    const repositoryUrlPathAnswer = await ask(
+      rl,
+      buildRepositoryUrlPathPrompt(defaultRepositoryUrlPath)
+    );
+    const repositoryUrlPath =
+      repositoryUrlPathAnswer === ''
+        ? defaultRepositoryUrlPath
+        : normalizeOptionalText(repositoryUrlPathAnswer);
+
+    printRepositoryUrlPathInformation(repositoryUrlPath);
 
     let removePreviousPackageFileFromFiles = false;
-    const shouldAskToRemovePrevious =
-      Array.isArray(currentFiles) &&
-      typeof previousPackageFilePath === 'string' &&
-      previousPackageFilePath !== packageFilePath &&
-      currentFiles.includes(previousPackageFilePath);
 
-    if (shouldAskToRemovePrevious) {
-      const removeAnswer = await ask(
+    if (
+      shouldAskToRemovePreviousPackageFile({
+        previousPackageFilePath,
+        nextPackageFilePath: packageFilePath,
+        currentFiles,
+      })
+    ) {
+      const removePreviousFileAnswer = await ask(
         rl,
         `Remove previous package file ${previousPackageFilePath} from package.json.files? [no]: `
       );
-      removePreviousPackageFileFromFiles = parseBooleanAnswer(removeAnswer, false);
+
+      removePreviousPackageFileFromFiles =
+        parseBooleanAnswer(removePreviousFileAnswer, false);
     }
 
     return {
@@ -202,8 +253,39 @@ Learn more:
         packageFilePath,
         repositoryUrlPath,
         previousPackageFilePath,
-        shouldCreateMinimalFile,
         removePreviousPackageFileFromFiles,
+      },
+    };
+  } finally {
+    rl.close();
+  }
+}
+
+async function collectDocLinkPlaceholderInput(config = {}) {
+  const docLink = config.docLink || {};
+
+  if (docLink.packageFileExists) {
+    return config;
+  }
+
+  const packageFilePath = docLink.packageFilePath;
+  const rl = createInterface();
+
+  try {
+    console.log(`\nℹ️ ${packageFilePath} does not exist.`);
+
+    const createMinimalFileAnswer = await ask(
+      rl,
+      'Create a minimal package file? [no]: '
+    );
+    const shouldCreateMinimalFile =
+      parseBooleanAnswer(createMinimalFileAnswer, false);
+
+    return {
+      ...config,
+      docLink: {
+        ...(config.docLink || {}),
+        shouldCreateMinimalFile,
       },
     };
   } finally {
@@ -214,12 +296,14 @@ Learn more:
 module.exports = {
   createInterface,
   ask,
+  normalizeOptionalText,
   parseBooleanAnswer,
+  normalizePackageFilePath,
   listRemoteChoices,
   chooseDefaultRemoteName,
   formatRemoteChoices,
   resolveRemoteSelection,
-  normalizePackageFilePath,
   collectRemoteInput,
-  collectDocLinkInput,
+  collectPackageFilePathInput,
+  collectDocLinkPlaceholderInput,
 };

@@ -17,7 +17,8 @@
   "files": [
     "scripts",
     "docs",
-    "README.md"
+    "README.md",
+    "test.md"
   ],
   "lastOfReadme": {
     "remoteName": "origin",
@@ -26,7 +27,7 @@
       "host": "github.com",
       "repository": "Dominic-Mayers/last-of-readme"
     },
-    "packageFilePath": "README.md",
+    "packageFilePath": "test.md",
     "repositoryUrlPath": ""
   }
 }

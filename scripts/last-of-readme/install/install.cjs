@@ -2,7 +2,10 @@
 
 const { checkCommonRequirements } = require('./common-requirements.cjs');
 const { runRemoteCycle } = require('./repository-url-phase.cjs');
-const { runDocLinkCycle } = require('./package-file-phase.cjs');
+const { runPackageFilePathCycle } = require('./package-file-path-phase.cjs');
+const {
+  runDocLinkPlaceholderCycle,
+} = require('./doc-link-placeholder-phase.cjs');
 const { automatedInstall } = require('./apply-installation.cjs');
 
 async function main() {
@@ -11,7 +14,8 @@ async function main() {
 
   let config = {};
   config = await runRemoteCycle(config);
-  config = await runDocLinkCycle(config);
+  config = await runPackageFilePathCycle(config);
+  config = await runDocLinkPlaceholderCycle(config);
 
   automatedInstall(config);
 }

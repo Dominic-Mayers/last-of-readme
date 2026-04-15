@@ -9,49 +9,68 @@ const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
-function checkDocLinkRequirements(config = {}) {
+function validatePackageFilePath(packageFilePath) {
+  if (
+    packageFilePath === '.' ||
+    packageFilePath === '..' ||
+    packageFilePath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(packageFilePath)
+  ) {
+    throw new Error(
+      'packageFilePath must point to a file inside the current repository'
+    );
+  }
+}
+
+function validateExistingPackageFile(packageFilePath) {
+  const stats = fs.statSync(packageFilePath);
+
+  if (!stats.isFile()) {
+    throw new Error(`${packageFilePath} exists but is not a regular file`);
+  }
+
+  fs.accessSync(packageFilePath, fs.constants.R_OK | fs.constants.W_OK);
+}
+
+function validateWritableBaseDirectoryForNewFile(packageFilePath) {
+  let candidateDirectory = path.dirname(packageFilePath);
+
+  while (
+    candidateDirectory &&
+    candidateDirectory !== '.' &&
+    !fs.existsSync(candidateDirectory)
+  ) {
+    const parentDirectory = path.dirname(candidateDirectory);
+
+    if (parentDirectory === candidateDirectory) {
+      break;
+    }
+
+    candidateDirectory = parentDirectory;
+  }
+
+  if (candidateDirectory && candidateDirectory !== '.') {
+    fs.accessSync(candidateDirectory, fs.constants.W_OK);
+  }
+}
+
+function checkPackageFilePathRequirements(config = {}) {
   const input = config.docLink || {};
   const packageFilePath = normalizePackageFilePath(input.packageFilePath);
-  checkPackageFilePathRequirements(packageFilePath);
-  const shouldCreateMinimalFile = Boolean(input.shouldCreateMinimalFile);
-  const removePreviousPackageFileFromFiles = Boolean(
-    input.removePreviousPackageFileFromFiles
-  );
-  const previousPackageFilePath =
-    typeof input.previousPackageFilePath === 'string' ? input.previousPackageFilePath : null;
+
+  validatePackageFilePath(packageFilePath);
 
   if (fs.existsSync(packageFilePath)) {
-    const validation = validateExistingDocLinkFile(packageFilePath);
+    validateExistingPackageFile(packageFilePath);
+
     return {
       ...config,
       docLink: {
         ...(config.docLink || {}),
         packageFilePath,
-        previousPackageFilePath,
-        mode: validation.mode,
-        shouldCreateMinimalFile,
-        removePreviousPackageFileFromFiles,
+        packageFileExists: true,
       },
     };
-  }
-
-  if (!shouldCreateMinimalFile) {
-    throw new Error(
-      `${packageFilePath} does not exist. Select minimal-file creation or create the file with the placeholder to allow installation.`
-    );
-  }
-
-  let writableBaseDir = path.dirname(packageFilePath);
-  while (writableBaseDir && writableBaseDir !== '.' && !fs.existsSync(writableBaseDir)) {
-    const next = path.dirname(writableBaseDir);
-    if (next === writableBaseDir) {
-      break;
-    }
-    writableBaseDir = next;
-  }
-
-  if (writableBaseDir && writableBaseDir !== '.') {
-    fs.accessSync(writableBaseDir, fs.constants.W_OK);
   }
 
   return {
@@ -59,53 +78,17 @@ function checkDocLinkRequirements(config = {}) {
     docLink: {
       ...(config.docLink || {}),
       packageFilePath,
-      previousPackageFilePath,
-      mode: 'create-minimal-file',
-      shouldCreateMinimalFile,
-      removePreviousPackageFileFromFiles,
+      packageFileExists: false,
     },
   };
 }
 
-function checkPackageFilePathRequirements(packageFilePath) {
-  if (
-    packageFilePath === '.' ||
-    packageFilePath === '..' ||
-    packageFilePath.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(packageFilePath)
-  ) {
-    throw new Error('packageFilePath must point to a file inside the current repository');
-  }
-}
-
-function validateExistingDocLinkFile(packageFilePath) {
-  const stats = fs.statSync(packageFilePath);
-  if (!stats.isFile()) {
-    throw new Error(`${packageFilePath} exists but is not a regular file`);
-  }
-
-  fs.accessSync(packageFilePath, fs.constants.R_OK | fs.constants.W_OK);
-
-  const content = fs.readFileSync(packageFilePath, 'utf8');
-  const managedPlaceholder = findManagedPlaceholder(content);
-
-  if (!managedPlaceholder) {
-    throw new Error(
-      `${packageFilePath} does not contain a managed placeholder outside example regions`
-    );
-  }
-
-  return {
-    mode: 'existing-file',
-    managedPlaceholder,
-  };
-}
-
 function findManagedPlaceholder(content) {
-  let offset = 0;
+  let searchOffset = 0;
 
-  while (offset <= content.length) {
-    const placeholderStart = content.indexOf(START_MARKER, offset);
+  while (searchOffset <= content.length) {
+    const placeholderStart = content.indexOf(START_MARKER, searchOffset);
+
     if (placeholderStart === -1) {
       return null;
     }
@@ -114,13 +97,15 @@ function findManagedPlaceholder(content) {
       END_MARKER,
       placeholderStart + START_MARKER.length
     );
+
     if (placeholderEndMarkerStart === -1) {
       throw new Error('Unclosed placeholder block');
     }
 
     const placeholderEnd = placeholderEndMarkerStart + END_MARKER.length;
 
-    const exampleStart = content.indexOf(EXAMPLE_START_MARKER, offset);
+    const exampleStart = content.indexOf(EXAMPLE_START_MARKER, searchOffset);
+
     if (exampleStart === -1) {
       return {
         start: placeholderStart,
@@ -132,6 +117,7 @@ function findManagedPlaceholder(content) {
       EXAMPLE_END_MARKER,
       exampleStart + EXAMPLE_START_MARKER.length
     );
+
     if (exampleEndMarkerStart === -1) {
       throw new Error('Unclosed example region');
     }
@@ -145,10 +131,73 @@ function findManagedPlaceholder(content) {
       };
     }
 
-    offset = exampleEnd;
+    if (placeholderStart >= exampleStart && placeholderStart < exampleEnd) {
+      searchOffset = exampleEnd;
+      continue;
+    }
+
+    return {
+      start: placeholderStart,
+      end: placeholderEnd,
+    };
   }
 
   return null;
+}
+
+function validateExistingDocLinkFile(packageFilePath) {
+  validateExistingPackageFile(packageFilePath);
+
+  const content = fs.readFileSync(packageFilePath, 'utf8');
+  const managedPlaceholder = findManagedPlaceholder(content);
+
+  if (!managedPlaceholder) {
+    throw new Error(
+      `${packageFilePath} does not contain a managed placeholder outside example regions`
+    );
+  }
+
+  return {
+    managedPlaceholder,
+  };
+}
+
+function checkDocLinkPlaceholderRequirements(config = {}) {
+  const input = config.docLink || {};
+  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+
+  validatePackageFilePath(packageFilePath);
+
+  if (!input.packageFileExists) {
+    if (!input.shouldCreateMinimalFile) {
+      throw new Error(
+        `${packageFilePath} does not exist. Select minimal-file creation or create the file with the placeholder to allow installation.`
+      );
+    }
+
+    validateWritableBaseDirectoryForNewFile(packageFilePath);
+
+    return {
+      ...config,
+      docLink: {
+        ...(config.docLink || {}),
+        packageFilePath,
+        mode: 'create-minimal-file',
+      },
+    };
+  }
+
+  const validation = validateExistingDocLinkFile(packageFilePath);
+
+  return {
+    ...config,
+    docLink: {
+      ...(config.docLink || {}),
+      packageFilePath,
+      mode: 'existing-file',
+      managedPlaceholder: validation.managedPlaceholder,
+    },
+  };
 }
 
 module.exports = {
@@ -156,8 +205,11 @@ module.exports = {
   END_MARKER,
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
+  validatePackageFilePath,
+  validateExistingPackageFile,
+  validateWritableBaseDirectoryForNewFile,
   findManagedPlaceholder,
-  checkPackageFilePathRequirements,
-  checkDocLinkRequirements,
   validateExistingDocLinkFile,
+  checkPackageFilePathRequirements,
+  checkDocLinkPlaceholderRequirements,
 };
