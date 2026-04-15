@@ -1,92 +1,120 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
 const { execFileSync } = require('child_process');
+const { runNpmPkg } = require('../runNpmPkg.cjs');
 
 function currentWorkingDirectory() {
-  return fs.realpathSync(process.cwd());
+  return process.cwd();
 }
 
 function gitVersion() {
   return execFileSync('git', ['--version'], {
-    encoding: 'utf8',
+    cwd: currentWorkingDirectory(),
     stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
   }).trim();
 }
 
 function gitTopLevel() {
   return execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    encoding: 'utf8',
+    cwd: currentWorkingDirectory(),
     stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
   }).trim();
 }
 
 function gitRemoteNames() {
   const output = execFileSync('git', ['remote'], {
-    encoding: 'utf8',
+    cwd: currentWorkingDirectory(),
     stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
   }).trim();
 
-  if (!output) {
-    return [];
-  }
-
-  return output
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  return output ? output.split(/\r?\n/).map((name) => name.trim()).filter(Boolean) : [];
 }
 
 function gitRemoteUrl(remoteName) {
   return execFileSync('git', ['remote', 'get-url', remoteName], {
-    encoding: 'utf8',
+    cwd: currentWorkingDirectory(),
     stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
   }).trim();
 }
 
-function normalizeGitHubRemote(url) {
-  if (!url || typeof url !== 'string') {
-    throw new Error('A GitHub remote URL is required');
-  }
+function normalizeGitHubRemote(remoteUrl) {
+  const httpsMatch = String(remoteUrl).match(
+    /^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/i
+  );
 
-  let normalized = url.trim();
+  if (httpsMatch) {
+    const host = httpsMatch[1];
+    const owner = httpsMatch[2];
+    const repo = httpsMatch[3];
 
-  if (normalized.startsWith('git+')) {
-    normalized = normalized.slice(4);
-  }
-
-  if (normalized.endsWith('.git')) {
-    normalized = normalized.slice(0, -4);
-  }
-
-  let match = normalized.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
-  if (match) {
     return {
-      kind: 'github',
-      host: match[1],
-      repository: match[2],
+      kind: host.toLowerCase() === 'github.com' ? 'github' : 'github-enterprise',
+      host,
+      repository: `${owner}/${repo}`,
     };
   }
 
-  match = normalized.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
-  if (match) {
+  const sshMatch = String(remoteUrl).match(
+    /^git@([^:]+):([^/]+)\/([^/]+?)(?:\.git)?$/i
+  );
+
+  if (sshMatch) {
+    const host = sshMatch[1];
+    const owner = sshMatch[2];
+    const repo = sshMatch[3];
+
     return {
-      kind: 'github',
-      host: match[1],
-      repository: match[2],
+      kind: host.toLowerCase() === 'github.com' ? 'github' : 'github-enterprise',
+      host,
+      repository: `${owner}/${repo}`,
     };
   }
 
-  match = normalized.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
-  if (match) {
-    return {
-      kind: 'github',
-      host: match[1],
-      repository: match[2],
-    };
+  throw new Error(`Unsupported remote URL: ${remoteUrl}`);
+}
+
+function getPackageJsonField(fieldPath) {
+  const value = runNpmPkg(
+    ['get', fieldPath, '--json'],
+    { allowFailure: true, expectJson: true, allowEmpty: true }
+  );
+
+  if (value === null || value === undefined) {
+    return undefined;
   }
 
-  throw new Error('Remote URL must point to a GitHub or GitHub Enterprise repository');
+  return Array.isArray(value) && value.length === 1 ? value[0] : value;
+}
+
+function getCurrentInstalledPackageFilePath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme');
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return null;
+  }
+
+  return typeof lastOfReadme.packageFilePath === 'string'
+    ? lastOfReadme.packageFilePath
+    : null;
+}
+
+function getCurrentRepositoryUrlPath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme');
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return '';
+  }
+
+  return typeof lastOfReadme.repositoryUrlPath === 'string'
+    ? lastOfReadme.repositoryUrlPath
+    : '';
+}
+
+function getCurrentFilesField() {
+  const files = getPackageJsonField('files');
+  return Array.isArray(files) ? files : null;
 }
 
 module.exports = {
@@ -96,4 +124,8 @@ module.exports = {
   gitRemoteNames,
   gitRemoteUrl,
   normalizeGitHubRemote,
+  getPackageJsonField,
+  getCurrentInstalledPackageFilePath,
+  getCurrentRepositoryUrlPath,
+  getCurrentFilesField,
 };

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const { runNpmPkg } = require('../runNpmPkg.cjs'); 
 const path = require('path');
 const { spawnSync } = require('child_process');
 
@@ -192,106 +191,6 @@ function installDocLink(config = {}) {
   };
 }
 
-function installDocLinkPackageJson(config = {}) {
-  const docLink = config.docLink;
-
-  if (!docLink || !docLink.packageFilePath) {
-    throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
-  }
-
-  const assignments = [
-    `lastOfReadme.packageFilePath=${JSON.stringify(docLink.packageFilePath)}`,
-  ];
-
-  if (typeof docLink.repositoryUrlPath === 'string') {
-    assignments.push(
-      `lastOfReadme.repositoryUrlPath=${JSON.stringify(docLink.repositoryUrlPath)}`
-    );
-  }
-
-  setPackageJsonFields(assignments);
-
-  const currentFiles = getCurrentFilesField();
-  const updatedFiles = updateFilesField(
-    currentFiles,
-    docLink.packageFilePath,
-    docLink.previousPackageFilePath,
-    Boolean(docLink.removePreviousPackageFileFromFiles)
-  );
-
-  if (updatedFiles !== null) {
-    setPackageJsonFields([`files=${JSON.stringify(updatedFiles)}`]);
-  }
-
-  return {
-    path: 'package.json',
-    packageFilePath: docLink.packageFilePath,
-    filesChanged: updatedFiles !== null,
-  };
-}
-
-function getCurrentFilesField() {
-  const files = getPackageJsonField('files', { allowFailure: true });
-  return Array.isArray(files) ? files : null;
-}
-
-function setPackageJsonFields(assignments) {
-  if (!Array.isArray(assignments) || assignments.length === 0) {
-    return;
-  }
-
-  runNpmPkg(['set', '--json', ...assignments], { allowEmpty: true });
-}
-
-function getPackageJsonField(field, { allowFailure = false } = {}) {
-  let value;
-
-  try {
-    value = runNpmPkg(
-      ['get', field, '--json'],
-      { expectJson: true }
-    );
-  } catch (error) {
-    if (allowFailure) {
-      return undefined;
-    }
-    throw error;
-  }
-
-  if (value === undefined) {
-    return undefined;
-  }
-
-  return Array.isArray(value) && value.length === 1 ? value[0] : value;
-}
-
-function updateFilesField(
-  currentFiles,
-  packageFilePath,
-  previousPackageFilePath,
-  shouldRemovePrevious
-) {
-  if (!Array.isArray(currentFiles)) {
-    return null;
-  }
-
-  const updatedFiles = [...currentFiles];
-
-  if (!updatedFiles.includes(packageFilePath)) {
-    updatedFiles.push(packageFilePath);
-  }
-
-  if (
-    shouldRemovePrevious &&
-    typeof previousPackageFilePath === 'string' &&
-    previousPackageFilePath !== packageFilePath
-  ) {
-    return updatedFiles.filter((item) => item !== previousPackageFilePath);
-  }
-
-  return updatedFiles;
-}
-
 module.exports = {
   START_MARKER,
   END_MARKER,
@@ -302,8 +201,4 @@ module.exports = {
   checkDocLinkRequirements,
   installDocLink,
   checkDocLinkPackageJsonRequirements,
-  installDocLinkPackageJson,
-  getPackageJsonField,
-  getCurrentFilesField,
-  updateFilesField,
 };

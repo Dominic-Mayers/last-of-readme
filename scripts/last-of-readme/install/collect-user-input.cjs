@@ -1,50 +1,13 @@
 #!/usr/bin/env node
 
-const { execFileSync } = require('child_process');
-const { runNpmPkg } = require('../runNpmPkg.cjs'); 
 const readline = require('readline');
-const { listRemoteChoices } = require('./remote.cjs');
-
-function getPackageJsonField(fieldPath) {
-
-  const value = runNpmPkg(
-    ['get', fieldPath, '--json'],
-    { allowFailure: true, expectJson: true, allowEmpty: true }
-  );
-
-  if (value === null || value === undefined) {
-    return undefined;
-  }
-
-  return Array.isArray(value) && value.length === 1 ? value[0] : value;
-}
-
-function getCurrentInstalledPackageFilePath() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme');
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return null;
-  }
-
-  return typeof lastOfReadme.packageFilePath === 'string'
-    ? lastOfReadme.packageFilePath
-    : null;
-}
-
-function getCurrentRepositoryUrlPath() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme');
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return '';
-  }
-
-  return typeof lastOfReadme.repositoryUrlPath === 'string'
-    ? lastOfReadme.repositoryUrlPath
-    : '';
-}
-
-function getCurrentFilesField() {
-  const files = getPackageJsonField('files');
-  return Array.isArray(files) ? files : null;
-}
+const {
+  gitRemoteNames,
+  gitRemoteUrl,
+  getCurrentInstalledPackageFilePath,
+  getCurrentRepositoryUrlPath,
+  getCurrentFilesField,
+} = require('./utils.cjs');
 
 function createInterface() {
   return readline.createInterface({
@@ -73,6 +36,13 @@ function parseBooleanAnswer(value, defaultValue) {
   }
 
   throw new Error('Please answer yes or no');
+}
+
+function listRemoteChoices() {
+  return gitRemoteNames().map((name) => ({
+    name,
+    url: gitRemoteUrl(name),
+  }));
 }
 
 function chooseDefaultRemoteName(remoteChoices) {
@@ -233,10 +203,13 @@ Learn more:
 }
 
 module.exports = {
+  createInterface,
+  ask,
+  parseBooleanAnswer,
+  listRemoteChoices,
+  chooseDefaultRemoteName,
+  formatRemoteChoices,
+  resolveRemoteSelection,
   collectRemoteInput,
   collectDocLinkInput,
-  getCurrentInstalledPackageFilePath,
-  getCurrentRepositoryUrlPath,
-  getCurrentFilesField,
-  getPackageJsonField,
 };

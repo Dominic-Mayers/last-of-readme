@@ -1,19 +1,9 @@
 #!/usr/bin/env node
 
-const { runNpmPkg } = require('../runNpmPkg.cjs'); 
-const { execFileSync } = require('child_process');
 const {
-  gitRemoteNames,
   gitRemoteUrl,
   normalizeGitHubRemote,
 } = require('./utils.cjs');
-
-function listRemoteChoices() {
-  return gitRemoteNames().map((name) => ({
-    name,
-    url: gitRemoteUrl(name),
-  }));
-}
 
 function checkRemoteRequirements(config = {}) {
   const localName = config?.remote?.localName;
@@ -49,6 +39,5 @@ function checkRemoteRequirements(config = {}) {
 }
 
 module.exports = {
-  listRemoteChoices,
   checkRemoteRequirements,
 };

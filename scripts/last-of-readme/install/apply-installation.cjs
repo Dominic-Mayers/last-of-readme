@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { runNpmPkg } = require('../runNpmPkg.cjs'); 
-const { installDocLink, installDocLinkPackageJson } = require('./doc-link.cjs');
+const { runNpmPkg } = require('../runNpmPkg.cjs');
+const { installDocLink } = require('./doc-link.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);
@@ -15,7 +15,7 @@ function setPackageJsonFields(updates) {
   );
 
   runNpmPkg(
-    ['set', '--json', ...assignments],  
+    ['set', '--json', ...assignments],
     {
       allowEmpty: true,
       failureMessage: 'Could not update package.json',
@@ -46,6 +46,95 @@ function installRemotePackageJson(config = {}) {
       repository: remote.repository,
     },
   };
+}
+
+function installDocLinkPackageJson(config = {}) {
+  const docLink = config.docLink;
+
+  if (!docLink || !docLink.packageFilePath) {
+    throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
+  }
+
+  setPackageJsonFields({
+    'lastOfReadme.packageFilePath': docLink.packageFilePath,
+    ...(typeof docLink.repositoryUrlPath === 'string'
+      ? { 'lastOfReadme.repositoryUrlPath': docLink.repositoryUrlPath }
+      : {}),
+  });
+
+  const currentFiles = getCurrentFilesField();
+  const updatedFiles = updateFilesField(
+    currentFiles,
+    docLink.packageFilePath,
+    docLink.previousPackageFilePath,
+    Boolean(docLink.removePreviousPackageFileFromFiles)
+  );
+
+  if (updatedFiles !== null) {
+    setPackageJsonFields({
+      files: updatedFiles,
+    });
+  }
+
+  return {
+    path: 'package.json',
+    packageFilePath: docLink.packageFilePath,
+    filesChanged: updatedFiles !== null,
+  };
+}
+
+function getCurrentFilesField() {
+  const files = getPackageJsonField('files', { allowFailure: true });
+  return Array.isArray(files) ? files : null;
+}
+
+function getPackageJsonField(field, { allowFailure = false } = {}) {
+  let value;
+
+  try {
+    value = runNpmPkg(
+      ['get', field, '--json'],
+      { expectJson: true }
+    );
+  } catch (error) {
+    if (allowFailure) {
+      return undefined;
+    }
+    throw error;
+  }
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return Array.isArray(value) && value.length === 1 ? value[0] : value;
+}
+
+function updateFilesField(
+  currentFiles,
+  packageFilePath,
+  previousPackageFilePath,
+  shouldRemovePrevious
+) {
+  if (!Array.isArray(currentFiles)) {
+    return null;
+  }
+
+  const updatedFiles = [...currentFiles];
+
+  if (!updatedFiles.includes(packageFilePath)) {
+    updatedFiles.push(packageFilePath);
+  }
+
+  if (
+    shouldRemovePrevious &&
+    typeof previousPackageFilePath === 'string' &&
+    previousPackageFilePath !== packageFilePath
+  ) {
+    return updatedFiles.filter((item) => item !== previousPackageFilePath);
+  }
+
+  return updatedFiles;
 }
 
 module.exports = {
