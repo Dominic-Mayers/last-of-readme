@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const readline = require('readline');
+const path = require('path');
 const {
   gitRemoteNames,
   gitRemoteUrl,
@@ -36,6 +37,28 @@ function parseBooleanAnswer(value, defaultValue) {
   }
 
   throw new Error('Please answer yes or no');
+}
+
+// TODO: This function currently mixes normalization and requirement checking.
+// Keep it here temporarily as normalization.
+// Later extract the requirement-check part into package-file-requirements.cjs.
+function resolvePackageFilePath(packageFilePath) {
+  if (!packageFilePath || typeof packageFilePath !== 'string') {
+    throw new Error('packageFilePath is required');
+  }
+
+  const normalizedPath = path.normalize(packageFilePath);
+
+  if (
+    normalizedPath === '.' ||
+    normalizedPath === '..' ||
+    normalizedPath.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(normalizedPath)
+  ) {
+    throw new Error('packageFilePath must point to a file inside the current repository');
+  }
+
+  return normalizedPath;
 }
 
 function listRemoteChoices() {
@@ -210,6 +233,7 @@ module.exports = {
   chooseDefaultRemoteName,
   formatRemoteChoices,
   resolveRemoteSelection,
+  resolvePackageFilePath,
   collectRemoteInput,
   collectDocLinkInput,
 };

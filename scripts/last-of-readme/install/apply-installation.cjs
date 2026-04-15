@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { runNpmPkg } = require('../runNpmPkg.cjs');
-const { installDocLink } = require('./doc-link.cjs');
+const { installDocLink } = require('./package-file-requirements.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);

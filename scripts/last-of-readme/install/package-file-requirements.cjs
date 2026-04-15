@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { resolvePackageFilePath } = require('./collect-user-input.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
@@ -64,25 +65,6 @@ function checkDocLinkRequirements(config = {}) {
       removePreviousPackageFileFromFiles,
     },
   };
-}
-
-function resolvePackageFilePath(packageFilePath) {
-  if (!packageFilePath || typeof packageFilePath !== 'string') {
-    throw new Error('packageFilePath is required');
-  }
-
-  const normalizedPath = path.normalize(packageFilePath);
-
-  if (
-    normalizedPath === '.' ||
-    normalizedPath === '..' ||
-    normalizedPath.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(normalizedPath)
-  ) {
-    throw new Error('packageFilePath must point to a file inside the current repository');
-  }
-
-  return normalizedPath;
 }
 
 function validateExistingDocLinkFile(packageFilePath) {
@@ -196,7 +178,6 @@ module.exports = {
   END_MARKER,
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
-  resolvePackageFilePath,
   findManagedPlaceholder,
   checkDocLinkRequirements,
   installDocLink,
