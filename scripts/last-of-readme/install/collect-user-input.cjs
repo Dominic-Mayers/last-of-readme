@@ -8,6 +8,7 @@ const {
   getCurrentInstalledPackageFilePath,
   getCurrentRepositoryUrlPath,
   getCurrentFilesField,
+  normalizeOptionalText,
 } = require('./utils.cjs');
 
 function createInterface() {
@@ -19,14 +20,6 @@ function createInterface() {
 
 function ask(rl, question) {
   return new Promise((resolve) => rl.question(question, resolve));
-}
-
-function normalizeOptionalText(value) {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  return value.trim();
 }
 
 function parseBooleanAnswer(value, defaultValue) {
@@ -45,16 +38,6 @@ function parseBooleanAnswer(value, defaultValue) {
   }
 
   throw new Error('Please answer yes or no');
-}
-
-function normalizePackageFilePath(packageFilePath) {
-  const normalized = normalizeOptionalText(packageFilePath);
-
-  if (!normalized) {
-    throw new Error('packageFilePath is required');
-  }
-
-  return path.normalize(normalized);
 }
 
 function listRemoteChoices() {
@@ -294,15 +277,6 @@ async function collectDocLinkPlaceholderInput(config = {}) {
 }
 
 module.exports = {
-  createInterface,
-  ask,
-  normalizeOptionalText,
-  parseBooleanAnswer,
-  normalizePackageFilePath,
-  listRemoteChoices,
-  chooseDefaultRemoteName,
-  formatRemoteChoices,
-  resolveRemoteSelection,
   collectRemoteInput,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,

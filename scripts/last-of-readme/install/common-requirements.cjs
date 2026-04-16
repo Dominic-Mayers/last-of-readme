@@ -7,6 +7,7 @@ const {
   currentWorkingDirectory,
   gitVersion,
   gitTopLevel,
+  normalizePackageFilePath,
 } = require('./utils.cjs');
 
 function assertGitAvailable() {

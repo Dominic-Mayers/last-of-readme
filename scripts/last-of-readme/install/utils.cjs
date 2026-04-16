@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const path = require('path');
 const { execFileSync } = require('child_process');
 const { runNpmPkg } = require('../runNpmPkg.cjs');
 
@@ -117,6 +118,24 @@ function getCurrentFilesField() {
   return Array.isArray(files) ? files : null;
 }
 
+function normalizePackageFilePath(packageFilePath) {
+  const normalized = normalizeOptionalText(packageFilePath);
+
+  if (!normalized) {
+    throw new Error('packageFilePath is required');
+  }
+
+  return path.normalize(normalized);
+}
+
+function normalizeOptionalText(value) {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim();
+}
+
 module.exports = {
   currentWorkingDirectory,
   gitVersion,
@@ -128,4 +147,6 @@ module.exports = {
   getCurrentInstalledPackageFilePath,
   getCurrentRepositoryUrlPath,
   getCurrentFilesField,
+  normalizePackageFilePath,
+  normalizeOptionalText,
 };
