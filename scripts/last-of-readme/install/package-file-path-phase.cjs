@@ -2,17 +2,21 @@
 
 const {
   collectPackageFilePathInput,
+  cleanPackageFilePathInput,
 } = require('./collect-user-input.cjs');
 const {
   checkPackageFilePathRequirements,
+  normalizePackageFilePathInput,
 } = require('./package-file-requirements.cjs');
 
 async function runPackageFilePathCycle(config = {}) {
-  const configWithInput = await collectPackageFilePathInput(config);
-  const configWithPackageFileState =
-    checkPackageFilePathRequirements(configWithInput);
+  const configWithCollectedInput = await collectPackageFilePathInput(config);
+  const configWithCleanedInput =
+    cleanPackageFilePathInput(configWithCollectedInput);
+  const configWithCheckedRequirements =
+    checkPackageFilePathRequirements(configWithCleanedInput);
 
-  return configWithPackageFileState;
+  return normalizePackageFilePathInput(configWithCheckedRequirements);
 }
 
 module.exports = {

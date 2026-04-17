@@ -1,11 +1,20 @@
 #!/usr/bin/env node
 
-const { collectRemoteInput } = require('./collect-user-input.cjs');
-const { checkRemoteRequirements } = require('./repository-url-requirements.cjs');
+const {
+  collectRemoteInput,
+  cleanRemoteInput,
+} = require('./collect-user-input.cjs');
+const {
+  checkRemoteRequirements,
+  normalizeRemoteInput,
+} = require('./repository-url-requirements.cjs');
 
 async function runRemoteCycle(config = {}) {
-  const withInput = await collectRemoteInput(config);
-  return checkRemoteRequirements(withInput);
+  const configWithInput = await collectRemoteInput(config);
+  const cleanedConfig = cleanRemoteInput(configWithInput);
+  const checkedConfig = checkRemoteRequirements(cleanedConfig);
+
+  return normalizeRemoteInput(checkedConfig);
 }
 
 module.exports = {

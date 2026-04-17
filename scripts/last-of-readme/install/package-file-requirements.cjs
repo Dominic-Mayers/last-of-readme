@@ -60,25 +60,36 @@ function checkPackageFilePathRequirements(config = {}) {
 
   validatePackageFilePath(packageFilePath);
 
-  if (fs.existsSync(packageFilePath)) {
-    validateExistingPackageFile(packageFilePath);
-
-    return {
-      ...config,
-      docLink: {
-        ...(config.docLink || {}),
-        packageFilePath,
-        packageFileExists: true,
-      },
-    };
-  }
-
   return {
     ...config,
+    _packageFilePathCheck: {
+      packageFileExists: fs.existsSync(packageFilePath),
+    },
+  };
+}
+
+function normalizePackageFilePathInput(config = {}) {
+  const input = config.docLink || {};
+  const checkResult = config._packageFilePathCheck || {};
+  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+
+  if (checkResult.packageFileExists) {
+    validateExistingPackageFile(packageFilePath);
+  }
+
+  const { _packageFilePathCheck, ...configWithoutCheck } = config;
+  const {
+    packageFilePathAnswer,
+    repositoryUrlPathAnswer,
+    ...docLinkWithoutRawAnswers
+  } = input;
+
+  return {
+    ...configWithoutCheck,
     docLink: {
-      ...(config.docLink || {}),
+      ...docLinkWithoutRawAnswers,
       packageFilePath,
-      packageFileExists: false,
+      packageFileExists: Boolean(checkResult.packageFileExists),
     },
   };
 }
@@ -179,9 +190,7 @@ function checkDocLinkPlaceholderRequirements(config = {}) {
 
     return {
       ...config,
-      docLink: {
-        ...(config.docLink || {}),
-        packageFilePath,
+      _docLinkPlaceholderCheck: {
         mode: 'create-minimal-file',
       },
     };
@@ -191,11 +200,23 @@ function checkDocLinkPlaceholderRequirements(config = {}) {
 
   return {
     ...config,
-    docLink: {
-      ...(config.docLink || {}),
-      packageFilePath,
+    _docLinkPlaceholderCheck: {
       mode: 'existing-file',
       managedPlaceholder: validation.managedPlaceholder,
+    },
+  };
+}
+
+function normalizeDocLinkPlaceholderInput(config = {}) {
+  const checkResult = config._docLinkPlaceholderCheck || {};
+  const { _docLinkPlaceholderCheck, ...configWithoutCheck } = config;
+
+  return {
+    ...configWithoutCheck,
+    docLink: {
+      ...(configWithoutCheck.docLink || {}),
+      mode: checkResult.mode,
+      managedPlaceholder: checkResult.managedPlaceholder,
     },
   };
 }
@@ -211,5 +232,7 @@ module.exports = {
   findManagedPlaceholder,
   validateExistingDocLinkFile,
   checkPackageFilePathRequirements,
+  normalizePackageFilePathInput,
   checkDocLinkPlaceholderRequirements,
+  normalizeDocLinkPlaceholderInput,
 };

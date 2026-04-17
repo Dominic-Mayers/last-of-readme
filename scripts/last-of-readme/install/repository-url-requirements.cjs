@@ -19,14 +19,21 @@ function checkRemoteRequirements(config = {}) {
     throw new Error(`Selected Git remote does not exist: ${localName}`);
   }
 
-  let normalizedRemote;
   try {
-    normalizedRemote = normalizeGitHubRemote(repositoryUrl);
+    normalizeGitHubRemote(repositoryUrl);
   } catch (error) {
     throw new Error(
       `Selected Git remote must point to GitHub or GitHub Enterprise for phase 1: ${localName} (${repositoryUrl})`
     );
   }
+
+  return config;
+}
+
+function normalizeRemoteInput(config = {}) {
+  const localName = config?.remote?.localName;
+  const repositoryUrl = gitRemoteUrl(localName);
+  const normalizedRemote = normalizeGitHubRemote(repositoryUrl);
 
   return {
     ...config,
@@ -40,4 +47,5 @@ function checkRemoteRequirements(config = {}) {
 
 module.exports = {
   checkRemoteRequirements,
+  normalizeRemoteInput,
 };

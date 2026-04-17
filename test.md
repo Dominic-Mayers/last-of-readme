@@ -1,1 +1,1 @@
-Last of Readme : <!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&host=github.com&v=0.1.29&urlPath="><img alt="README-last of 0.1.29" src="https://img.shields.io/badge/README-last%20of%200.1.29-blue?logo=github"></a><!-- DOC-LINK-END -->
+Last of Readme : <!-- DOC-LINK-START --><!-- DOC-LINK-END -->

@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 
 const readline = require('readline');
-const path = require('path');
 const {
-  gitRemoteNames,
-  gitRemoteUrl,
   getCurrentInstalledPackageFilePath,
   getCurrentRepositoryUrlPath,
   getCurrentFilesField,
   normalizeOptionalText,
 } = require('./utils.cjs');
+const { askRemoteChoice } = require('./prompt-user-input.cjs');
 
 function createInterface() {
   return readline.createInterface({
@@ -40,95 +38,20 @@ function parseBooleanAnswer(value, defaultValue) {
   throw new Error('Please answer yes or no');
 }
 
-function listRemoteChoices() {
-  return gitRemoteNames().map((name) => ({
-    name,
-    url: gitRemoteUrl(name),
-  }));
-}
-
-function chooseDefaultRemoteName(remoteChoices) {
-  if (remoteChoices.length === 1) {
-    return remoteChoices[0].name;
-  }
-
-  return '';
-}
-
-function formatRemoteChoices(remoteChoices) {
-  if (remoteChoices.length === 0) {
-    return '  (no Git remotes found)';
-  }
-
-  return remoteChoices
-    .map(({ name, url }, index) => `  ${index + 1}. ${name} (${url})`)
-    .join('\n');
-}
-
-function resolveRemoteSelection(answer, remoteChoices, defaultRemoteName) {
-  const trimmed = normalizeOptionalText(answer);
-  const value = trimmed || defaultRemoteName;
-
-  if (!value) {
-    return null;
-  }
-
-  if (['none', 'no', 'skip'].includes(value.toLowerCase())) {
-    return null;
-  }
-
-  if (/^\d+$/.test(value)) {
-    const index = Number(value) - 1;
-
-    if (index >= 0 && index < remoteChoices.length) {
-      return remoteChoices[index].name;
-    }
-
-    throw new Error('Please choose a listed remote by number or by name');
-  }
-
-  const byName = remoteChoices.find(({ name }) => name === value);
-
-  if (byName) {
-    return byName.name;
-  }
-
-  throw new Error('Please choose a listed remote by number or by name');
-}
-
 async function collectRemoteInput(config = {}) {
-  const remoteChoices = listRemoteChoices();
-  const defaultRemoteName = chooseDefaultRemoteName(remoteChoices);
-  const rl = createInterface();
+  const selectedRemote = await askRemoteChoice();
 
-  try {
-    console.log('Git remotes:');
-    console.log(formatRemoteChoices(remoteChoices));
-    console.log('Select a remote by number or by name. Enter none to stop.');
+  return {
+    ...config,
+    remote: {
+      ...(config.remote || {}),
+      localName: selectedRemote ? selectedRemote.name : null,
+    },
+  };
+}
 
-    const remoteAnswer = await ask(
-      rl,
-      defaultRemoteName
-        ? `Remote to use for Last of Readme [${defaultRemoteName}]: `
-        : 'Remote to use for Last of Readme: '
-    );
-
-    const localName = resolveRemoteSelection(
-      remoteAnswer,
-      remoteChoices,
-      defaultRemoteName
-    );
-
-    return {
-      ...config,
-      remote: {
-        ...(config.remote || {}),
-        localName,
-      },
-    };
-  } finally {
-    rl.close();
-  }
+function cleanRemoteInput(config = {}) {
+  return config;
 }
 
 function getDefaultPackageFilePath() {
@@ -184,6 +107,21 @@ Learn more:
 `);
 }
 
+function resolveCollectedPackageFilePathAnswer(packageFilePathAnswer) {
+  const defaultPackageFilePath = getDefaultPackageFilePath();
+  return normalizeOptionalText(packageFilePathAnswer) || defaultPackageFilePath;
+}
+
+function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
+  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
+
+  if (repositoryUrlPathAnswer === '') {
+    return defaultRepositoryUrlPath;
+  }
+
+  return normalizeOptionalText(repositoryUrlPathAnswer);
+}
+
 async function collectPackageFilePathInput(config = {}) {
   const previousPackageFilePath = getCurrentInstalledPackageFilePath();
   const currentFiles = getCurrentFilesField();
@@ -197,26 +135,26 @@ async function collectPackageFilePathInput(config = {}) {
       rl,
       buildPackageFilePathPrompt(defaultPackageFilePath)
     );
-    const packageFilePath =
-      normalizeOptionalText(packageFilePathAnswer) || defaultPackageFilePath;
 
     const repositoryUrlPathAnswer = await ask(
       rl,
       buildRepositoryUrlPathPrompt(defaultRepositoryUrlPath)
     );
-    const repositoryUrlPath =
-      repositoryUrlPathAnswer === ''
-        ? defaultRepositoryUrlPath
-        : normalizeOptionalText(repositoryUrlPathAnswer);
 
-    printRepositoryUrlPathInformation(repositoryUrlPath);
+    const effectiveRepositoryUrlPath = resolveCollectedRepositoryUrlPathAnswer(
+      repositoryUrlPathAnswer
+    );
+    printRepositoryUrlPathInformation(effectiveRepositoryUrlPath);
 
     let removePreviousPackageFileFromFiles = false;
+    const effectivePackageFilePath = resolveCollectedPackageFilePathAnswer(
+      packageFilePathAnswer
+    );
 
     if (
       shouldAskToRemovePreviousPackageFile({
         previousPackageFilePath,
-        nextPackageFilePath: packageFilePath,
+        nextPackageFilePath: effectivePackageFilePath,
         currentFiles,
       })
     ) {
@@ -233,8 +171,8 @@ async function collectPackageFilePathInput(config = {}) {
       ...config,
       docLink: {
         ...(config.docLink || {}),
-        packageFilePath,
-        repositoryUrlPath,
+        packageFilePathAnswer,
+        repositoryUrlPathAnswer,
         previousPackageFilePath,
         removePreviousPackageFileFromFiles,
       },
@@ -242,6 +180,23 @@ async function collectPackageFilePathInput(config = {}) {
   } finally {
     rl.close();
   }
+}
+
+function cleanPackageFilePathInput(config = {}) {
+  const input = config.docLink || {};
+
+  return {
+    ...config,
+    docLink: {
+      ...input,
+      packageFilePath: resolveCollectedPackageFilePathAnswer(
+        input.packageFilePathAnswer
+      ),
+      repositoryUrlPath: resolveCollectedRepositoryUrlPathAnswer(
+        input.repositoryUrlPathAnswer
+      ),
+    },
+  };
 }
 
 async function collectDocLinkPlaceholderInput(config = {}) {
@@ -255,7 +210,8 @@ async function collectDocLinkPlaceholderInput(config = {}) {
   const rl = createInterface();
 
   try {
-    console.log(`\nℹ️ ${packageFilePath} does not exist.`);
+    console.log(`
+ℹ️ ${packageFilePath} does not exist.`);
 
     const createMinimalFileAnswer = await ask(
       rl,
@@ -276,8 +232,15 @@ async function collectDocLinkPlaceholderInput(config = {}) {
   }
 }
 
+function cleanDocLinkPlaceholderInput(config = {}) {
+  return config;
+}
+
 module.exports = {
   collectRemoteInput,
+  cleanRemoteInput,
   collectPackageFilePathInput,
+  cleanPackageFilePathInput,
   collectDocLinkPlaceholderInput,
+  cleanDocLinkPlaceholderInput,
 };
