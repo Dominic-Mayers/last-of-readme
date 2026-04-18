@@ -3,11 +3,11 @@
 const {
   collectRemoteInput,
   cleanRemoteInput,
-} = require('./collect-user-input.cjs');
+} = require('./user-interaction.cjs');
 const {
   checkRemoteRequirements,
   normalizeRemoteInput,
-} = require('./repository-url-requirements.cjs');
+} = require('./repository-url-interaction.cjs');
 
 async function runRemoteCycle(config = {}) {
   const configWithInput = await collectRemoteInput(config);

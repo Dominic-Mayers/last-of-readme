@@ -1,102 +1,86 @@
 #!/usr/bin/env node
 
-const readline = require('readline');
-const {
-  gitRemoteNames,
-  gitRemoteUrl,
-  normalizeOptionalText,
-} = require('./utils.cjs');
+async function askRemoteChoice({
+  askQuestion,
+  remotesDisplay,
+  defaultRemoteName,
+}) {
+  console.log('Git remotes:');
+  console.log(remotesDisplay);
+  console.log('Select a remote by number or by name. Enter none to stop.');
 
-async function getUserInputRemoteChoice() {
-  const remotes = getRemotesFromGit();
-  const defaultRemoteName = chooseDefaultRemoteName(remotes);
-  const rl = createInterface();
+  const question = defaultRemoteName
+    ? `Remote to use for Last of Readme [${defaultRemoteName}]: `
+    : 'Remote to use for Last of Readme: ';
 
-  try {
-    console.log('Git remotes:');
-    console.log(formatRemoteChoices(remotes));
-    console.log('Select a remote by number or by name. Enter none to stop.');
-
-    const remoteAnswer = await getUserInput(
-      rl,
-      defaultRemoteName
-        ? `Remote to use for Last of Readme [${defaultRemoteName}]: `
-        : 'Remote to use for Last of Readme: '
-    );
-
-    return resolveSelectedRemote(remoteAnswer, remotes, defaultRemoteName);
-  } finally {
-    rl.close();
-  }
+  return askQuestion(question);
 }
 
-function createInterface() {
-  return readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+async function askPackageFilePath({
+  askQuestion,
+  defaultPackageFilePath,
+}) {
+  return askQuestion(
+    `Package file to update [${defaultPackageFilePath}]: `
+  );
 }
 
-function getUserInput(rl, question) {
-  return new Promise((resolve) => rl.question(question, resolve));
+function showRepositoryUrlPathInformation() {
+  console.log(`
+ℹ️ Using the repository URL without a path.
+
+GitHub uses specific rules to select which README to display at such URLs.
+
+To avoid a collision with your package README.md,
+you can place a separate GitHub README at:
+  .github/README.md
+
+Learn more:
+  https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes
+`);
 }
 
-function getRemotesFromGit() {
-  return gitRemoteNames().map((name) => ({
-    name,
-    url: gitRemoteUrl(name),
-  }));
+async function askRepositoryUrlPath({
+  askQuestion,
+  defaultRepositoryUrlPath,
+  shouldShowRepositoryUrlPathInformationForAnswer,
+}) {
+  const question = defaultRepositoryUrlPath
+    ? `Repository URL path to open after resolution [${defaultRepositoryUrlPath}]: `
+    : 'Repository URL path to open after resolution (empty for the repository URL without a path): ';
+
+  const answer = await askQuestion(question);
+
+  if (shouldShowRepositoryUrlPathInformationForAnswer(answer)) {
+    showRepositoryUrlPathInformation();
+  }
+
+  return answer;
 }
 
-function chooseDefaultRemoteName(remotes) {
-  if (remotes.length === 1) {
-    return remotes[0].name;
-  }
-
-  return '';
+async function askRemovePreviousPackageFile({
+  askQuestion,
+  previousPackageFilePath,
+}) {
+  return askQuestion(
+    `Remove previous package file ${previousPackageFilePath} from package.json.files? [no]: `
+  );
 }
 
-function formatRemoteChoices(remotes) {
-  if (remotes.length === 0) {
-    return '  (no Git remotes found)';
-  }
-
-  return remotes
-    .map(({ name, url }, index) => `  ${index + 1}. ${name} (${url})`)
-    .join('\n');
+function printMissingPackageFileInformation(packageFilePath) {
+  console.log(`
+ℹ️ ${packageFilePath} does not exist.`);
 }
 
-function resolveSelectedRemote(answer, remotes, defaultRemoteName) {
-  const trimmed = normalizeOptionalText(answer);
-  const value = trimmed || defaultRemoteName;
-
-  if (!value) {
-    return null;
-  }
-
-  if (['none', 'no', 'skip'].includes(value.toLowerCase())) {
-    return null;
-  }
-
-  if (/^\d+$/.test(value)) {
-    const index = Number(value) - 1;
-
-    if (index >= 0 && index < remotes.length) {
-      return remotes[index];
-    }
-
-    throw new Error('Please choose a listed remote by number or by name');
-  }
-
-  const byName = remotes.find(({ name }) => name === value);
-
-  if (byName) {
-    return byName;
-  }
-
-  throw new Error('Please choose a listed remote by number or by name');
+async function askCreateMinimalPackageFile({ askQuestion }) {
+  return askQuestion('Create a minimal package file? [no]: ');
 }
 
 module.exports = {
   askRemoteChoice,
+  askPackageFilePath,
+  askRepositoryUrlPath,
+  askRemovePreviousPackageFile,
+  printMissingPackageFileInformation,
+  askCreateMinimalPackageFile,
 };

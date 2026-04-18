@@ -3,11 +3,11 @@
 const {
   collectDocLinkPlaceholderInput,
   cleanDocLinkPlaceholderInput,
-} = require('./collect-user-input.cjs');
+} = require('./user-interaction.cjs');
 const {
   checkDocLinkPlaceholderRequirements,
   normalizeDocLinkPlaceholderInput,
-} = require('./package-file-requirements.cjs');
+} = require('./package-file-interaction.cjs');
 
 async function runDocLinkPlaceholderCycle(config = {}) {
   const configWithInput = await collectDocLinkPlaceholderInput(config);

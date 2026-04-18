@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { runNpmPkg } = require('../runNpmPkg.cjs');
-const { START_MARKER, END_MARKER } = require('./package-file-requirements.cjs');
+const { START_MARKER, END_MARKER } = require('./package-file-interaction.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);

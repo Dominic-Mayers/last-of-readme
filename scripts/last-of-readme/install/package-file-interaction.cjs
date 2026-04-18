@@ -54,30 +54,50 @@ function validateWritableBaseDirectoryForNewFile(packageFilePath) {
   }
 }
 
-function checkPackageFilePathRequirements(config = {}) {
+function collectPackageFilePathEnvironmentInput(config = {}) {
   const input = config.docLink || {};
   const packageFilePath = normalizePackageFilePath(input.packageFilePath);
 
-  validatePackageFilePath(packageFilePath);
-
   return {
     ...config,
-    _packageFilePathCheck: {
-      packageFileExists: fs.existsSync(packageFilePath),
+    _packageFilePathEnvironmentInput: {
+      packageFileExistsAnswer: fs.existsSync(packageFilePath),
     },
   };
 }
 
-function normalizePackageFilePathInput(config = {}) {
+function cleanPackageFilePathEnvironmentInput(config = {}) {
+  const environmentInput = config._packageFilePathEnvironmentInput || {};
+
+  return {
+    ...config,
+    _packageFilePathEnvironmentInput: {
+      packageFileExists: Boolean(environmentInput.packageFileExistsAnswer),
+    },
+  };
+}
+
+function checkPackageFilePathRequirements(config = {}) {
   const input = config.docLink || {};
-  const checkResult = config._packageFilePathCheck || {};
+  const environmentInput = config._packageFilePathEnvironmentInput || {};
   const packageFilePath = normalizePackageFilePath(input.packageFilePath);
 
-  if (checkResult.packageFileExists) {
+  validatePackageFilePath(packageFilePath);
+
+  if (environmentInput.packageFileExists) {
     validateExistingPackageFile(packageFilePath);
   }
 
-  const { _packageFilePathCheck, ...configWithoutCheck } = config;
+  return config;
+}
+
+function normalizePackageFilePathInput(config = {}) {
+  const input = config.docLink || {};
+  const environmentInput = config._packageFilePathEnvironmentInput || {};
+  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+
+  const { _packageFilePathEnvironmentInput, ...configWithoutEnvironmentInput } =
+    config;
   const {
     packageFilePathAnswer,
     repositoryUrlPathAnswer,
@@ -85,11 +105,11 @@ function normalizePackageFilePathInput(config = {}) {
   } = input;
 
   return {
-    ...configWithoutCheck,
+    ...configWithoutEnvironmentInput,
     docLink: {
       ...docLinkWithoutRawAnswers,
       packageFilePath,
-      packageFileExists: Boolean(checkResult.packageFileExists),
+      packageFileExists: Boolean(environmentInput.packageFileExists),
     },
   };
 }
@@ -229,6 +249,8 @@ module.exports = {
   validatePackageFilePath,
   validateExistingPackageFile,
   validateWritableBaseDirectoryForNewFile,
+  collectPackageFilePathEnvironmentInput,
+  cleanPackageFilePathEnvironmentInput,
   findManagedPlaceholder,
   validateExistingDocLinkFile,
   checkPackageFilePathRequirements,
