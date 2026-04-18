@@ -56,7 +56,7 @@ function validateWritableBaseDirectoryForNewFile(packageFilePath) {
 
 function collectPackageFilePathEnvironmentInput(config = {}) {
   const input = config.docLink || {};
-  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+  const packageFilePath = input.packageFilePath;
 
   return {
     ...config,
@@ -80,7 +80,7 @@ function cleanPackageFilePathEnvironmentInput(config = {}) {
 function checkPackageFilePathRequirements(config = {}) {
   const input = config.docLink || {};
   const environmentInput = config._packageFilePathEnvironmentInput || {};
-  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+  const packageFilePath = input.packageFilePath;
 
   validatePackageFilePath(packageFilePath);
 
@@ -94,7 +94,7 @@ function checkPackageFilePathRequirements(config = {}) {
 function normalizePackageFilePathInput(config = {}) {
   const input = config.docLink || {};
   const environmentInput = config._packageFilePathEnvironmentInput || {};
-  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+  const packageFilePath = input.packageFilePath;
 
   const { _packageFilePathEnvironmentInput, ...configWithoutEnvironmentInput } =
     config;

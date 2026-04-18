@@ -6,6 +6,7 @@ const {
   getCurrentRepositoryUrlPath,
   getCurrentFilesField,
   normalizeOptionalText,
+  normalizePackageFilePath,
   gitRemoteNames,
   gitRemoteUrl,
 } = require('./utils.cjs');
@@ -239,14 +240,15 @@ async function collectPackageFilePathInput(config = {}) {
 
 function cleanPackageFilePathInput(config = {}) {
   const input = config.docLink || {};
+  const resolvedPackageFilePath = resolveCollectedPackageFilePathAnswer(
+    input.packageFilePathAnswer
+  );
 
   return {
     ...config,
     docLink: {
       ...input,
-      packageFilePath: resolveCollectedPackageFilePathAnswer(
-        input.packageFilePathAnswer
-      ),
+      packageFilePath: normalizePackageFilePath(resolvedPackageFilePath),
       repositoryUrlPath: resolveCollectedRepositoryUrlPathAnswer(
         input.repositoryUrlPathAnswer
       ),
