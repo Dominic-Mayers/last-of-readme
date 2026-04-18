@@ -134,7 +134,7 @@ async function collectRemoteInput(config = {}) {
   }
 }
 
-function cleanRemoteInput(config = {}) {
+function prepareRemoteInput(config = {}) {
   return config;
 }
 
@@ -238,7 +238,7 @@ async function collectPackageFilePathInput(config = {}) {
   }
 }
 
-function cleanPackageFilePathInput(config = {}) {
+function preparePackageFilePathInput(config = {}) {
   const input = config.docLink || {};
   const resolvedPackageFilePath = resolveCollectedPackageFilePathAnswer(
     input.packageFilePathAnswer
@@ -287,15 +287,15 @@ async function collectDocLinkPlaceholderInput(config = {}) {
   }
 }
 
-function cleanDocLinkPlaceholderInput(config = {}) {
+function prepareDocLinkPlaceholderInput(config = {}) {
   return config;
 }
 
 module.exports = {
   collectRemoteInput,
-  cleanRemoteInput,
+  prepareRemoteInput,
   collectPackageFilePathInput,
-  cleanPackageFilePathInput,
+  preparePackageFilePathInput,
   collectDocLinkPlaceholderInput,
-  cleanDocLinkPlaceholderInput,
+  prepareDocLinkPlaceholderInput,
 };

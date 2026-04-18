@@ -30,7 +30,7 @@ function checkRemoteRequirements(config = {}) {
   return config;
 }
 
-function normalizeRemoteInput(config = {}) {
+function finalizeRemoteState(config = {}) {
   const localName = config?.remote?.localName;
   const repositoryUrl = gitRemoteUrl(localName);
   const normalizedRemote = normalizeGitHubRemote(repositoryUrl);
@@ -47,5 +47,5 @@ function normalizeRemoteInput(config = {}) {
 
 module.exports = {
   checkRemoteRequirements,
-  normalizeRemoteInput,
+  finalizeRemoteState,
 };

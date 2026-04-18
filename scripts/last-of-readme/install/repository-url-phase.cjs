@@ -2,19 +2,19 @@
 
 const {
   collectRemoteInput,
-  cleanRemoteInput,
+  prepareRemoteInput,
 } = require('./user-interaction.cjs');
 const {
   checkRemoteRequirements,
-  normalizeRemoteInput,
+  finalizeRemoteState,
 } = require('./repository-url-interaction.cjs');
 
 async function runRemoteCycle(config = {}) {
   const configWithInput = await collectRemoteInput(config);
-  const cleanedConfig = cleanRemoteInput(configWithInput);
-  const checkedConfig = checkRemoteRequirements(cleanedConfig);
+  const preparedConfig = prepareRemoteInput(configWithInput);
+  const checkedConfig = checkRemoteRequirements(preparedConfig);
 
-  return normalizeRemoteInput(checkedConfig);
+  return finalizeRemoteState(checkedConfig);
 }
 
 module.exports = {

@@ -2,27 +2,27 @@
 
 const {
   collectPackageFilePathInput,
-  cleanPackageFilePathInput,
+  preparePackageFilePathInput,
 } = require('./user-interaction.cjs');
 const {
   collectPackageFilePathEnvironmentInput,
-  cleanPackageFilePathEnvironmentInput,
+  preparePackageFilePathEnvironmentInput,
   checkPackageFilePathRequirements,
-  normalizePackageFilePathInput,
+  finalizePackageFilePathState,
 } = require('./package-file-interaction.cjs');
 
 async function runPackageFilePathCycle(config = {}) {
   const configWithCollectedUserInput = await collectPackageFilePathInput(config);
   const configWithCleanedUserInput =
-    cleanPackageFilePathInput(configWithCollectedUserInput);
+    preparePackageFilePathInput(configWithCollectedUserInput);
   const configWithCollectedEnvironmentInput =
     collectPackageFilePathEnvironmentInput(configWithCleanedUserInput);
   const configWithCleanedEnvironmentInput =
-    cleanPackageFilePathEnvironmentInput(configWithCollectedEnvironmentInput);
+    preparePackageFilePathEnvironmentInput(configWithCollectedEnvironmentInput);
   const configWithCheckedRequirements =
     checkPackageFilePathRequirements(configWithCleanedEnvironmentInput);
 
-  return normalizePackageFilePathInput(configWithCheckedRequirements);
+  return finalizePackageFilePathState(configWithCheckedRequirements);
 }
 
 module.exports = {

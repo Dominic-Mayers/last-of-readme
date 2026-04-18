@@ -2,20 +2,30 @@
 
 const {
   collectDocLinkPlaceholderInput,
-  cleanDocLinkPlaceholderInput,
+  prepareDocLinkPlaceholderInput,
 } = require('./user-interaction.cjs');
 const {
+  collectDocLinkPlaceholderEnvironmentInput,
+  prepareDocLinkPlaceholderEnvironmentInput,
   checkDocLinkPlaceholderRequirements,
-  normalizeDocLinkPlaceholderInput,
+  finalizeDocLinkPlaceholderState,
 } = require('./package-file-interaction.cjs');
 
 async function runDocLinkPlaceholderCycle(config = {}) {
-  const configWithInput = await collectDocLinkPlaceholderInput(config);
-  const configWithCleanInput = cleanDocLinkPlaceholderInput(configWithInput);
+  const configWithCollectedUserInput =
+    await collectDocLinkPlaceholderInput(config);
+  const configWithCleanedUserInput =
+    prepareDocLinkPlaceholderInput(configWithCollectedUserInput);
+  const configWithCollectedEnvironmentInput =
+    collectDocLinkPlaceholderEnvironmentInput(configWithCleanedUserInput);
+  const configWithCleanedEnvironmentInput =
+    prepareDocLinkPlaceholderEnvironmentInput(
+      configWithCollectedEnvironmentInput
+    );
   const configWithCheckedRequirements =
-    checkDocLinkPlaceholderRequirements(configWithCleanInput);
+    checkDocLinkPlaceholderRequirements(configWithCleanedEnvironmentInput);
 
-  return normalizeDocLinkPlaceholderInput(configWithCheckedRequirements);
+  return finalizeDocLinkPlaceholderState(configWithCheckedRequirements);
 }
 
 module.exports = {

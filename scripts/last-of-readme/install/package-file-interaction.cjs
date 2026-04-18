@@ -66,7 +66,7 @@ function collectPackageFilePathEnvironmentInput(config = {}) {
   };
 }
 
-function cleanPackageFilePathEnvironmentInput(config = {}) {
+function preparePackageFilePathEnvironmentInput(config = {}) {
   const environmentInput = config._packageFilePathEnvironmentInput || {};
 
   return {
@@ -91,7 +91,7 @@ function checkPackageFilePathRequirements(config = {}) {
   return config;
 }
 
-function normalizePackageFilePathInput(config = {}) {
+function finalizePackageFilePathState(config = {}) {
   const input = config.docLink || {};
   const environmentInput = config._packageFilePathEnvironmentInput || {};
   const packageFilePath = input.packageFilePath;
@@ -193,8 +193,45 @@ function validateExistingDocLinkFile(packageFilePath) {
   };
 }
 
+function collectDocLinkPlaceholderEnvironmentInput(config = {}) {
+  const input = config.docLink || {};
+  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+
+  if (!input.packageFileExists) {
+    return {
+      ...config,
+      _docLinkPlaceholderEnvironmentInput: {},
+    };
+  }
+
+  const content = fs.readFileSync(packageFilePath, 'utf8');
+
+  return {
+    ...config,
+    _docLinkPlaceholderEnvironmentInput: {
+      content,
+    },
+  };
+}
+
+function prepareDocLinkPlaceholderEnvironmentInput(config = {}) {
+  const environmentInput = config._docLinkPlaceholderEnvironmentInput || {};
+  const managedPlaceholder = environmentInput.content
+    ? findManagedPlaceholder(environmentInput.content)
+    : null;
+
+  return {
+    ...config,
+    _docLinkPlaceholderEnvironmentInput: {
+      ...environmentInput,
+      managedPlaceholder,
+    },
+  };
+}
+
 function checkDocLinkPlaceholderRequirements(config = {}) {
   const input = config.docLink || {};
+  const environmentInput = config._docLinkPlaceholderEnvironmentInput || {};
   const packageFilePath = normalizePackageFilePath(input.packageFilePath);
 
   validatePackageFilePath(packageFilePath);
@@ -216,18 +253,24 @@ function checkDocLinkPlaceholderRequirements(config = {}) {
     };
   }
 
-  const validation = validateExistingDocLinkFile(packageFilePath);
+  validateExistingPackageFile(packageFilePath);
+
+  if (!environmentInput.managedPlaceholder) {
+    throw new Error(
+      `${packageFilePath} does not contain a managed placeholder outside example regions`
+    );
+  }
 
   return {
     ...config,
     _docLinkPlaceholderCheck: {
       mode: 'existing-file',
-      managedPlaceholder: validation.managedPlaceholder,
+      managedPlaceholder: environmentInput.managedPlaceholder,
     },
   };
 }
 
-function normalizeDocLinkPlaceholderInput(config = {}) {
+function finalizeDocLinkPlaceholderState(config = {}) {
   const checkResult = config._docLinkPlaceholderCheck || {};
   const { _docLinkPlaceholderCheck, ...configWithoutCheck } = config;
 
@@ -250,11 +293,13 @@ module.exports = {
   validateExistingPackageFile,
   validateWritableBaseDirectoryForNewFile,
   collectPackageFilePathEnvironmentInput,
-  cleanPackageFilePathEnvironmentInput,
+  preparePackageFilePathEnvironmentInput,
   findManagedPlaceholder,
   validateExistingDocLinkFile,
   checkPackageFilePathRequirements,
-  normalizePackageFilePathInput,
+  finalizePackageFilePathState,
+  collectDocLinkPlaceholderEnvironmentInput,
+  prepareDocLinkPlaceholderEnvironmentInput,
   checkDocLinkPlaceholderRequirements,
-  normalizeDocLinkPlaceholderInput,
+  finalizeDocLinkPlaceholderState,
 };
