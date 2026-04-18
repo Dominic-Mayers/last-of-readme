@@ -5,16 +5,24 @@ const {
   prepareRemoteInput,
 } = require('./user-interaction.cjs');
 const {
+  collectRemoteEnvironmentInput,
+  prepareRemoteEnvironmentInput,
   checkRemoteRequirements,
   finalizeRemoteState,
 } = require('./repository-url-interaction.cjs');
 
 async function runRemoteCycle(config = {}) {
-  const configWithInput = await collectRemoteInput(config);
-  const preparedConfig = prepareRemoteInput(configWithInput);
-  const checkedConfig = checkRemoteRequirements(preparedConfig);
+  const configWithCollectedUserInput = await collectRemoteInput(config);
+  const configWithCleanedUserInput =
+    prepareRemoteInput(configWithCollectedUserInput);
+  const configWithCollectedEnvironmentInput =
+    collectRemoteEnvironmentInput(configWithCleanedUserInput);
+  const configWithCleanedEnvironmentInput =
+    prepareRemoteEnvironmentInput(configWithCollectedEnvironmentInput);
+  const configWithCheckedRequirements =
+    checkRemoteRequirements(configWithCleanedEnvironmentInput);
 
-  return finalizeRemoteState(checkedConfig);
+  return finalizeRemoteState(configWithCheckedRequirements);
 }
 
 module.exports = {
