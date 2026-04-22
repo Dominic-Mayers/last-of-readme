@@ -3,11 +3,6 @@
 const path = require('path');
 const { runNpmPkg } = require('../runNpmPkg.cjs');
 
-function currentWorkingDirectory() {
-  return process.cwd();
-}
-
-
 function normalizeGitHubRemote(remoteUrl) {
   const httpsMatch = String(remoteUrl).match(
     /^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/i
@@ -79,7 +74,6 @@ function normalizeOptionalText(value) {
 }
 
 module.exports = {
-  currentWorkingDirectory,
   normalizeGitHubRemote,
   getPackageJsonField,
   normalizePackageFilePath,

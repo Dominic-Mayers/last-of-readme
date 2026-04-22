@@ -275,6 +275,10 @@ function getCurrentFilesField() {
   return Array.isArray(files) ? files : null;
 }
 
+function currentWorkingDirectory() {
+  return process.cwd();
+}
+
 module.exports = {
     getCurrentInstalledPackageFilePath,
     getCurrentRepositoryUrlPath,
@@ -294,5 +298,6 @@ module.exports = {
     gitVersion,
     gitTopLevel,
     gitRemoteNames,
-    gitRemoteUrl
+    gitRemoteUrl,
+    currentWorkingDirectory
 };

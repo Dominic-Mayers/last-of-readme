@@ -4,10 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const {
-  currentWorkingDirectory,
   normalizePackageFilePath,
 } = require('./utils.cjs');
 const {
+  currentWorkingDirectory,
   gitVersion,
   gitTopLevel,
 } = require('../adapters/local-workspace-adapter.cjs');
