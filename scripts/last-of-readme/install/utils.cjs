@@ -39,22 +39,6 @@ function normalizeGitHubRemote(remoteUrl) {
   throw new Error(`Unsupported remote URL: ${remoteUrl}`);
 }
 
-function getPackageJsonField(fieldPath) {
-  const value = runNpmPkg(
-    ['get', fieldPath, '--json'],
-    { allowFailure: true, expectJson: true, allowEmpty: true }
-  );
-
-  if (value === null || value === undefined) {
-    return undefined;
-  }
-
-  return Array.isArray(value) && value.length === 1 ? value[0] : value;
-}
-
-
-
-
 function normalizePackageFilePath(packageFilePath) {
   const normalized = normalizeOptionalText(packageFilePath);
 
@@ -75,7 +59,6 @@ function normalizeOptionalText(value) {
 
 module.exports = {
   normalizeGitHubRemote,
-  getPackageJsonField,
   normalizePackageFilePath,
   normalizeOptionalText,
 };

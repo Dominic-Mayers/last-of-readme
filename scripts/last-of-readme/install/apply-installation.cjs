@@ -119,29 +119,6 @@ function installDocLink(config = {}) {
   };
 }
 
-
-function getPackageJsonField(field, { allowFailure = false } = {}) {
-  let value;
-
-  try {
-    value = runNpmPkg(
-      ['get', field, '--json'],
-      { expectJson: true }
-    );
-  } catch (error) {
-    if (allowFailure) {
-      return undefined;
-    }
-    throw error;
-  }
-
-  if (value === undefined) {
-    return undefined;
-  }
-
-  return Array.isArray(value) && value.length === 1 ? value[0] : value;
-}
-
 function updateFilesField(
   currentFiles,
   packageFilePath,
