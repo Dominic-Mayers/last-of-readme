@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const {
+  getCurrentFilesField,
+} = require('../adapters/local-workspace-adapter.cjs');
 const path = require('path');
 const { runNpmPkg } = require('../runNpmPkg.cjs');
 const { START_MARKER, END_MARKER } = require('./package-file-interaction.cjs');
@@ -116,10 +119,6 @@ function installDocLink(config = {}) {
   };
 }
 
-function getCurrentFilesField() {
-  const files = getPackageJsonField('files', { allowFailure: true });
-  return Array.isArray(files) ? files : null;
-}
 
 function getPackageJsonField(field, { allowFailure = false } = {}) {
   let value;

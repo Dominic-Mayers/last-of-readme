@@ -2,13 +2,13 @@
 
 const readline = require('readline');
 const {
-  getCurrentInstalledPackageFilePath,
-  getCurrentRepositoryUrlPath,
-  getCurrentFilesField,
   normalizeOptionalText,
   normalizePackageFilePath,
 } = require('./utils.cjs');
 const {
+  getCurrentInstalledPackageFilePath,
+  getCurrentRepositoryUrlPath,
+  getCurrentFilesField,
   gitRemoteNames,
   gitRemoteUrl,
 } = require('../adapters/local-workspace-adapter.cjs');

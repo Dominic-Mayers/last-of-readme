@@ -249,7 +249,36 @@ function publishTag(tag, remote = remoteName()) {
   });
 }
 
+
+function getCurrentInstalledPackageFilePath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return null;
+  }
+  return typeof lastOfReadme.packageFilePath === 'string'
+    ? lastOfReadme.packageFilePath
+    : null;
+}
+
+function getCurrentRepositoryUrlPath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return '';
+  }
+  return typeof lastOfReadme.repositoryUrlPath === 'string'
+    ? lastOfReadme.repositoryUrlPath
+    : '';
+}
+
+function getCurrentFilesField() {
+  const files = getPackageJsonField('files', { allowEmpty: true });
+  return Array.isArray(files) ? files : null;
+}
+
 module.exports = {
+    getCurrentInstalledPackageFilePath,
+    getCurrentRepositoryUrlPath,
+    getCurrentFilesField,
     repositoryUrlPath,
     packageFilePath,
     remoteName,

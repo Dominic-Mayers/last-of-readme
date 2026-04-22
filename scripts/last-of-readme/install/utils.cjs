@@ -57,32 +57,8 @@ function getPackageJsonField(fieldPath) {
   return Array.isArray(value) && value.length === 1 ? value[0] : value;
 }
 
-function getCurrentInstalledPackageFilePath() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme');
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return null;
-  }
 
-  return typeof lastOfReadme.packageFilePath === 'string'
-    ? lastOfReadme.packageFilePath
-    : null;
-}
 
-function getCurrentRepositoryUrlPath() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme');
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return '';
-  }
-
-  return typeof lastOfReadme.repositoryUrlPath === 'string'
-    ? lastOfReadme.repositoryUrlPath
-    : '';
-}
-
-function getCurrentFilesField() {
-  const files = getPackageJsonField('files');
-  return Array.isArray(files) ? files : null;
-}
 
 function normalizePackageFilePath(packageFilePath) {
   const normalized = normalizeOptionalText(packageFilePath);
@@ -106,9 +82,6 @@ module.exports = {
   currentWorkingDirectory,
   normalizeGitHubRemote,
   getPackageJsonField,
-  getCurrentInstalledPackageFilePath,
-  getCurrentRepositoryUrlPath,
-  getCurrentFilesField,
   normalizePackageFilePath,
   normalizeOptionalText,
 };
