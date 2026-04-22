@@ -1,27 +1,10 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const { execFileSync } = require('child_process');
 const { runNpmPkg } = require('../runNpmPkg.cjs');
 
 function currentWorkingDirectory() {
   return process.cwd();
-}
-
-function gitVersion() {
-  return execFileSync('git', ['--version'], {
-    cwd: currentWorkingDirectory(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
-}
-
-function gitTopLevel() {
-  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: currentWorkingDirectory(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
 }
 
 
@@ -121,8 +104,6 @@ function normalizeOptionalText(value) {
 
 module.exports = {
   currentWorkingDirectory,
-  gitVersion,
-  gitTopLevel,
   normalizeGitHubRemote,
   getPackageJsonField,
   getCurrentInstalledPackageFilePath,

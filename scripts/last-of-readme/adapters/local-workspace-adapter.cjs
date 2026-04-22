@@ -5,10 +5,6 @@ const path = require('path');
 const cp = require('child_process');
 const { execFileSync } = require('child_process');
 const { runNpmPkg } = require('../runNpmPkg.cjs'); 
-const {
-  gitVersion,
-  gitTopLevel,
-} = require('../install/utils.cjs');
 
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
@@ -24,6 +20,23 @@ function run(command, options = {}) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     ...options,
+  }).trim();
+}
+
+
+function gitVersion() {
+  return execFileSync('git', ['--version'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+}
+
+function gitTopLevel() {
+  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
   }).trim();
 }
 
