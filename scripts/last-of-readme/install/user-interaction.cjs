@@ -7,9 +7,11 @@ const {
   getCurrentFilesField,
   normalizeOptionalText,
   normalizePackageFilePath,
+} = require('./utils.cjs');
+const {
   gitRemoteNames,
   gitRemoteUrl,
-} = require('./utils.cjs');
+} = require('../adapters/local-workspace-adapter.cjs');
 const {
   askRemoteChoice,
   askPackageFilePath,

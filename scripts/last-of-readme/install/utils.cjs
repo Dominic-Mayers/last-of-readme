@@ -24,23 +24,6 @@ function gitTopLevel() {
   }).trim();
 }
 
-function gitRemoteNames() {
-  const output = execFileSync('git', ['remote'], {
-    cwd: currentWorkingDirectory(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
-
-  return output ? output.split(/\r?\n/).map((name) => name.trim()).filter(Boolean) : [];
-}
-
-function gitRemoteUrl(remoteName) {
-  return execFileSync('git', ['remote', 'get-url', remoteName], {
-    cwd: currentWorkingDirectory(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
-}
 
 function normalizeGitHubRemote(remoteUrl) {
   const httpsMatch = String(remoteUrl).match(
@@ -140,8 +123,6 @@ module.exports = {
   currentWorkingDirectory,
   gitVersion,
   gitTopLevel,
-  gitRemoteNames,
-  gitRemoteUrl,
   normalizeGitHubRemote,
   getPackageJsonField,
   getCurrentInstalledPackageFilePath,

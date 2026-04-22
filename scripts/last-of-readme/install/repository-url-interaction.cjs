@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
 const {
-  gitRemoteUrl,
   normalizeGitHubRemote,
 } = require('./utils.cjs');
+
+const {
+  gitRemoteUrl,
+} = require('../adapters/local-workspace-adapter.cjs');
+
 
 function collectRemoteEnvironmentInput(config = {}) {
   const localName = config?.remote?.localName;

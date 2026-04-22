@@ -3,7 +3,12 @@
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const { execFileSync } = require('child_process');
 const { runNpmPkg } = require('../runNpmPkg.cjs'); 
+const {
+  gitVersion,
+  gitTopLevel,
+} = require('../install/utils.cjs');
 
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
@@ -19,6 +24,27 @@ function run(command, options = {}) {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     ...options,
+  }).trim();
+}
+
+
+function gitRemoteNames() {
+  const output = execFileSync('git', ['remote'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+
+  return output
+    ? output.split(/\r?\n/).map((name) => name.trim()).filter(Boolean)
+    : [];
+}
+
+function gitRemoteUrl(remoteName) {
+  return execFileSync('git', ['remote', 'get-url', remoteName], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
   }).trim();
 }
 
@@ -222,5 +248,9 @@ module.exports = {
     setTag,
     publishTag,
     packageName,
-    currentPackageVersion
+    currentPackageVersion,
+    gitVersion,
+    gitTopLevel,
+    gitRemoteNames,
+    gitRemoteUrl
 };

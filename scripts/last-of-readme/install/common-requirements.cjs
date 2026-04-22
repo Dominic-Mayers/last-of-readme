@@ -5,10 +5,12 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const {
   currentWorkingDirectory,
-  gitVersion,
-  gitTopLevel,
   normalizePackageFilePath,
 } = require('./utils.cjs');
+const {
+  gitVersion,
+  gitTopLevel,
+} = require('../adapters/local-workspace-adapter.cjs');
 
 function assertGitAvailable() {
   try {
