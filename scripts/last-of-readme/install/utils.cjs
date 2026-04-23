@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 
 const path = require('path');
-const { runNpmPkg } = require('../runNpmPkg.cjs');
-
 function normalizeGitHubRemote(remoteUrl) {
   const httpsMatch = String(remoteUrl).match(
     /^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/i

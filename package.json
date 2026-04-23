@@ -14,6 +14,11 @@
     "type": "git",
     "url": "git+https://github.com/Dominic-Mayers/last-of-readme"
   },
+  "files": [
+    "README.md",
+    "scripts",
+    "docs"
+  ],
   "lastOfReadme": {
     "remoteName": "origin",
     "remote": {
