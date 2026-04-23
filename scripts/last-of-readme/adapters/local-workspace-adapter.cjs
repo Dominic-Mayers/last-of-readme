@@ -5,6 +5,7 @@ const path = require('path');
 const cp = require('child_process');
 const { execFileSync } = require('child_process');
 const { runNpmPkg } = require('../runNpmPkg.cjs'); 
+const { assertExistingReadableWritableRegularFile } = require('../install/utils.cjs'); 
 
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
@@ -279,6 +280,29 @@ function currentWorkingDirectory() {
   return process.cwd();
 }
 
+// Boundary-level requirement check used by installer phase logic.
+// It delegates to the lower-level file check but throws in installation
+// requirement terms.
+function validateExistingPackageFile(packageFilePath) {
+  try {
+    assertExistingReadableWritableRegularFile(packageFilePath);
+  } catch (error) {
+    throw new Error(
+      `${packageFilePath} must be an existing regular file readable and writable for Last of Readme to run`
+    );
+  }
+}
+
+// Secondary operational check (very unexpected failure)
+function assertPackageFileReadyForPlaceholderInspection(packageFilePath) {
+  try {
+    assertExistingReadableWritableRegularFile(packageFilePath);
+  } catch (error) {
+    throw new Error(
+      `Unexpected package-file access failure while inspecting the managed placeholder in ${packageFilePath}`
+    );
+  }
+}
 module.exports = {
     getCurrentInstalledPackageFilePath,
     getCurrentRepositoryUrlPath,
@@ -299,5 +323,7 @@ module.exports = {
     gitTopLevel,
     gitRemoteNames,
     gitRemoteUrl,
-    currentWorkingDirectory
+    currentWorkingDirectory,
+    validateExistingPackageFile,
+    assertPackageFileReadyForPlaceholderInspection
 };

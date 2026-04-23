@@ -2,13 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const {
-  normalizePackageFilePath,
-  assertExistingReadableWritableRegularFile,
-} = require('./utils.cjs');
+const { normalizePackageFilePath } = require('./utils.cjs');
+
 const {
   validateExistingPackageFile,
-} = require('../adapters/package-file-adapter.cjs');
+  assertPackageFileReadyForPlaceholderInspection,
+} = require('../adapters/local-workspace-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
@@ -27,7 +26,6 @@ function validatePackageFilePath(packageFilePath) {
     );
   }
 }
-
 
 function validateWritableBaseDirectoryForNewFile(packageFilePath) {
   let candidateDirectory = path.dirname(packageFilePath);
@@ -174,13 +172,7 @@ function findManagedPlaceholder(content) {
 }
 
 function validateExistingDocLinkFile(packageFilePath) {
-  try {
-    assertExistingReadableWritableRegularFile(packageFilePath);
-  } catch (error) {
-    throw new Error(
-      `Unexpected unusable package file while inspecting the managed placeholder: ${packageFilePath}`
-    );
-  }
+  validateExistingPackageFile(packageFilePath);
 
   const content = fs.readFileSync(packageFilePath, 'utf8');
   const managedPlaceholder = findManagedPlaceholder(content);
@@ -293,7 +285,6 @@ module.exports = {
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
   validatePackageFilePath,
-  validateExistingPackageFile,
   validateWritableBaseDirectoryForNewFile,
   collectPackageFilePathEnvironmentInput,
   preparePackageFilePathEnvironmentInput,
