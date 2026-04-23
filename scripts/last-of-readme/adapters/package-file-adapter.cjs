@@ -1,16 +1,8 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-
-function assertExistingReadableWritableRegularFile(filePath) {
-  const stats = fs.statSync(filePath);
-
-  if (!stats.isFile()) {
-    throw new Error(`${filePath} exists but is not a regular file`);
-  }
-
-  fs.accessSync(filePath, fs.constants.R_OK | fs.constants.W_OK);
-}
+const {
+  assertExistingReadableWritableRegularFile,
+} = require('../install/utils.cjs');
 
 // Boundary-level requirement check used by installer phase logic.
 // It delegates to the lower-level file check but throws in run-time

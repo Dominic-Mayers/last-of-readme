@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const path = require('path');
+const fs = require('fs');
 function normalizeGitHubRemote(remoteUrl) {
   const httpsMatch = String(remoteUrl).match(
     /^https?:\/\/([^/]+)\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/i
@@ -55,7 +56,18 @@ function normalizeOptionalText(value) {
   return value.trim();
 }
 
+function assertExistingReadableWritableRegularFile(filePath) {
+  const stats = fs.statSync(filePath);
+
+  if (!stats.isFile()) {
+    throw new Error(`${filePath} exists but is not a regular file`);
+  }
+
+  fs.accessSync(filePath, fs.constants.R_OK | fs.constants.W_OK);
+}
+
 module.exports = {
+  assertExistingReadableWritableRegularFile,
   normalizeGitHubRemote,
   normalizePackageFilePath,
   normalizeOptionalText,

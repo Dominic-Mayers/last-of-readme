@@ -2,10 +2,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { normalizePackageFilePath } = require('./utils.cjs');
+const {
+  normalizePackageFilePath,
+  assertExistingReadableWritableRegularFile,
+} = require('./utils.cjs');
 const {
   validateExistingPackageFile,
-  assertExistingReadableWritableRegularFile,
 } = require('../adapters/package-file-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
