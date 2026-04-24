@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
 const {
   getCurrentFilesField,
+  updatePackageJsonFields,
+  createPackageFileIfAbsent,
 } = require('../adapters/local-workspace-adapter.cjs');
-const path = require('path');
-const { runNpmPkg } = require('../runNpmPkg.cjs');
 const { START_MARKER, END_MARKER } = require('./package-file-interaction.cjs');
 
 function automatedInstall(config) {
@@ -15,17 +14,7 @@ function automatedInstall(config) {
 }
 
 function setPackageJsonFields(updates) {
-  const assignments = Object.entries(updates).map(
-    ([key, value]) => `${key}=${JSON.stringify(value)}`
-  );
-
-  runNpmPkg(
-    ['set', '--json', ...assignments],
-    {
-      allowEmpty: true,
-      failureMessage: 'Could not update package.json',
-    }
-  );
+  updatePackageJsonFields(updates);
 }
 
 function installRemotePackageJson(config = {}) {
@@ -104,13 +93,9 @@ function installDocLink(config = {}) {
     };
   }
 
-  const parentDir = path.dirname(docLink.packageFilePath);
-  if (parentDir && parentDir !== '.') {
-    fs.mkdirSync(parentDir, { recursive: true });
-  }
-
-  const minimalContent = `Last of Readme : ${START_MARKER}${END_MARKER}\n`;
-  fs.writeFileSync(docLink.packageFilePath, minimalContent, { flag: 'wx' });
+  const minimalContent = `Last of Readme : ${START_MARKER}${END_MARKER}
+`;
+  createPackageFileIfAbsent(docLink.packageFilePath, minimalContent);
 
   return {
     mode: 'created-minimal-file',

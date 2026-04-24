@@ -303,6 +303,85 @@ function assertPackageFileReadyForPlaceholderInspection(packageFilePath) {
     );
   }
 }
+
+function assertPackageManifestReadableByNpm() {
+  if (!fs.existsSync(PACKAGE_PATH)) {
+    throw new Error('package.json must exist at the repository root');
+  }
+
+  try {
+    execFileSync('npm', ['pkg', 'get', 'version'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+  } catch (error) {
+    const detail = error && error.stderr ? String(error.stderr).trim() : '';
+    const suffix = detail ? `\n${detail}` : '';
+    throw new Error(
+      `npm must recognize package.json as the package manifest in this repository${suffix}`
+    );
+  }
+}
+
+function updatePackageJsonFields(updates) {
+  const assignments = Object.entries(updates).map(
+    ([key, value]) => `${key}=${JSON.stringify(value)}`
+  );
+
+  runNpmPkg(
+    ['set', '--json', ...assignments],
+    {
+      allowEmpty: true,
+      failureMessage: 'Could not update package.json',
+    }
+  );
+}
+
+// TODO: The current check allows a parent path that exists but is a file,
+// which later causes fs.mkdirSync to fail with a low-level EEXIST error.
+// The installer should detect this earlier and report a clear, user-facing error:
+// e.g. "package.json exists but is not a directory".
+// This was pre-existing behavior and is intentionally preserved for now.
+function assertPackageFileCanBeCreated(packageFilePath) {
+  let candidateDirectory = path.dirname(packageFilePath);
+
+  while (
+    candidateDirectory &&
+    candidateDirectory !== '.' &&
+    !fs.existsSync(candidateDirectory)
+  ) {
+    const parentDirectory = path.dirname(candidateDirectory);
+
+    if (parentDirectory === candidateDirectory) {
+      break;
+    }
+
+    candidateDirectory = parentDirectory;
+  }
+
+  if (candidateDirectory && candidateDirectory !== '.') {
+    fs.accessSync(candidateDirectory, fs.constants.W_OK);
+  }
+}
+
+function packageFileExists(packageFilePath) {
+  return fs.existsSync(packageFilePath);
+}
+
+function readPackageFileContent(packageFilePath) {
+  return fs.readFileSync(packageFilePath, 'utf8');
+}
+
+function createPackageFileIfAbsent(packageFilePath, content) {
+  const parentDir = path.dirname(packageFilePath);
+  if (parentDir && parentDir !== '.') {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
+
+  fs.writeFileSync(packageFilePath, content, { flag: 'wx' });
+}
+
 module.exports = {
     getCurrentInstalledPackageFilePath,
     getCurrentRepositoryUrlPath,
@@ -325,5 +404,11 @@ module.exports = {
     gitRemoteUrl,
     currentWorkingDirectory,
     validateExistingPackageFile,
-    assertPackageFileReadyForPlaceholderInspection
+    assertPackageFileReadyForPlaceholderInspection,
+    assertPackageManifestReadableByNpm,
+    updatePackageJsonFields,
+    assertPackageFileCanBeCreated,
+    packageFileExists,
+    readPackageFileContent,
+    createPackageFileIfAbsent
 };

@@ -1,15 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execFileSync } = require('child_process');
-const {
-  normalizePackageFilePath,
-} = require('./utils.cjs');
 const {
   currentWorkingDirectory,
   gitVersion,
   gitTopLevel,
+  assertPackageManifestReadableByNpm,
 } = require('../adapters/local-workspace-adapter.cjs');
 
 function assertGitAvailable() {
@@ -39,30 +34,8 @@ function assertAtRepoRoot() {
   }
 }
 
-function getPackageJsonPath() {
-  return path.resolve(currentWorkingDirectory(), 'package.json');
-}
-
 function assertPackageJsonInstalled() {
-  const packageJsonPath = getPackageJsonPath();
-
-  if (!fs.existsSync(packageJsonPath)) {
-    throw new Error('package.json must exist at the repository root');
-  }
-
-  try {
-    execFileSync('npm', ['pkg', 'get', 'version'], {
-      cwd: currentWorkingDirectory(),
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    });
-  } catch (error) {
-    const detail = error && error.stderr ? String(error.stderr).trim() : '';
-    const suffix = detail ? `\n${detail}` : '';
-    throw new Error(
-      `npm must recognize package.json as the package manifest in this repository${suffix}`
-    );
-  }
+  assertPackageManifestReadableByNpm();
 }
 
 function checkCommonRequirements() {

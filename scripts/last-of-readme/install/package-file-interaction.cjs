@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
 const path = require('path');
 const { normalizePackageFilePath } = require('./utils.cjs');
 
 const {
   validateExistingPackageFile,
   assertPackageFileReadyForPlaceholderInspection,
+  assertPackageFileCanBeCreated,
+  packageFileExists,
+  readPackageFileContent,
 } = require('../adapters/local-workspace-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
@@ -27,28 +29,6 @@ function validatePackageFilePath(packageFilePath) {
   }
 }
 
-function validateWritableBaseDirectoryForNewFile(packageFilePath) {
-  let candidateDirectory = path.dirname(packageFilePath);
-
-  while (
-    candidateDirectory &&
-    candidateDirectory !== '.' &&
-    !fs.existsSync(candidateDirectory)
-  ) {
-    const parentDirectory = path.dirname(candidateDirectory);
-
-    if (parentDirectory === candidateDirectory) {
-      break;
-    }
-
-    candidateDirectory = parentDirectory;
-  }
-
-  if (candidateDirectory && candidateDirectory !== '.') {
-    fs.accessSync(candidateDirectory, fs.constants.W_OK);
-  }
-}
-
 function collectPackageFilePathEnvironmentInput(config = {}) {
   const input = config.docLink || {};
   const packageFilePath = input.packageFilePath;
@@ -56,7 +36,7 @@ function collectPackageFilePathEnvironmentInput(config = {}) {
   return {
     ...config,
     _packageFilePathEnvironmentInput: {
-      packageFileExistsAnswer: fs.existsSync(packageFilePath),
+      packageFileExistsAnswer: packageFileExists(packageFilePath),
     },
   };
 }
@@ -172,9 +152,9 @@ function findManagedPlaceholder(content) {
 }
 
 function validateExistingDocLinkFile(packageFilePath) {
-  validateExistingPackageFile(packageFilePath);
+  assertPackageFileReadyForPlaceholderInspection(packageFilePath);
 
-  const content = fs.readFileSync(packageFilePath, 'utf8');
+  const content = readPackageFileContent(packageFilePath);
   const managedPlaceholder = findManagedPlaceholder(content);
 
   if (!managedPlaceholder) {
@@ -199,7 +179,7 @@ function collectDocLinkPlaceholderEnvironmentInput(config = {}) {
     };
   }
 
-  const content = fs.readFileSync(packageFilePath, 'utf8');
+  const content = readPackageFileContent(packageFilePath);
 
   return {
     ...config,
@@ -238,7 +218,7 @@ function checkDocLinkPlaceholderRequirements(config = {}) {
       );
     }
 
-    validateWritableBaseDirectoryForNewFile(packageFilePath);
+    assertPackageFileCanBeCreated(packageFilePath);
 
     return {
       ...config,
@@ -285,7 +265,7 @@ module.exports = {
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
   validatePackageFilePath,
-  validateWritableBaseDirectoryForNewFile,
+  validateWritableBaseDirectoryForNewFile: assertPackageFileCanBeCreated,
   collectPackageFilePathEnvironmentInput,
   preparePackageFilePathEnvironmentInput,
   findManagedPlaceholder,
