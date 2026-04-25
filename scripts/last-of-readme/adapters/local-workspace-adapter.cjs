@@ -12,22 +12,32 @@ const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
 // Git functions
 
-function gitVersion() {
-  return execFileSync('git', ['--version'], {
-    cwd: WORKSPACE_ROOT,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
+function assertGitAvailable() {
+  try {
+    gitVersion();
+  } catch (error) {
+    throw new Error('Git must be installed and available in PATH');
+  }
 }
 
-function gitTopLevel() {
-  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: WORKSPACE_ROOT,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
+function assertInGitRepository() {
+  try {
+    gitTopLevel();
+  } catch (error) {
+    throw new Error('Install must be run inside a Git repository');
+  }
 }
 
+function assertAtRepoRoot() {
+  const repoRoot = gitTopLevel();
+  const cwd = currentWorkingDirectory();
+
+  if (cwd !== repoRoot) {
+    throw new Error(
+      `Install must be run from the repository root.\nCurrent directory: ${cwd}\nRepository root: ${repoRoot}`
+    );
+  }
+}
 
 function gitRemoteNames() {
   const output = execFileSync('git', ['remote'], {
@@ -369,10 +379,6 @@ function writeFile(relativePath, content) {
   }
 }
 
-function currentWorkingDirectory() {
-  return process.cwd();
-}
-
 // Generic private functions
 
 function fail(message) {
@@ -389,8 +395,31 @@ function run(command, options = {}) {
   }).trim();
 }
 
+function gitVersion() {
+  return execFileSync('git', ['--version'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+}
+
+function gitTopLevel() {
+  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+}
+
+function currentWorkingDirectory() {
+  return process.cwd();
+}
+
 
 module.exports = {
+    assertGitAvailable,
+    assertInGitRepository,
+    assertAtRepoRoot,
     getCurrentInstalledPackageFilePath,
     getCurrentRepositoryUrlPath,
     getCurrentFilesField,
@@ -406,11 +435,8 @@ module.exports = {
     publishTag,
     packageName,
     currentPackageVersion,
-    gitVersion,
-    gitTopLevel,
     gitRemoteNames,
     gitRemoteUrl,
-    currentWorkingDirectory,
     validateExistingPackageFile,
     assertPackageFileReadyForPlaceholderInspection,
     assertPackageManifestReadableByNpm,
