@@ -10,20 +10,7 @@ const { assertExistingReadableWritableRegularFile } = require('../install/utils.
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
-function fail(message) {
-  const error = new Error(message);
-  error.isWorkspaceApiError = true;
-  throw error;
-}
-
-function run(command, options = {}) {
-  return cp.execSync(command, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
-  }).trim();
-}
-
+// Git functions
 
 function gitVersion() {
   return execFileSync('git', ['--version'], {
@@ -60,31 +47,6 @@ function gitRemoteUrl(remoteName) {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
   }).trim();
-}
-
-function getPackageJsonField(field, { allowEmpty = false } = {}) {
-
-  const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
-  const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
-
-  if ((normalized === undefined || normalized === null || normalized === '') && !allowEmpty) {
-    fail(`package.json has no ${field}`);
-  }
-
-  return normalized;
-}
-
-function resolveWorkspacePath(relativePath) {
-  if (!relativePath) {
-    fail('Path is required');
-  }
-  return path.join(WORKSPACE_ROOT, relativePath);
-}
-
-function ensureFile(filePath, label) {
-  if (!fs.existsSync(filePath)) {
-    fail(`${label} not found`);
-  }
 }
 
 function normalizeRepositoryUrl(repository) {
@@ -140,13 +102,6 @@ function currentRepoNode() {
   return run('git rev-parse HEAD');
 }
 
-function currentPackageVersion() {
-  return String(getPackageJsonField('version'));
-}
-
-function packageName() {
-  return String(getPackageJsonField('name'));
-}
 
 function remoteConfiguration() {
   const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
@@ -182,49 +137,6 @@ function remoteRepository() {
   return remoteConfiguration().repository;
 }
 
-function packageFilePath() {
-  const value = getPackageJsonField('lastOfReadme.packageFilePath', { allowEmpty: true });
-  if (!value || typeof value !== 'string') {
-    fail('package.json has no lastOfReadme.packageFilePath');
-  }
-  return value;
-}
-
-function repositoryUrlPath() {
-  const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
-
-  if (!config || typeof config !== 'object') {
-    fail('package.json has no lastOfReadme configuration');
-  }
-
-  const value = config.repositoryUrlPath;
-
-  if (typeof value !== 'string') {
-    fail('package.json has no valid lastOfReadme.repositoryUrlPath');
-  }
-
-  return value;
-}
-
-function readFile(relativePath) {
-  const filePath = resolveWorkspacePath(relativePath);
-  ensureFile(filePath, relativePath);
-  try {
-    return fs.readFileSync(filePath, 'utf8');
-  } catch (err) {
-    fail(`Could not read ${relativePath}: ${err.message}`);
-  }
-}
-
-function writeFile(relativePath, content) {
-  const filePath = resolveWorkspacePath(relativePath);
-  try {
-    fs.writeFileSync(filePath, content);
-  } catch (err) {
-    fail(`Could not write ${relativePath}: ${err.message}`);
-  }
-}
-
 function setTag(tag, repoNode, annotation) {
   ensureGitWorkspace();
 
@@ -250,6 +162,51 @@ function publishTag(tag, remote = remoteName()) {
   });
 }
 
+// Npm functions
+
+function getPackageJsonField(field, { allowEmpty = false } = {}) {
+
+  const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
+  const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
+
+  if ((normalized === undefined || normalized === null || normalized === '') && !allowEmpty) {
+    fail(`package.json has no ${field}`);
+  }
+
+  return normalized;
+}
+
+function currentPackageVersion() {
+  return String(getPackageJsonField('version'));
+}
+
+function packageName() {
+  return String(getPackageJsonField('name'));
+}
+
+function packageFilePath() {
+  const value = getPackageJsonField('lastOfReadme.packageFilePath', { allowEmpty: true });
+  if (!value || typeof value !== 'string') {
+    fail('package.json has no lastOfReadme.packageFilePath');
+  }
+  return value;
+}
+
+function repositoryUrlPath() {
+  const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+
+  if (!config || typeof config !== 'object') {
+    fail('package.json has no lastOfReadme configuration');
+  }
+
+  const value = config.repositoryUrlPath;
+
+  if (typeof value !== 'string') {
+    fail('package.json has no valid lastOfReadme.repositoryUrlPath');
+  }
+
+  return value;
+}
 
 function getCurrentInstalledPackageFilePath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
@@ -274,10 +231,6 @@ function getCurrentRepositoryUrlPath() {
 function getCurrentFilesField() {
   const files = getPackageJsonField('files', { allowEmpty: true });
   return Array.isArray(files) ? files : null;
-}
-
-function currentWorkingDirectory() {
-  return process.cwd();
 }
 
 // Boundary-level requirement check used by installer phase logic.
@@ -381,6 +334,61 @@ function createPackageFileIfAbsent(packageFilePath, content) {
 
   fs.writeFileSync(packageFilePath, content, { flag: 'wx' });
 }
+
+// File system functions
+
+function resolveWorkspacePath(relativePath) {
+  if (!relativePath) {
+    fail('Path is required');
+  }
+  return path.join(WORKSPACE_ROOT, relativePath);
+}
+
+function ensureFile(filePath, label) {
+  if (!fs.existsSync(filePath)) {
+    fail(`${label} not found`);
+  }
+}
+
+function readFile(relativePath) {
+  const filePath = resolveWorkspacePath(relativePath);
+  ensureFile(filePath, relativePath);
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (err) {
+    fail(`Could not read ${relativePath}: ${err.message}`);
+  }
+}
+
+function writeFile(relativePath, content) {
+  const filePath = resolveWorkspacePath(relativePath);
+  try {
+    fs.writeFileSync(filePath, content);
+  } catch (err) {
+    fail(`Could not write ${relativePath}: ${err.message}`);
+  }
+}
+
+function currentWorkingDirectory() {
+  return process.cwd();
+}
+
+// Generic private functions
+
+function fail(message) {
+  const error = new Error(message);
+  error.isWorkspaceApiError = true;
+  throw error;
+}
+
+function run(command, options = {}) {
+  return cp.execSync(command, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    ...options,
+  }).trim();
+}
+
 
 module.exports = {
     getCurrentInstalledPackageFilePath,
