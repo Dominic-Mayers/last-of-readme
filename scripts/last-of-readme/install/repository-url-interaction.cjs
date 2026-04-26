@@ -8,31 +8,19 @@ const {
   gitRemoteUrl,
 } = require('../adapters/local-workspace-adapter.cjs');
 
-
 function collectRemoteEnvironmentInput(config = {}) {
   const localName = config?.remote?.localName;
+  const repositoryUrl = config?.remote?.repositoryUrl;
 
   if (!localName || typeof localName !== 'string') {
     return config;
-  }
-
-  let repositoryUrl;
-  try {
-    repositoryUrl = gitRemoteUrl(localName);
-  } catch (error) {
-    return {
-      ...config,
-      remote: {
-        ...config.remote,
-        repositoryUrl: undefined,
-      },
-    };
   }
 
   return {
     ...config,
     remote: {
       ...config.remote,
+      localName,
       repositoryUrl,
     },
   };

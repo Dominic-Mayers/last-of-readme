@@ -106,14 +106,6 @@ function remoteConfiguration() {
   return normalizeRepositoryUrl(getPackageJsonField('repository'));
 }
 
-function remoteName() {
-  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', { allowEmpty: true });
-  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
-    return configuredRemoteName;
-  }
-  return 'origin';
-}
-
 function currentPackageVersion() {
   return String(getPackageJsonField('version'));
 }
@@ -144,26 +136,6 @@ function repositoryUrlPath() {
   }
 
   return value;
-}
-
-function getCurrentInstalledPackageFilePath() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return null;
-  }
-  return typeof lastOfReadme.packageFilePath === 'string'
-    ? lastOfReadme.packageFilePath
-    : null;
-}
-
-function getCurrentRepositoryUrlPath() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return '';
-  }
-  return typeof lastOfReadme.repositoryUrlPath === 'string'
-    ? lastOfReadme.repositoryUrlPath
-    : '';
 }
 
 function getCurrentFilesField() {
@@ -206,6 +178,129 @@ function updatePackageJsonFields(updates) {
 }
 
 // Package file functions
+
+async function collectDocLinkPlaceholderInput(config = {}) {
+  const docLink = config.docLink || {};
+
+  if (docLink.packageFileExists) {
+    return config;
+  }
+
+  const packageFilePath = docLink.packageFilePath;
+  const rl = createInterface();
+
+  try {
+    printMissingPackageFileInformation(packageFilePath);
+
+    const createMinimalFileAnswer = await askCreateMinimalPackageFile({
+      askQuestion: (question) => ask(rl, question),
+    });
+    const shouldCreateMinimalFile =
+      parseBooleanAnswer(createMinimalFileAnswer, false);
+
+    return {
+      ...config,
+      docLink: {
+        ...(config.docLink || {}),
+        shouldCreateMinimalFile,
+      },
+    };
+  } finally {
+    rl.close();
+  }
+}
+
+async function collectPackageFilePathInput(config = {}) {
+  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
+  const currentFiles = getCurrentFilesField();
+  const defaultPackageFilePath = getDefaultPackageFilePath();
+  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
+
+  const rl = createInterface();
+
+  try {
+    const packageFilePathAnswer = await askPackageFilePath({
+      askQuestion: (question) => ask(rl, question),
+      defaultPackageFilePath,
+    });
+
+    const repositoryUrlPathAnswer = await askRepositoryUrlPath({
+      askQuestion: (question) => ask(rl, question),
+      defaultRepositoryUrlPath,
+      shouldShowRepositoryUrlPathInformationForAnswer: (answer) =>
+        shouldShowRepositoryUrlPathInformation(
+          resolveCollectedRepositoryUrlPathAnswer(answer)
+        ),
+    });
+
+    let removePreviousPackageFileFromFiles = false;
+    const effectivePackageFilePath = resolveCollectedPackageFilePathAnswer(
+      packageFilePathAnswer
+    );
+
+    if (
+      shouldAskToRemovePreviousPackageFile({
+        previousPackageFilePath,
+        nextPackageFilePath: effectivePackageFilePath,
+        currentFiles,
+      })
+    ) {
+      const removePreviousFileAnswer = await askRemovePreviousPackageFile({
+        askQuestion: (question) => ask(rl, question),
+        previousPackageFilePath,
+      });
+
+      removePreviousPackageFileFromFiles =
+        parseBooleanAnswer(removePreviousFileAnswer, false);
+    }
+
+    return {
+      ...config,
+      docLink: {
+        ...(config.docLink || {}),
+        packageFilePathAnswer,
+        repositoryUrlPathAnswer,
+        previousPackageFilePath,
+        defaultPackageFilePath,
+        defaultRepositoryUrlPath,
+        removePreviousPackageFileFromFiles,
+      },
+    };
+  } finally {
+    rl.close();
+  }
+}
+
+async function collectRemoteInput(config = {}) {
+  const remotes = getRemotesFromGit();
+  const defaultRemoteName = chooseDefaultRemoteName(remotes);
+  const rl = createInterface();
+
+  try {
+    const remoteAnswer = await askRemoteChoice({
+      askQuestion: (question) => ask(rl, question),
+      remotesDisplay: formatRemoteChoices(remotes),
+      defaultRemoteName,
+    });
+
+    const selectedRemote = resolveSelectedRemote(
+      remoteAnswer,
+      remotes,
+      defaultRemoteName
+    );
+
+    return {
+      ...config,
+      remote: {
+        ...(config.remote || {}),
+        localName: selectedRemote ? selectedRemote.name : null,
+        repositoryUrl: selectedRemote ? selectedRemote.url : null,
+      },
+    };
+  } finally {
+    rl.close();
+  }
+}
 
 // Boundary-level requirement check used by installer phase logic.
 // It delegates to the lower-level file check but throws in installation
@@ -278,19 +373,6 @@ function createPackageFileIfAbsent(packageFilePath, content) {
 
 // File system functions
 
-function resolveWorkspacePath(relativePath) {
-  if (!relativePath) {
-    fail('Path is required');
-  }
-  return path.join(WORKSPACE_ROOT, relativePath);
-}
-
-function ensureFile(filePath, label) {
-  if (!fs.existsSync(filePath)) {
-    fail(`${label} not found`);
-  }
-}
-
 function readFile(relativePath) {
   const filePath = resolveWorkspacePath(relativePath);
   ensureFile(filePath, relativePath);
@@ -310,7 +392,7 @@ function writeFile(relativePath, content) {
   }
 }
 
-// Adapter-zone functions
+// Private functions (adapter-zone)
 
 function createInterface() {
   return readline.createInterface({
@@ -397,36 +479,6 @@ function resolveSelectedRemote(answer, remotes, defaultRemoteName) {
   throw new Error('Please choose a listed remote by number or by name');
 }
 
-async function collectRemoteInput(config = {}) {
-  const remotes = getRemotesFromGit();
-  const defaultRemoteName = chooseDefaultRemoteName(remotes);
-  const rl = createInterface();
-
-  try {
-    const remoteAnswer = await askRemoteChoice({
-      askQuestion: (question) => ask(rl, question),
-      remotesDisplay: formatRemoteChoices(remotes),
-      defaultRemoteName,
-    });
-
-    const selectedRemote = resolveSelectedRemote(
-      remoteAnswer,
-      remotes,
-      defaultRemoteName
-    );
-
-    return {
-      ...config,
-      remote: {
-        ...(config.remote || {}),
-        localName: selectedRemote ? selectedRemote.name : null,
-      },
-    };
-  } finally {
-    rl.close();
-  }
-}
-
 function getDefaultPackageFilePath() {
   return getCurrentInstalledPackageFilePath() || 'README.md';
 }
@@ -466,98 +518,6 @@ function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
   }
 
   return normalizeOptionalText(repositoryUrlPathAnswer);
-}
-
-async function collectPackageFilePathInput(config = {}) {
-  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
-  const currentFiles = getCurrentFilesField();
-  const defaultPackageFilePath = getDefaultPackageFilePath();
-  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
-
-  const rl = createInterface();
-
-  try {
-    const packageFilePathAnswer = await askPackageFilePath({
-      askQuestion: (question) => ask(rl, question),
-      defaultPackageFilePath,
-    });
-
-    const repositoryUrlPathAnswer = await askRepositoryUrlPath({
-      askQuestion: (question) => ask(rl, question),
-      defaultRepositoryUrlPath,
-      shouldShowRepositoryUrlPathInformationForAnswer: (answer) =>
-        shouldShowRepositoryUrlPathInformation(
-          resolveCollectedRepositoryUrlPathAnswer(answer)
-        ),
-    });
-
-    let removePreviousPackageFileFromFiles = false;
-    const effectivePackageFilePath = resolveCollectedPackageFilePathAnswer(
-      packageFilePathAnswer
-    );
-
-    if (
-      shouldAskToRemovePreviousPackageFile({
-        previousPackageFilePath,
-        nextPackageFilePath: effectivePackageFilePath,
-        currentFiles,
-      })
-    ) {
-      const removePreviousFileAnswer = await askRemovePreviousPackageFile({
-        askQuestion: (question) => ask(rl, question),
-        previousPackageFilePath,
-      });
-
-      removePreviousPackageFileFromFiles =
-        parseBooleanAnswer(removePreviousFileAnswer, false);
-    }
-
-    return {
-      ...config,
-      docLink: {
-        ...(config.docLink || {}),
-        packageFilePathAnswer,
-        repositoryUrlPathAnswer,
-        previousPackageFilePath,
-        defaultPackageFilePath,
-        defaultRepositoryUrlPath,
-        removePreviousPackageFileFromFiles,
-      },
-    };
-  } finally {
-    rl.close();
-  }
-}
-
-async function collectDocLinkPlaceholderInput(config = {}) {
-  const docLink = config.docLink || {};
-
-  if (docLink.packageFileExists) {
-    return config;
-  }
-
-  const packageFilePath = docLink.packageFilePath;
-  const rl = createInterface();
-
-  try {
-    printMissingPackageFileInformation(packageFilePath);
-
-    const createMinimalFileAnswer = await askCreateMinimalPackageFile({
-      askQuestion: (question) => ask(rl, question),
-    });
-    const shouldCreateMinimalFile =
-      parseBooleanAnswer(createMinimalFileAnswer, false);
-
-    return {
-      ...config,
-      docLink: {
-        ...(config.docLink || {}),
-        shouldCreateMinimalFile,
-      },
-    };
-  } finally {
-    rl.close();
-  }
 }
 
 function fail(message) {
@@ -674,34 +634,73 @@ function getPackageJsonField(field, { allowEmpty = false } = {}) {
   return normalized;
 }
 
+function remoteName() {
+  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', { allowEmpty: true });
+
+  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
+    return configuredRemoteName;
+  }
+
+  fail('No Last of Readme remoteName configured in package.json');
+}
+
+function getCurrentInstalledPackageFilePath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return null;
+  }
+  return typeof lastOfReadme.packageFilePath === 'string'
+    ? lastOfReadme.packageFilePath
+    : null;
+}
+
+function getCurrentRepositoryUrlPath() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return '';
+  }
+  return typeof lastOfReadme.repositoryUrlPath === 'string'
+    ? lastOfReadme.repositoryUrlPath
+    : '';
+}
+
+function resolveWorkspacePath(relativePath) {
+  if (!relativePath) {
+    fail('Path is required');
+  }
+  return path.join(WORKSPACE_ROOT, relativePath);
+}
+
+function ensureFile(filePath, label) {
+  if (!fs.existsSync(filePath)) {
+    fail(`${label} not found`);
+  }
+}
+
 module.exports = {
-    collectRemoteInput,
-    collectPackageFilePathInput,
-    collectDocLinkPlaceholderInput,
     assertGitAvailable,
     assertInGitRepository,
     assertAtRepoRoot,
-    getCurrentInstalledPackageFilePath,
-    getCurrentRepositoryUrlPath,
-    getCurrentFilesField,
-    repositoryUrlPath,
-    packageFilePath,
-    remoteName,
-    remoteConfiguration,
     currentRepoNode,
-    readFile,
-    writeFile,
     setTag,
     publishTag,
-    packageName,
+    remoteConfiguration,
     currentPackageVersion,
-    gitRemoteUrl,
-    validateExistingPackageFile,
-    assertPackageFileReadyForPlaceholderInspection,
+    packageName,
+    packageFilePath,
+    repositoryUrlPath,
+    getCurrentFilesField,
     assertPackageManifestReadableByNpm,
     updatePackageJsonFields,
+    collectDocLinkPlaceholderInput,
+    collectPackageFilePathInput,
+    collectRemoteInput,
+    validateExistingPackageFile,
+    assertPackageFileReadyForPlaceholderInspection,
     assertPackageFileCanBeCreated,
     packageFileExists,
     readPackageFileContent,
-    createPackageFileIfAbsent
+    createPackageFileIfAbsent,
+    readFile,
+    writeFile
 };
