@@ -51,47 +51,6 @@ function assertAtRepoRoot() {
   }
 }
 
-function normalizeRepositoryUrl(repository) {
-  let url =
-    typeof repository === 'string'
-      ? repository
-      : repository && typeof repository.url === 'string'
-        ? repository.url
-        : null;
-
-  if (!url) {
-    fail('package.json has no valid repository.url');
-  }
-
-  url = url.trim();
-
-  if (url.startsWith('git+')) {
-    url = url.slice(4);
-  }
-
-  if (url.endsWith('.git')) {
-    url = url.slice(0, -4);
-  }
-
-  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
-  if (match) {
-    return { kind: 'github', host: match[1], repository: match[2] };
-  }
-
-  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
-  if (match) {
-    return { kind: 'github', host: match[1], repository: match[2] };
-  }
-
-  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
-  if (match) {
-    return { kind: 'github', host: match[1], repository: match[2] };
-  }
-
-  fail('repository.url must point to a GitHub repository');
-}
-
-
 function currentRepoNode() {
   ensureGitWorkspace();
   return run('git rev-parse HEAD');
@@ -359,8 +318,7 @@ function writeFile(relativePath, content) {
   }
 }
 
-
-// User input adapter-zone functions
+// Adapter-zone functions
 
 function createInterface() {
   return readline.createInterface({
@@ -608,8 +566,6 @@ async function collectDocLinkPlaceholderInput(config = {}) {
   }
 }
 
-// Generic private functions
-
 function fail(message) {
   const error = new Error(message);
   error.isWorkspaceApiError = true;
@@ -670,6 +626,46 @@ function ensureGitWorkspace() {
   } catch {
     fail('Current directory is not a Git repository');
   }
+}
+
+function normalizeRepositoryUrl(repository) {
+  let url =
+    typeof repository === 'string'
+      ? repository
+      : repository && typeof repository.url === 'string'
+        ? repository.url
+        : null;
+
+  if (!url) {
+    fail('package.json has no valid repository.url');
+  }
+
+  url = url.trim();
+
+  if (url.startsWith('git+')) {
+    url = url.slice(4);
+  }
+
+  if (url.endsWith('.git')) {
+    url = url.slice(0, -4);
+  }
+
+  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
+  if (match) {
+    return { kind: 'github', host: match[1], repository: match[2] };
+  }
+
+  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
+  if (match) {
+    return { kind: 'github', host: match[1], repository: match[2] };
+  }
+
+  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
+  if (match) {
+    return { kind: 'github', host: match[1], repository: match[2] };
+  }
+
+  fail('repository.url must point to a GitHub repository');
 }
 
 module.exports = {
