@@ -519,6 +519,8 @@ async function collectPackageFilePathInput(config = {}) {
         packageFilePathAnswer,
         repositoryUrlPathAnswer,
         previousPackageFilePath,
+        defaultPackageFilePath,
+        defaultRepositoryUrlPath,
         removePreviousPackageFileFromFiles,
       },
     };

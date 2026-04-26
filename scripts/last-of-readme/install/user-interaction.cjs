@@ -8,32 +8,24 @@ const {
   collectRemoteInput,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
-  getCurrentInstalledPackageFilePath,
-  getCurrentRepositoryUrlPath,
 } = require('../adapters/local-workspace-adapter.cjs');
 
 function prepareRemoteInput(config = {}) {
   return config;
 }
-
-function getDefaultPackageFilePath() {
-  return getCurrentInstalledPackageFilePath() || 'README.md';
-}
-
-function getDefaultRepositoryUrlPath() {
-  return getCurrentRepositoryUrlPath() || '';
-}
-
-function resolveCollectedPackageFilePathAnswer(packageFilePathAnswer) {
-  const defaultPackageFilePath = getDefaultPackageFilePath();
+function resolvePackageFilePathFromCollectedInput({
+  packageFilePathAnswer,
+  defaultPackageFilePath,
+}) {
   return normalizeOptionalText(packageFilePathAnswer) || defaultPackageFilePath;
 }
 
-function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
-  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
-
+function resolveRepositoryUrlPathFromCollectedInput({
+  repositoryUrlPathAnswer,
+  defaultRepositoryUrlPath,
+}) {
   if (repositoryUrlPathAnswer === '') {
-    return defaultRepositoryUrlPath;
+    return defaultRepositoryUrlPath || '';
   }
 
   return normalizeOptionalText(repositoryUrlPathAnswer);
@@ -41,18 +33,20 @@ function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
 
 function preparePackageFilePathInput(config = {}) {
   const input = config.docLink || {};
-  const resolvedPackageFilePath = resolveCollectedPackageFilePathAnswer(
-    input.packageFilePathAnswer
-  );
+  const resolvedPackageFilePath = resolvePackageFilePathFromCollectedInput({
+    packageFilePathAnswer: input.packageFilePathAnswer,
+    defaultPackageFilePath: input.defaultPackageFilePath,
+  });
 
   return {
     ...config,
     docLink: {
       ...input,
       packageFilePath: normalizePackageFilePath(resolvedPackageFilePath),
-      repositoryUrlPath: resolveCollectedRepositoryUrlPathAnswer(
-        input.repositoryUrlPathAnswer
-      ),
+      repositoryUrlPath: resolveRepositoryUrlPathFromCollectedInput({
+        repositoryUrlPathAnswer: input.repositoryUrlPathAnswer,
+        defaultRepositoryUrlPath: input.defaultRepositoryUrlPath,
+      }),
     },
   };
 }
