@@ -50,29 +50,6 @@ function assertAtRepoRoot() {
     );
   }
 }
-
-// Only used in user-interaction.cjs to get names in  getRemotesFromGit.
-function gitRemoteNames() {
-  const output = execFileSync('git', ['remote'], {
-    cwd: WORKSPACE_ROOT,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
-
-  return output
-    ? output.split(/\r?\n/).map((name) => name.trim()).filter(Boolean)
-    : [];
-}
-
-// Only used in user-interaction.cjs to get the urls in  getRemotesFromGit.
-function gitRemoteUrl(remoteName) {
-  return execFileSync('git', ['remote', 'get-url', remoteName], {
-    cwd: WORKSPACE_ROOT,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    encoding: 'utf8',
-  }).trim();
-}
-
 function normalizeRepositoryUrl(repository) {
   let url =
     typeof repository === 'string'
@@ -678,6 +655,25 @@ function currentWorkingDirectory() {
   return process.cwd();
 }
 
+function gitRemoteNames() {
+  const output = execFileSync('git', ['remote'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+
+  return output
+    ? output.split(/\r?\n/).map((name) => name.trim()).filter(Boolean)
+    : [];
+}
+
+function gitRemoteUrl(remoteName) {
+  return execFileSync('git', ['remote', 'get-url', remoteName], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+}
 
 module.exports = {
     collectRemoteInput,
@@ -701,7 +697,6 @@ module.exports = {
     publishTag,
     packageName,
     currentPackageVersion,
-    gitRemoteNames,
     gitRemoteUrl,
     validateExistingPackageFile,
     assertPackageFileReadyForPlaceholderInspection,
