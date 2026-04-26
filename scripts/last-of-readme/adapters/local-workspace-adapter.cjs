@@ -39,6 +39,7 @@ function assertAtRepoRoot() {
   }
 }
 
+// Only used in user-interaction.cjs to get names in  getRemotesFromGit.
 function gitRemoteNames() {
   const output = execFileSync('git', ['remote'], {
     cwd: WORKSPACE_ROOT,
@@ -51,6 +52,7 @@ function gitRemoteNames() {
     : [];
 }
 
+// Only used in user-interaction.cjs to get the urls in  getRemotesFromGit.
 function gitRemoteUrl(remoteName) {
   return execFileSync('git', ['remote', 'get-url', remoteName], {
     cwd: WORKSPACE_ROOT,

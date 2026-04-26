@@ -50,6 +50,7 @@ function parseBooleanAnswer(value, defaultValue) {
   throw new Error('Please answer yes or no');
 }
 
+// Only used to present choices in collectRemoteInput.
 function getRemotesFromGit() {
   return gitRemoteNames().map((name) => ({
     name,
