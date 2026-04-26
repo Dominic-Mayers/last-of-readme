@@ -50,6 +50,7 @@ function assertAtRepoRoot() {
     );
   }
 }
+
 function normalizeRepositoryUrl(repository) {
   let url =
     typeof repository === 'string'

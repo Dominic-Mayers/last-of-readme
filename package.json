@@ -5,6 +5,7 @@
   "author": "Dominic Mayers",
   "license": "MIT",
   "scripts": {
+    "start": "node scripts/last-of-readme/install/install.cjs",
     "preversion": "node scripts/last-of-readme/tag-doc.cjs next-doc",
     "version": "node scripts/last-of-readme/update-readme-link.cjs && node scripts/last-of-readme/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
