@@ -83,6 +83,7 @@ function publishTag(tag, remote = remoteName()) {
 
 // Npm functions
 
+// In update-readme-link.cjs.
 function remoteConfiguration() {
   const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
   const host = getPackageJsonField('lastOfReadme.remote.host', { allowEmpty: true });
@@ -111,18 +112,6 @@ function remoteName() {
     return configuredRemoteName;
   }
   return 'origin';
-}
-
-function getPackageJsonField(field, { allowEmpty = false } = {}) {
-
-  const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
-  const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
-
-  if ((normalized === undefined || normalized === null || normalized === '') && !allowEmpty) {
-    fail(`package.json has no ${field}`);
-  }
-
-  return normalized;
 }
 
 function currentPackageVersion() {
@@ -182,30 +171,6 @@ function getCurrentFilesField() {
   return Array.isArray(files) ? files : null;
 }
 
-// Boundary-level requirement check used by installer phase logic.
-// It delegates to the lower-level file check but throws in installation
-// requirement terms.
-function validateExistingPackageFile(packageFilePath) {
-  try {
-    assertExistingReadableWritableRegularFile(packageFilePath);
-  } catch (error) {
-    throw new Error(
-      `${packageFilePath} must be an existing regular file readable and writable for Last of Readme to run`
-    );
-  }
-}
-
-// Secondary operational check (very unexpected failure)
-function assertPackageFileReadyForPlaceholderInspection(packageFilePath) {
-  try {
-    assertExistingReadableWritableRegularFile(packageFilePath);
-  } catch (error) {
-    throw new Error(
-      `Unexpected package-file access failure while inspecting the managed placeholder in ${packageFilePath}`
-    );
-  }
-}
-
 function assertPackageManifestReadableByNpm() {
   if (!fs.existsSync(PACKAGE_PATH)) {
     throw new Error('package.json must exist at the repository root');
@@ -239,6 +204,33 @@ function updatePackageJsonFields(updates) {
     }
   );
 }
+
+// Package file functions
+
+// Boundary-level requirement check used by installer phase logic.
+// It delegates to the lower-level file check but throws in installation
+// requirement terms.
+function validateExistingPackageFile(packageFilePath) {
+  try {
+    assertExistingReadableWritableRegularFile(packageFilePath);
+  } catch (error) {
+    throw new Error(
+      `${packageFilePath} must be an existing regular file readable and writable for Last of Readme to run`
+    );
+  }
+}
+
+// Secondary operational check (very unexpected failure)
+function assertPackageFileReadyForPlaceholderInspection(packageFilePath) {
+  try {
+    assertExistingReadableWritableRegularFile(packageFilePath);
+  } catch (error) {
+    throw new Error(
+      `Unexpected package-file access failure while inspecting the managed placeholder in ${packageFilePath}`
+    );
+  }
+}
+
 
 // TODO: The current check allows a parent path that exists but is a file,
 // which later causes fs.mkdirSync to fail with a low-level EEXIST error.
@@ -666,6 +658,18 @@ function normalizeRepositoryUrl(repository) {
   }
 
   fail('repository.url must point to a GitHub repository');
+}
+
+function getPackageJsonField(field, { allowEmpty = false } = {}) {
+
+  const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
+  const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
+
+  if ((normalized === undefined || normalized === null || normalized === '') && !allowEmpty) {
+    fail(`package.json has no ${field}`);
+  }
+
+  return normalized;
 }
 
 module.exports = {
