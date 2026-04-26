@@ -91,19 +91,38 @@ function normalizeRepositoryUrl(repository) {
   fail('repository.url must point to a GitHub repository');
 }
 
-function ensureGitWorkspace() {
-  try {
-    run('git rev-parse --is-inside-work-tree');
-  } catch {
-    fail('Current directory is not a Git repository');
-  }
-}
 
 function currentRepoNode() {
   ensureGitWorkspace();
   return run('git rev-parse HEAD');
 }
 
+function setTag(tag, repoNode, annotation) {
+  ensureGitWorkspace();
+
+  try {
+    run(`git rev-parse -q --verify refs/tags/${JSON.stringify(tag)}`);
+    fail(`Tag already exists: ${tag}`);
+  } catch (err) {
+    if (err.isWorkspaceApiError) {
+      throw err;
+    }
+  }
+
+  cp.execSync(
+    `git tag -a ${JSON.stringify(tag)} ${JSON.stringify(repoNode)} -m ${JSON.stringify(annotation)}`,
+    { stdio: 'inherit' }
+  );
+}
+
+function publishTag(tag, remote = remoteName()) {
+  ensureGitWorkspace();
+  cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
+    stdio: 'inherit',
+  });
+}
+
+// Npm functions
 
 function remoteConfiguration() {
   const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
@@ -134,37 +153,6 @@ function remoteName() {
   }
   return 'origin';
 }
-
-function remoteRepository() {
-  return remoteConfiguration().repository;
-}
-
-function setTag(tag, repoNode, annotation) {
-  ensureGitWorkspace();
-
-  try {
-    run(`git rev-parse -q --verify refs/tags/${JSON.stringify(tag)}`);
-    fail(`Tag already exists: ${tag}`);
-  } catch (err) {
-    if (err.isWorkspaceApiError) {
-      throw err;
-    }
-  }
-
-  cp.execSync(
-    `git tag -a ${JSON.stringify(tag)} ${JSON.stringify(repoNode)} -m ${JSON.stringify(annotation)}`,
-    { stdio: 'inherit' }
-  );
-}
-
-function publishTag(tag, remote = remoteName()) {
-  ensureGitWorkspace();
-  cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
-    stdio: 'inherit',
-  });
-}
-
-// Npm functions
 
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
 
@@ -676,6 +664,14 @@ function gitRemoteUrl(remoteName) {
   }).trim();
 }
 
+function ensureGitWorkspace() {
+  try {
+    run('git rev-parse --is-inside-work-tree');
+  } catch {
+    fail('Current directory is not a Git repository');
+  }
+}
+
 module.exports = {
     collectRemoteInput,
     collectPackageFilePathInput,
@@ -690,7 +686,6 @@ module.exports = {
     packageFilePath,
     remoteName,
     remoteConfiguration,
-    remoteRepository,
     currentRepoNode,
     readFile,
     writeFile,

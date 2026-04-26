@@ -13,7 +13,9 @@ async function main() {
   console.log('✔ Common requirements satisfied');
 
   let config = {};
+  
   config = await runRemoteCycle(config);
+  
   config = await runPackageFilePathCycle(config);
   config = await runDocLinkPlaceholderCycle(config);
 
