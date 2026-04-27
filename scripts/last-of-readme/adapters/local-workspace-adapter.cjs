@@ -41,19 +41,6 @@ function assertInGitRepository() {
   }
 }
 
-/**
- * Checks that the current working directory is the package root.
- *
- * Last of Readme expects package.json and package-file paths to be interpreted
- * from the current directory. This requirement is separate from the Git
- * repository requirement: the package root is not assumed to be the Git root.
- */
-function assertCwdIsPackageRoot() {
-  if (!fs.existsSync(PACKAGE_PATH)) {
-    throw new Error('Install must be run from the package root containing package.json');
-  }
-}
-
 function currentRepoNode() {
   ensureGitWorkspace();
   return run('git rev-parse HEAD');
@@ -85,6 +72,19 @@ function publishTag(tag, remote = remoteName()) {
 }
 
 // Package manifest
+
+/**
+ * Checks that the current working directory is the package root.
+ *
+ * Last of Readme expects package.json and package-file paths to be interpreted
+ * from the current directory. This requirement is separate from the Git
+ * repository requirement: the package root is not assumed to be the Git root.
+ */
+function assertCwdIsPackageRoot() {
+  if (!fs.existsSync(PACKAGE_PATH)) {
+    throw new Error('Install must be run from the package root containing package.json');
+  }
+}
 
 // In update-readme-link.cjs.
 function remoteConfiguration() {
@@ -663,11 +663,11 @@ function getCurrentRepositoryUrlPath() {
 module.exports = {
 // Git
     assertInGitRepository,
-    assertCwdIsPackageRoot,
     currentRepoNode,
     setTag,
     publishTag,
 // Package manifest
+    assertCwdIsPackageRoot,
     remoteConfiguration,
     currentPackageVersion,
     packageName,
