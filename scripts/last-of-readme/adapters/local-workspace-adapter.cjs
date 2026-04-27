@@ -24,30 +24,33 @@ const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
 // Git
 
-function assertGitAvailable() {
-  try {
-    gitVersion();
-  } catch (error) {
-    throw new Error('Git must be installed and available in PATH');
-  }
-}
-
+/**
+ * Checks that installation runs inside a Git repository.
+ *
+ * Last of Readme needs a repository context to:
+ *   - list and select remotes, which determine where the GitHub README is displayed
+ *   - read the current commit when tagging documentation
+ *   - create and publish documentation tags
+ */
 function assertInGitRepository() {
   try {
-    gitTopLevel();
+    gitVersion();
+    gitDirectory();
   } catch (error) {
     throw new Error('Install must be run inside a Git repository');
   }
 }
 
-function assertAtRepoRoot() {
-  const repoRoot = gitTopLevel();
-  const cwd = currentWorkingDirectory();
-
-  if (cwd !== repoRoot) {
-    throw new Error(
-      `Install must be run from the repository root.\nCurrent directory: ${cwd}\nRepository root: ${repoRoot}`
-    );
+/**
+ * Checks that the current working directory is the package root.
+ *
+ * Last of Readme expects package.json and package-file paths to be interpreted
+ * from the current directory. This requirement is separate from the Git
+ * repository requirement: the package root is not assumed to be the Git root.
+ */
+function assertCwdIsPackageRoot() {
+  if (!fs.existsSync(PACKAGE_PATH)) {
+    throw new Error('Install must be run from the package root containing package.json');
   }
 }
 
@@ -526,6 +529,14 @@ function gitVersion() {
   }).trim();
 }
 
+function gitDirectory() {
+  return execFileSync('git', ['rev-parse', '--git-dir'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
+}
+
 function gitTopLevel() {
   return execFileSync('git', ['rev-parse', '--show-toplevel'], {
     cwd: WORKSPACE_ROOT,
@@ -651,9 +662,8 @@ function getCurrentRepositoryUrlPath() {
 
 module.exports = {
 // Git
-    assertGitAvailable,
     assertInGitRepository,
-    assertAtRepoRoot,
+    assertCwdIsPackageRoot,
     currentRepoNode,
     setTag,
     publishTag,

@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 
 const {
-  assertGitAvailable,
   assertInGitRepository,
-  assertAtRepoRoot,
+  assertCwdIsPackageRoot,
   assertPackageManifestReadableByNpm,
 } = require('../adapters/local-workspace-adapter.cjs');
 
 function checkCommonRequirements() {
-  assertGitAvailable();
   assertInGitRepository();
-  assertAtRepoRoot();
+  assertCwdIsPackageRoot();
   assertPackageManifestReadableByNpm();
 }
 
