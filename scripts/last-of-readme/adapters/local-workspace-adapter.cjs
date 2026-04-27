@@ -22,7 +22,7 @@ const {
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
-// Git functions
+// Git
 
 function assertGitAvailable() {
   try {
@@ -81,7 +81,7 @@ function publishTag(tag, remote = remoteName()) {
   });
 }
 
-// Npm functions
+// Package manifest
 
 // In update-readme-link.cjs.
 function remoteConfiguration() {
@@ -177,7 +177,7 @@ function updatePackageJsonFields(updates) {
   );
 }
 
-// Package file functions
+// User interaction
 
 async function collectDocLinkPlaceholderInput(config = {}) {
   const docLink = config.docLink || {};
@@ -302,6 +302,8 @@ async function collectRemoteInput(config = {}) {
   }
 }
 
+// Package file
+
 // Boundary-level requirement check used by installer phase logic.
 // It delegates to the lower-level file check but throws in installation
 // requirement terms.
@@ -325,7 +327,6 @@ function assertPackageFileReadyForPlaceholderInspection(packageFilePath) {
     );
   }
 }
-
 
 // TODO: The current check allows a parent path that exists but is a file,
 // which later causes fs.mkdirSync to fail with a low-level EEXIST error.
@@ -656,7 +657,7 @@ module.exports = {
     currentRepoNode,
     setTag,
     publishTag,
-// Npm
+// Package manifest
     remoteConfiguration,
     currentPackageVersion,
     packageName,
@@ -665,10 +666,11 @@ module.exports = {
     getCurrentFilesField,
     assertPackageManifestReadableByNpm,
     updatePackageJsonFields,
-// Package file
+// User interaction
     collectDocLinkPlaceholderInput,
     collectPackageFilePathInput,
     collectRemoteInput,
+// Package file
     validateExistingPackageFile,
     assertPackageFileReadyForPlaceholderInspection,
     assertPackageFileCanBeCreated,
