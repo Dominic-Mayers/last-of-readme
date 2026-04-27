@@ -362,6 +362,10 @@ function readPackageFileContent(packageFilePath) {
   return fs.readFileSync(packageFilePath, 'utf8');
 }
 
+function writePackageFileContent(packageFilePath, content) {
+  fs.writeFileSync(packageFilePath, content);
+}
+
 function createPackageFileIfAbsent(packageFilePath, content) {
   const parentDir = path.dirname(packageFilePath);
   if (parentDir && parentDir !== '.') {
@@ -369,27 +373,6 @@ function createPackageFileIfAbsent(packageFilePath, content) {
   }
 
   fs.writeFileSync(packageFilePath, content, { flag: 'wx' });
-}
-
-// File system functions
-
-function readFile(relativePath) {
-  const filePath = resolveWorkspacePath(relativePath);
-  ensureFile(filePath, relativePath);
-  try {
-    return fs.readFileSync(filePath, 'utf8');
-  } catch (err) {
-    fail(`Could not read ${relativePath}: ${err.message}`);
-  }
-}
-
-function writeFile(relativePath, content) {
-  const filePath = resolveWorkspacePath(relativePath);
-  try {
-    fs.writeFileSync(filePath, content);
-  } catch (err) {
-    fail(`Could not write ${relativePath}: ${err.message}`);
-  }
 }
 
 // Private functions (adapter-zone)
@@ -664,26 +647,16 @@ function getCurrentRepositoryUrlPath() {
     : '';
 }
 
-function resolveWorkspacePath(relativePath) {
-  if (!relativePath) {
-    fail('Path is required');
-  }
-  return path.join(WORKSPACE_ROOT, relativePath);
-}
-
-function ensureFile(filePath, label) {
-  if (!fs.existsSync(filePath)) {
-    fail(`${label} not found`);
-  }
-}
 
 module.exports = {
+// Git
     assertGitAvailable,
     assertInGitRepository,
     assertAtRepoRoot,
     currentRepoNode,
     setTag,
     publishTag,
+// Npm
     remoteConfiguration,
     currentPackageVersion,
     packageName,
@@ -692,6 +665,7 @@ module.exports = {
     getCurrentFilesField,
     assertPackageManifestReadableByNpm,
     updatePackageJsonFields,
+// Package file
     collectDocLinkPlaceholderInput,
     collectPackageFilePathInput,
     collectRemoteInput,
@@ -700,7 +674,6 @@ module.exports = {
     assertPackageFileCanBeCreated,
     packageFileExists,
     readPackageFileContent,
-    createPackageFileIfAbsent,
-    readFile,
-    writeFile
+    writePackageFileContent,
+    createPackageFileIfAbsent
 };

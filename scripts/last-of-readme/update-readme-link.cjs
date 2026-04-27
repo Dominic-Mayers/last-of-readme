@@ -108,9 +108,9 @@ function main() {
 
   try {
     const link = buildResolverLink(urlPath);
-    const content = workspace.readFile(documentationPath);
+    const content = workspace.readPackageFileContent(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
-    workspace.writeFile(documentationPath, updatedContent);
+    workspace.writePackageFileContent(documentationPath, updatedContent);
     console.log(`✅ ${documentationPath} updated for version ${workspace.currentPackageVersion()}`);
   } catch (err) {
     fail(err && err.message ? err.message : String(err));
