@@ -11,14 +11,10 @@ const { automatedInstall } = require('./apply-installation.cjs');
 async function main() {
   checkCommonRequirements();
   console.log('✔ Common requirements satisfied');
-
   let config = {};
-  
   config = await runRemoteCycle(config);
-  
   config = await runPackageFilePathCycle(config);
   config = await runDocLinkPlaceholderCycle(config);
-
   automatedInstall(config);
 }
 
