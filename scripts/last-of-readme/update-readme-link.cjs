@@ -45,8 +45,8 @@ function buildResolverLink(urlPath = '') {
 
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(packageName)}` +
-    `&repo=${encodeURIComponent(remote.repository)}` +
-    `&host=${encodeURIComponent(remote.host)}` +
+    `&repositoryApiUrl=${encodeURIComponent(remote.repositoryApiUrl)}` +
+    `&repositoryBrowserUrl=${encodeURIComponent(remote.repositoryBrowserUrl)}` +
     `&v=${encodeURIComponent(version)}` +
     `&urlPath=${encodeURIComponent(urlPath)}">` +
     `<img alt="README-last of ${version}" ` +

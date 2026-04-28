@@ -1,16 +1,10 @@
 #!/usr/bin/env node
 
-const {
-  normalizeGitHubRemote,
-} = require('./utils.cjs');
-
-const {
-  gitRemoteUrl,
-} = require('../adapters/local-workspace-adapter.cjs');
-
 function collectRemoteEnvironmentInput(config = {}) {
   const localName = config?.remote?.localName;
   const repositoryUrl = config?.remote?.repositoryUrl;
+  const repositoryApiUrl = config?.remote?.repositoryApiUrl;
+  const repositoryBrowserUrl = config?.remote?.repositoryBrowserUrl;
 
   if (!localName || typeof localName !== 'string') {
     return config;
@@ -22,12 +16,21 @@ function collectRemoteEnvironmentInput(config = {}) {
       ...config.remote,
       localName,
       repositoryUrl,
+      repositoryApiUrl,
+      repositoryBrowserUrl,
     },
   };
 }
 
 function prepareRemoteEnvironmentInput(config = {}) {
-  return config;
+  return {
+    ...config,
+    remote: {
+      ...(config.remote || {}),
+      repositoryApiUrl: normalizeUrl(config?.remote?.repositoryApiUrl),
+      repositoryBrowserUrl: normalizeUrl(config?.remote?.repositoryBrowserUrl),
+    },
+  };
 }
 
 function checkRemoteRequirements(config = {}) {
@@ -43,13 +46,14 @@ function checkRemoteRequirements(config = {}) {
     throw new Error(`Selected Git remote does not exist: ${localName}`);
   }
 
-  try {
-    normalizeGitHubRemote(repositoryUrl);
-  } catch (error) {
-    throw new Error(
-      `Selected Git remote must point to GitHub or GitHub Enterprise for phase 1: ${localName} (${repositoryUrl})`
-    );
-  }
+  assertHttpUrl(
+    config?.remote?.repositoryApiUrl,
+    'A GitHub repository API URL must be provided for Last of Readme'
+  );
+  assertHttpUrl(
+    config?.remote?.repositoryBrowserUrl,
+    'A GitHub repository browser URL must be provided for Last of Readme'
+  );
 
   return config;
 }
@@ -57,16 +61,40 @@ function checkRemoteRequirements(config = {}) {
 function finalizeRemoteState(config = {}) {
   const localName = config?.remote?.localName;
   const repositoryUrl = config?.remote?.repositoryUrl;
-  const normalizedRemote = normalizeGitHubRemote(repositoryUrl);
+  const repositoryApiUrl = config?.remote?.repositoryApiUrl;
+  const repositoryBrowserUrl = config?.remote?.repositoryBrowserUrl;
 
   return {
     ...config,
     remote: {
       localName,
       repositoryUrl,
-      ...normalizedRemote,
+      kind: 'github',
+      repositoryApiUrl,
+      repositoryBrowserUrl,
     },
   };
+}
+
+function normalizeUrl(value) {
+  return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
+}
+
+function assertHttpUrl(value, message) {
+  if (!value || typeof value !== 'string') {
+    throw new Error(message);
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${message}: ${value}`);
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error(`${message}: ${value}`);
+  }
 }
 
 module.exports = {

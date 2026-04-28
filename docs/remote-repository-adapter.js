@@ -1,15 +1,22 @@
 function createRemoteRepositoryAPI(remote, urlPath = '') {
-  if (!remote || remote.kind !== 'github' || !remote.host || !remote.repository) {
-    throw new Error('A GitHub remote with host and repository is required');
+  if (!remote || remote.kind !== 'github') {
+    throw new Error('A GitHub remote is required');
   }
 
-  const webBase = `https://${remote.host}`;
-  const apiBase =
-    remote.host === 'github.com'
-      ? 'https://api.github.com'
-      : `${webBase}/api/v3`;
+  const resolvedRemote = remote.repositoryApiUrl && remote.repositoryBrowserUrl
+    ? remote
+    : legacyGitHubRemoteToUrls(remote);
 
-  const api = (path) => `${apiBase}/repos/${remote.repository}${path}`;
+  if (!resolvedRemote.repositoryApiUrl || !resolvedRemote.repositoryBrowserUrl) {
+    throw new Error(
+      'A GitHub remote with repositoryApiUrl and repositoryBrowserUrl is required'
+    );
+  }
+
+  const repositoryApiUrl = String(resolvedRemote.repositoryApiUrl).replace(/\/+$/, '');
+  const repositoryBrowserUrl = String(resolvedRemote.repositoryBrowserUrl).replace(/\/+$/, '');
+
+  const api = (path) => `${repositoryApiUrl}${path}`;
 
   async function resolveTag(tag) {
     const r = await fetch(api(`/commits/${encodeURIComponent(tag)}`));
@@ -41,7 +48,7 @@ function createRemoteRepositoryAPI(remote, urlPath = '') {
   }
 
   function browseDocumentation(target) {
-    const baseUrl = `${webBase}/${remote.repository}/tree/${encodeURIComponent(target)}`;
+    const baseUrl = `${repositoryBrowserUrl}/tree/${encodeURIComponent(target)}`;
     const normalizedPath = String(urlPath || '').replace(/^\/+/, '');
     return normalizedPath ? `${baseUrl}/${normalizedPath}` : baseUrl;
   }
@@ -50,5 +57,24 @@ function createRemoteRepositoryAPI(remote, urlPath = '') {
     resolveTag,
     branchesContaining,
     browseDocumentation,
+  };
+}
+
+
+function legacyGitHubRemoteToUrls(remote) {
+  if (!remote || !remote.host || !remote.repository) {
+    return remote;
+  }
+
+  const host = String(remote.host).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const repository = String(remote.repository).replace(/^\/+/, '').replace(/\/+$/, '');
+  const apiBase = host === 'github.com'
+    ? 'https://api.github.com'
+    : `https://${host}/api/v3`;
+
+  return {
+    kind: 'github',
+    repositoryApiUrl: `${apiBase}/repos/${repository}`,
+    repositoryBrowserUrl: `https://${host}/${repository}`,
   };
 }

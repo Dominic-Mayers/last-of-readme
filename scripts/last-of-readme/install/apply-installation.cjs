@@ -27,8 +27,8 @@ function installRemotePackageJson(config = {}) {
   setPackageJsonFields({
     'lastOfReadme.remoteName': remote.localName,
     'lastOfReadme.remote.kind': remote.kind,
-    'lastOfReadme.remote.host': remote.host,
-    'lastOfReadme.remote.repository': remote.repository,
+    'lastOfReadme.remote.repositoryApiUrl': remote.repositoryApiUrl,
+    'lastOfReadme.remote.repositoryBrowserUrl': remote.repositoryBrowserUrl,
   });
 
   return {
@@ -36,8 +36,8 @@ function installRemotePackageJson(config = {}) {
     remote: {
       localName: remote.localName,
       kind: remote.kind,
-      host: remote.host,
-      repository: remote.repository,
+      repositoryApiUrl: remote.repositoryApiUrl,
+      repositoryBrowserUrl: remote.repositoryBrowserUrl,
     },
   };
 }

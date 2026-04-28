@@ -89,24 +89,42 @@ function assertCwdIsPackageRoot() {
 // In update-readme-link.cjs.
 function remoteConfiguration() {
   const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
-  const host = getPackageJsonField('lastOfReadme.remote.host', { allowEmpty: true });
-  const repository = getPackageJsonField('lastOfReadme.remote.repository', { allowEmpty: true });
+  const repositoryApiUrl = getPackageJsonField(
+    'lastOfReadme.remote.repositoryApiUrl',
+    { allowEmpty: true }
+  );
+  const repositoryBrowserUrl = getPackageJsonField(
+    'lastOfReadme.remote.repositoryBrowserUrl',
+    { allowEmpty: true }
+  );
 
   if (kind !== undefined && kind !== null && kind !== '') {
     if (kind !== 'github') {
       fail('package.json lastOfReadme.remote.kind must be "github"');
     }
-    if (!host || !repository) {
-      fail('package.json lastOfReadme.remote must include host and repository');
+
+    if (repositoryApiUrl && repositoryBrowserUrl) {
+      return {
+        kind: 'github',
+        repositoryApiUrl: String(repositoryApiUrl),
+        repositoryBrowserUrl: String(repositoryBrowserUrl),
+      };
     }
-    return {
-      kind: 'github',
-      host: String(host),
-      repository: String(repository),
-    };
+
+    // Backward-compatible read path for manifests installed by earlier versions.
+    const host = getPackageJsonField('lastOfReadme.remote.host', { allowEmpty: true });
+    const repository = getPackageJsonField('lastOfReadme.remote.repository', { allowEmpty: true });
+
+    if (host && repository) {
+      return githubRemoteUrlsFromHostRepository(String(host), String(repository));
+    }
+
+    fail(
+      'package.json lastOfReadme.remote must include repositoryApiUrl and repositoryBrowserUrl'
+    );
   }
 
-  return normalizeRepositoryUrl(getPackageJsonField('repository'));
+  return deriveGitHubRemoteUrls(getPackageJsonField('repository'));
 }
 
 function currentPackageVersion() {
@@ -292,12 +310,50 @@ async function collectRemoteInput(config = {}) {
       defaultRemoteName
     );
 
+    const derivedRemote = selectedRemote
+      ? tryDeriveGitHubRemoteUrls(selectedRemote.url)
+      : null;
+
+    const defaultRepositoryApiUrl =
+      getCurrentRepositoryApiUrl() ||
+      (derivedRemote ? derivedRemote.repositoryApiUrl : '');
+    const defaultRepositoryBrowserUrl =
+      getCurrentRepositoryBrowserUrl() ||
+      (derivedRemote ? derivedRemote.repositoryBrowserUrl : '');
+
+    const repositoryApiUrlAnswer = await ask(
+      rl,
+      formatPromptWithDefault(
+        'GitHub repository API URL',
+        defaultRepositoryApiUrl
+      )
+    );
+    const repositoryBrowserUrlAnswer = await ask(
+      rl,
+      formatPromptWithDefault(
+        'GitHub repository browser URL',
+        defaultRepositoryBrowserUrl
+      )
+    );
+
+    const repositoryApiUrl = resolveCollectedUrlAnswer(
+      repositoryApiUrlAnswer,
+      defaultRepositoryApiUrl
+    );
+    const repositoryBrowserUrl = resolveCollectedUrlAnswer(
+      repositoryBrowserUrlAnswer,
+      defaultRepositoryBrowserUrl
+    );
+
     return {
       ...config,
       remote: {
         ...(config.remote || {}),
         localName: selectedRemote ? selectedRemote.name : null,
         repositoryUrl: selectedRemote ? selectedRemote.url : null,
+        kind: 'github',
+        repositoryApiUrl,
+        repositoryBrowserUrl,
       },
     };
   } finally {
@@ -507,6 +563,22 @@ function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
   return normalizeOptionalText(repositoryUrlPathAnswer);
 }
 
+function tryDeriveGitHubRemoteUrls(repositoryUrl) {
+  try {
+    return deriveGitHubRemoteUrls(repositoryUrl);
+  } catch {
+    return null;
+  }
+}
+
+function formatPromptWithDefault(label, defaultValue) {
+  return defaultValue ? `${label} [${defaultValue}]: ` : `${label}: `;
+}
+
+function resolveCollectedUrlAnswer(answer, defaultValue) {
+  return normalizeOptionalText(answer) || defaultValue || '';
+}
+
 function fail(message) {
   const error = new Error(message);
   error.isWorkspaceApiError = true;
@@ -577,7 +649,7 @@ function ensureGitWorkspace() {
   }
 }
 
-function normalizeRepositoryUrl(repository) {
+function deriveGitHubRemoteUrls(repository) {
   let url =
     typeof repository === 'string'
       ? repository
@@ -601,20 +673,35 @@ function normalizeRepositoryUrl(repository) {
 
   let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
   if (match) {
-    return { kind: 'github', host: match[1], repository: match[2] };
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
   }
 
   match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
   if (match) {
-    return { kind: 'github', host: match[1], repository: match[2] };
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
   }
 
   match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
   if (match) {
-    return { kind: 'github', host: match[1], repository: match[2] };
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
   }
 
   fail('repository.url must point to a GitHub repository');
+}
+
+function githubRemoteUrlsFromHostRepository(host, repository) {
+  const normalizedHost = String(host).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const normalizedRepository = String(repository).replace(/^\/+/, '').replace(/\/+$/, '');
+  const apiBase =
+    normalizedHost === 'github.com'
+      ? 'https://api.github.com'
+      : `https://${normalizedHost}/api/v3`;
+
+  return {
+    kind: 'github',
+    repositoryApiUrl: `${apiBase}/repos/${normalizedRepository}`,
+    repositoryBrowserUrl: `https://${normalizedHost}/${normalizedRepository}`,
+  };
 }
 
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
@@ -649,6 +736,30 @@ function getCurrentInstalledPackageFilePath() {
     : null;
 }
 
+function getCurrentRepositoryApiUrl() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return '';
+  }
+
+  const remote = lastOfReadme.remote;
+  return remote && typeof remote.repositoryApiUrl === 'string'
+    ? remote.repositoryApiUrl
+    : '';
+}
+
+function getCurrentRepositoryBrowserUrl() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return '';
+  }
+
+  const remote = lastOfReadme.remote;
+  return remote && typeof remote.repositoryBrowserUrl === 'string'
+    ? remote.repositoryBrowserUrl
+    : '';
+}
+
 function getCurrentRepositoryUrlPath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
   if (!lastOfReadme || typeof lastOfReadme !== 'object') {
@@ -676,6 +787,7 @@ module.exports = {
     getCurrentFilesField,
     assertPackageManifestReadableByNpm,
     updatePackageJsonFields,
+    deriveGitHubRemoteUrls,
 // User interaction
     collectDocLinkPlaceholderInput,
     collectPackageFilePathInput,

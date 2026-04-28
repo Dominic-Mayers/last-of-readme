@@ -24,8 +24,8 @@
     "remoteName": "origin",
     "remote": {
       "kind": "github",
-      "host": "github.com",
-      "repository": "Dominic-Mayers/last-of-readme"
+      "repositoryApiUrl": "https://api.github.com/repos/Dominic-Mayers/last-of-readme",
+      "repositoryBrowserUrl": "https://github.com/Dominic-Mayers/last-of-readme"
     },
     "packageFilePath": "README.md",
     "repositoryUrlPath": ""
