@@ -143,6 +143,20 @@ function packageFilePath() {
   return value;
 }
 
+/**
+ * Returns the path, relative to the remote repository root, where the package
+ * documentation should be browsed once the resolver has selected a commit.
+ *
+ * This is not the local package-file path. It is the remote URL path component
+ * appended to the repository browser URL and selected commit. The value may be
+ * empty when the documentation file is at the repository root, which is the
+ * common README case.
+ *
+ * In Last of Readme, this separates two environment facts that often coincide
+ * but need not:
+ *   - the package file modified locally during installation/version bumps;
+ *   - the path used remotely to browse the documentation at a resolved commit.
+ */
 function repositoryUrlPath() {
   const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
 
@@ -292,6 +306,20 @@ async function collectPackageFilePathInput(config = {}) {
   }
 }
 
+/**
+ * Collects the remote information that will be written to Last of Readme's
+ * package-manifest configuration.
+ *
+ * The selected Git remote is not itself the authoritative configuration value.
+ * It is used as an environment-derived hint from which Last of Readme proposes
+ * default GitHub URLs. The user-confirmed repository API URL and repository
+ * browser URL are the values that define the installed remote contract.
+ *
+ * This distinction matters because the local Git remote may use a transport
+ * form that is convenient for Git, such as SSH, while the resolver needs HTTP
+ * endpoints: one URL for GitHub-compatible API access and one base URL for
+ * browsing the selected documentation commit.
+ */
 async function collectRemoteInput(config = {}) {
   const remotes = getRemotesFromGit();
   const defaultRemoteName = chooseDefaultRemoteName(remotes);
