@@ -1,6 +1,6 @@
 # Last of README 
 
-[![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repo=Dominic-Mayers%2Flast-of-readme&host=github.com&v=0.1.40&urlPath="><img alt="README-last of 0.1.40" src="https://img.shields.io/badge/README-last%20of%200.1.40-blue?logo=github"></a><!-- DOC-LINK-END -->
+[![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&repositoryApiUrl=https%3A%2F%2Fapi.github.com%2Frepos%2FDominic-Mayers%2Flast-of-readme&repositoryBrowserUrl=https%3A%2F%2Fgithub.com%2FDominic-Mayers%2Flast-of-readme&v=0.1.41&urlPath="><img alt="README-last of 0.1.41" src="https://img.shields.io/badge/README-last%20of%200.1.41-blue?logo=github"></a><!-- DOC-LINK-END -->
 
 By default, a package version is expected to contain its correct documentation, but in practice there is no guarantee that documentation is complete or even correct at release time.
 
