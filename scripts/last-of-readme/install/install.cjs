@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { checkCommonRequirements } = require('./common-requirements.cjs');
+const { checkCommonRequirements } = require('./basic-requirements.cjs');
 const { runRemoteCycle } = require('./repository-url-phase.cjs');
 const { runPackageFilePathCycle } = require('./package-file-path-phase.cjs');
 const {
