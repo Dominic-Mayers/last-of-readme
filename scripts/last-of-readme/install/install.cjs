@@ -2,6 +2,9 @@
 
 const { checkCommonRequirements } = require('./basic-requirements.cjs');
 const { runRemoteCycle } = require('./repository-url-phase.cjs');
+const {
+  runCwdPackageRootCycle,
+} = require('./cwd-package-root-phase.cjs');
 const { runPackageFilePathCycle } = require('./package-file-path-phase.cjs');
 const {
   runDocLinkPlaceholderCycle,
@@ -12,6 +15,7 @@ async function main() {
   checkCommonRequirements();
   console.log('✔ Common requirements satisfied');
   let config = {};
+  config = runCwdPackageRootCycle(config);
   config = await runRemoteCycle(config);
   config = await runPackageFilePathCycle(config);
   config = await runDocLinkPlaceholderCycle(config);

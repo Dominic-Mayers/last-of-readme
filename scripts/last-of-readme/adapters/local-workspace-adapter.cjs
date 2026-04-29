@@ -80,9 +80,16 @@ function publishTag(tag, remote = remoteName()) {
  * from the current directory. This requirement is separate from the Git
  * repository requirement: the package root is not assumed to be the Git root.
  */
-function assertCwdIsPackageRoot() {
-  if (!fs.existsSync(PACKAGE_PATH)) {
-    throw new Error('Install must be run from the package root containing package.json');
+function assertCwdIsPackageRoot(cwd = currentWorkingDirectory(), packageRoot = npmPackageRoot()) {
+  const resolvedCwd = path.resolve(cwd);
+  const resolvedPackageRoot = path.resolve(packageRoot);
+
+  if (resolvedCwd !== resolvedPackageRoot) {
+    throw new Error(
+      `Install must be run from the npm package root.\n` +
+      `Current working directory: ${resolvedCwd}\n` +
+      `npm package root: ${resolvedPackageRoot}`
+    );
   }
 }
 
@@ -143,20 +150,6 @@ function packageFilePath() {
   return value;
 }
 
-/**
- * Returns the path, relative to the remote repository root, where the package
- * documentation should be browsed once the resolver has selected a commit.
- *
- * This is not the local package-file path. It is the remote URL path component
- * appended to the repository browser URL and selected commit. The value may be
- * empty when the documentation file is at the repository root, which is the
- * common README case.
- *
- * In Last of Readme, this separates two environment facts that often coincide
- * but need not:
- *   - the package file modified locally during installation/version bumps;
- *   - the path used remotely to browse the documentation at a resolved commit.
- */
 function repositoryUrlPath() {
   const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
 
@@ -306,20 +299,6 @@ async function collectPackageFilePathInput(config = {}) {
   }
 }
 
-/**
- * Collects the remote information that will be written to Last of Readme's
- * package-manifest configuration.
- *
- * The selected Git remote is not itself the authoritative configuration value.
- * It is used as an environment-derived hint from which Last of Readme proposes
- * default GitHub URLs. The user-confirmed repository API URL and repository
- * browser URL are the values that define the installed remote contract.
- *
- * This distinction matters because the local Git remote may use a transport
- * form that is convenient for Git, such as SSH, while the resolver needs HTTP
- * endpoints: one URL for GitHub-compatible API access and one base URL for
- * browsing the selected documentation commit.
- */
 async function collectRemoteInput(config = {}) {
   const remotes = getRemotesFromGit();
   const defaultRemoteName = chooseDefaultRemoteName(remotes);
@@ -649,6 +628,20 @@ function currentWorkingDirectory() {
   return process.cwd();
 }
 
+function npmPackageRoot() {
+  try {
+    return execFileSync('npm', ['prefix'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    }).trim();
+  } catch (error) {
+    const detail = error && error.stderr ? String(error.stderr).trim() : '';
+    const suffix = detail ? `\n${detail}` : '';
+    throw new Error(`Could not determine the npm package root${suffix}`);
+  }
+}
+
 function gitRemoteNames() {
   const output = execFileSync('git', ['remote'], {
     cwd: WORKSPACE_ROOT,
@@ -805,8 +798,11 @@ module.exports = {
     currentRepoNode,
     setTag,
     publishTag,
-// Package manifest
+// File system
+    currentWorkingDirectory,
+    npmPackageRoot,
     assertCwdIsPackageRoot,
+// Package manifest
     remoteConfiguration,
     currentPackageVersion,
     packageName,
