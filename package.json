@@ -1,6 +1,6 @@
 {
   "name": "@dominic.mayers/last-of-readme",
-  "version": "0.1.42",
+  "version": "0.1.43",
   "description": "Resolve README to last relevant commit based on npm version",
   "author": "Dominic Mayers",
   "license": "MIT",
