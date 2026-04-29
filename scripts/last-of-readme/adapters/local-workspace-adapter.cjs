@@ -24,7 +24,34 @@ const {
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
-// Git
+// Section: File system
+
+function currentWorkingDirectory() {
+  return process.cwd();
+}
+
+/**
+ * Checks that the current working directory is the package root.
+ *
+ * Last of Readme expects package.json and package-file paths to be interpreted
+ * from the current directory. This requirement is separate from the Git
+ * repository requirement: the package root is not assumed to be the Git root.
+ */
+function assertCwdIsPackageRoot(cwd = currentWorkingDirectory(), packageRoot = npmPackageRoot()) {
+  const resolvedCwd = path.resolve(cwd);
+  const resolvedPackageRoot = path.resolve(packageRoot);
+
+  if (resolvedCwd !== resolvedPackageRoot) {
+    throw new Error(
+      `Install must be run from the npm package root.\n` +
+      `Current working directory: ${resolvedCwd}\n` +
+      `npm package root: ${resolvedPackageRoot}`
+    );
+  }
+}
+
+
+// Section: Git
 
 /**
  * Checks that installation runs inside a Git repository.
@@ -73,25 +100,19 @@ function publishTag(tag, remote = remoteName()) {
   });
 }
 
-// Package manifest
+// Section: Package manifest
 
-/**
- * Checks that the current working directory is the package root.
- *
- * Last of Readme expects package.json and package-file paths to be interpreted
- * from the current directory. This requirement is separate from the Git
- * repository requirement: the package root is not assumed to be the Git root.
- */
-function assertCwdIsPackageRoot(cwd = currentWorkingDirectory(), packageRoot = npmPackageRoot()) {
-  const resolvedCwd = path.resolve(cwd);
-  const resolvedPackageRoot = path.resolve(packageRoot);
-
-  if (resolvedCwd !== resolvedPackageRoot) {
-    throw new Error(
-      `Install must be run from the npm package root.\n` +
-      `Current working directory: ${resolvedCwd}\n` +
-      `npm package root: ${resolvedPackageRoot}`
-    );
+function npmPackageRoot() {
+  try {
+    return execFileSync('npm', ['prefix'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    }).trim();
+  } catch (error) {
+    const detail = error && error.stderr ? String(error.stderr).trim() : '';
+    const suffix = detail ? `\n${detail}` : '';
+    throw new Error(`Could not determine the npm package root${suffix}`);
   }
 }
 
@@ -207,7 +228,7 @@ function updatePackageJsonFields(updates) {
   );
 }
 
-// User interaction
+// Section User interaction
 
 async function collectDocLinkPlaceholderInput(config = {}) {
   const docLink = config.docLink || {};
@@ -364,7 +385,7 @@ async function collectRemoteInput(config = {}) {
   }
 }
 
-// Package file
+// Section: Package file
 
 // Boundary-level requirement check used by installer phase logic.
 // It delegates to the lower-level file check but throws in installation
@@ -438,7 +459,7 @@ function createPackageFileIfAbsent(packageFilePath, content) {
   fs.writeFileSync(packageFilePath, content, { flag: 'wx' });
 }
 
-// Private functions (adapter-zone)
+// Section: Private (adapter-zone)
 
 function createInterface() {
   return readline.createInterface({
@@ -566,14 +587,6 @@ function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
   return normalizeOptionalText(repositoryUrlPathAnswer);
 }
 
-function tryDeriveGitHubRemoteUrls(repositoryUrl) {
-  try {
-    return deriveGitHubRemoteUrls(repositoryUrl);
-  } catch {
-    return null;
-  }
-}
-
 function formatPromptWithDefault(label, defaultValue) {
   return defaultValue ? `${label} [${defaultValue}]: ` : `${label}: `;
 }
@@ -618,24 +631,6 @@ function gitTopLevel() {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
   }).trim();
-}
-
-function currentWorkingDirectory() {
-  return process.cwd();
-}
-
-function npmPackageRoot() {
-  try {
-    return execFileSync('npm', ['prefix'], {
-      cwd: WORKSPACE_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    }).trim();
-  } catch (error) {
-    const detail = error && error.stderr ? String(error.stderr).trim() : '';
-    const suffix = detail ? `\n${detail}` : '';
-    throw new Error(`Could not determine the npm package root${suffix}`);
-  }
 }
 
 function gitRemoteNames() {
@@ -787,18 +782,25 @@ function getCurrentRepositoryUrlPath() {
     : '';
 }
 
+function tryDeriveGitHubRemoteUrls(repositoryUrl) {
+  try {
+    return deriveGitHubRemoteUrls(repositoryUrl);
+  } catch {
+    return null;
+  }
+}
 
 module.exports = {
+// File system
+    currentWorkingDirectory,
+    assertCwdIsPackageRoot,
 // Git
     assertInGitRepository,
     currentRepoNode,
     setTag,
     publishTag,
-// File system
-    currentWorkingDirectory,
-    npmPackageRoot,
-    assertCwdIsPackageRoot,
 // Package manifest
+    npmPackageRoot,
     remoteConfiguration,
     currentPackageVersion,
     packageName,
@@ -807,7 +809,6 @@ module.exports = {
     getCurrentFilesField,
     assertPackageManifestReadableByNpm,
     updatePackageJsonFields,
-    deriveGitHubRemoteUrls,
 // User interaction
     collectDocLinkPlaceholderInput,
     collectPackageFilePathInput,
@@ -821,3 +822,5 @@ module.exports = {
     writePackageFileContent,
     createPackageFileIfAbsent
 };
+
+
