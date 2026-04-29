@@ -12,6 +12,8 @@ const {
 } = require('../install/utils.cjs'); 
 const {
   askRemoteChoice,
+  askRepositoryApiUrl,
+  askRepositoryBrowserUrl,
   askPackageFilePath,
   askRepositoryUrlPath,
   askRemovePreviousPackageFile,
@@ -328,20 +330,14 @@ async function collectRemoteInput(config = {}) {
       getCurrentRepositoryBrowserUrl() ||
       (derivedRemote ? derivedRemote.repositoryBrowserUrl : '');
 
-    const repositoryApiUrlAnswer = await ask(
-      rl,
-      formatPromptWithDefault(
-        'GitHub repository API URL',
-        defaultRepositoryApiUrl
-      )
-    );
-    const repositoryBrowserUrlAnswer = await ask(
-      rl,
-      formatPromptWithDefault(
-        'GitHub repository browser URL',
-        defaultRepositoryBrowserUrl
-      )
-    );
+    const repositoryApiUrlAnswer = await askRepositoryApiUrl({
+      askQuestion: (question) => ask(rl, question),
+      defaultRepositoryApiUrl,
+    });
+    const repositoryBrowserUrlAnswer = await askRepositoryBrowserUrl({
+      askQuestion: (question) => ask(rl, question),
+      defaultRepositoryBrowserUrl,
+    });
 
     const repositoryApiUrl = resolveCollectedUrlAnswer(
       repositoryApiUrlAnswer,

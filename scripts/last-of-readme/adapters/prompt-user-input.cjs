@@ -16,6 +16,29 @@ async function askRemoteChoice({
   return askQuestion(question);
 }
 
+
+async function askRepositoryApiUrl({
+  askQuestion,
+  defaultRepositoryApiUrl,
+}) {
+  const question = defaultRepositoryApiUrl
+    ? `Repository API URL [${defaultRepositoryApiUrl}]: `
+    : 'Repository API URL: ';
+
+  return askQuestion(question);
+}
+
+async function askRepositoryBrowserUrl({
+  askQuestion,
+  defaultRepositoryBrowserUrl,
+}) {
+  const question = defaultRepositoryBrowserUrl
+    ? `Repository browser URL [${defaultRepositoryBrowserUrl}]: `
+    : 'Repository browser URL: ';
+
+  return askQuestion(question);
+}
+
 async function askPackageFilePath({
   askQuestion,
   defaultPackageFilePath,
@@ -78,6 +101,8 @@ async function askCreateMinimalPackageFile({ askQuestion }) {
 
 module.exports = {
   askRemoteChoice,
+  askRepositoryApiUrl,
+  askRepositoryBrowserUrl,
   askPackageFilePath,
   askRepositoryUrlPath,
   askRemovePreviousPackageFile,
