@@ -1,17 +1,22 @@
 #!/usr/bin/env node
 
 const {
-  collectCwdPackageRootEnvironmentInput,
+  collectNpmPackageRootEnvironmentInput,
+} = require('./npm-step-logic.cjs');
+const {
+  collectCwdEnvironmentInput,
   prepareCwdPackageRootEnvironmentInput,
   checkCwdPackageRootRequirements,
   finalizeCwdPackageRootState,
-} = require('./cwd-package-root-interaction.cjs');
+} = require('./filesystem-step-logic.cjs');
 
 function runCwdPackageRootCycle(config = {}) {
-  const configWithCollectedEnvironmentInput =
-    collectCwdPackageRootEnvironmentInput(config);
+  const configWithCollectedNpmInput =
+    collectNpmPackageRootEnvironmentInput(config);
+  const configWithCollectedFilesystemInput =
+    collectCwdEnvironmentInput(configWithCollectedNpmInput);
   const configWithCleanedEnvironmentInput =
-    prepareCwdPackageRootEnvironmentInput(configWithCollectedEnvironmentInput);
+    prepareCwdPackageRootEnvironmentInput(configWithCollectedFilesystemInput);
   const configWithCheckedRequirements =
     checkCwdPackageRootRequirements(configWithCleanedEnvironmentInput);
 

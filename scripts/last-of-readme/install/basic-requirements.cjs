@@ -2,8 +2,10 @@
 
 const {
   assertInGitRepository,
+} = require('../adapters/git-adapter.cjs');
+const {
   assertPackageManifestReadableByNpm,
-} = require('../adapters/local-workspace-adapter.cjs');
+} = require('../adapters/npm-adapter.cjs');
 
 function checkCommonRequirements() {
   assertInGitRepository();

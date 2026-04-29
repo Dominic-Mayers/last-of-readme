@@ -3,9 +3,11 @@
 const {
   getCurrentFilesField,
   updatePackageJsonFields,
+} = require('../adapters/npm-adapter.cjs');
+const {
   createPackageFileIfAbsent,
-} = require('../adapters/local-workspace-adapter.cjs');
-const { START_MARKER, END_MARKER } = require('./package-file-interaction.cjs');
+} = require('../adapters/filesystem-adapter.cjs');
+const { START_MARKER, END_MARKER } = require('./filesystem-step-logic.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);

@@ -8,11 +8,12 @@ const {
   collectRemoteInput,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
-} = require('../adapters/local-workspace-adapter.cjs');
+} = require('../adapters/user-input-adapter.cjs');
 
 function prepareRemoteInput(config = {}) {
   return config;
 }
+
 function resolvePackageFilePathFromCollectedInput({
   packageFilePathAnswer,
   defaultPackageFilePath,

@@ -3,13 +3,13 @@
 const {
   collectDocLinkPlaceholderInput,
   prepareDocLinkPlaceholderInput,
-} = require('./user-interaction.cjs');
+} = require('./user-input-step-logic.cjs');
 const {
   collectDocLinkPlaceholderEnvironmentInput,
   prepareDocLinkPlaceholderEnvironmentInput,
   checkDocLinkPlaceholderRequirements,
   finalizeDocLinkPlaceholderState,
-} = require('./package-file-interaction.cjs');
+} = require('./filesystem-step-logic.cjs');
 
 async function runDocLinkPlaceholderCycle(config = {}) {
   const configWithCollectedUserInput =

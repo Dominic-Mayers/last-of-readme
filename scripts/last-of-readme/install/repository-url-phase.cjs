@@ -3,13 +3,13 @@
 const {
   collectRemoteInput,
   prepareRemoteInput,
-} = require('./user-interaction.cjs');
+} = require('./user-input-step-logic.cjs');
 const {
   collectRemoteEnvironmentInput,
   prepareRemoteEnvironmentInput,
   checkRemoteRequirements,
   finalizeRemoteState,
-} = require('./repository-url-interaction.cjs');
+} = require('./git-step-logic.cjs');
 
 async function runRemoteCycle(config = {}) {
   const configWithCollectedUserInput = await collectRemoteInput(config);
