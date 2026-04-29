@@ -11,7 +11,7 @@ const {
   finalizeRemoteState,
 } = require('./git-step-logic.cjs');
 
-async function runRemoteCycle(config = {}) {
+async function checkGitRemote(config = {}) {
   const configWithCollectedUserInput = await collectRemoteInput(config);
   const configWithCleanedUserInput =
     prepareRemoteInput(configWithCollectedUserInput);
@@ -26,5 +26,5 @@ async function runRemoteCycle(config = {}) {
 }
 
 module.exports = {
-  runRemoteCycle,
+  checkGitRemote,
 };

@@ -11,7 +11,7 @@ const {
   finalizePackageFilePathState,
 } = require('./filesystem-step-logic.cjs');
 
-async function runPackageFilePathCycle(config = {}) {
+async function checkPackageFilePath(config = {}) {
   const configWithCollectedUserInput = await collectPackageFilePathInput(config);
   const configWithCleanedUserInput =
     preparePackageFilePathInput(configWithCollectedUserInput);
@@ -26,5 +26,5 @@ async function runPackageFilePathCycle(config = {}) {
 }
 
 module.exports = {
-  runPackageFilePathCycle,
+  checkPackageFilePath,
 };

@@ -10,7 +10,7 @@ const {
   finalizeCwdPackageRootState,
 } = require('./filesystem-step-logic.cjs');
 
-function runCwdPackageRootCycle(config = {}) {
+function checkCwdIsPackageRoot(config = {}) {
   const configWithCollectedNpmInput =
     collectNpmPackageRootEnvironmentInput(config);
   const configWithCollectedFilesystemInput =
@@ -24,5 +24,5 @@ function runCwdPackageRootCycle(config = {}) {
 }
 
 module.exports = {
-  runCwdPackageRootCycle,
+  checkCwdIsPackageRoot,
 };

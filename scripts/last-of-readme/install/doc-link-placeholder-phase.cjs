@@ -11,7 +11,7 @@ const {
   finalizeDocLinkPlaceholderState,
 } = require('./filesystem-step-logic.cjs');
 
-async function runDocLinkPlaceholderCycle(config = {}) {
+async function checkDocLinkPlaceholder(config = {}) {
   const configWithCollectedUserInput =
     await collectDocLinkPlaceholderInput(config);
   const configWithCleanedUserInput =
@@ -29,5 +29,5 @@ async function runDocLinkPlaceholderCycle(config = {}) {
 }
 
 module.exports = {
-  runDocLinkPlaceholderCycle,
+  checkDocLinkPlaceholder,
 };

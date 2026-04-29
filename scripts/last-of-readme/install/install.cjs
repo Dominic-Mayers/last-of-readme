@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 const { checkCommonRequirements } = require('./basic-requirements.cjs');
-const { runRemoteCycle } = require('./repository-url-phase.cjs');
+const { checkGitRemote } = require('./repository-url-phase.cjs');
 const {
-  runCwdPackageRootCycle,
+  checkCwdIsPackageRoot,
 } = require('./cwd-package-root-phase.cjs');
-const { runPackageFilePathCycle } = require('./package-file-path-phase.cjs');
+const { checkPackageFilePath } = require('./package-file-path-phase.cjs');
 const {
-  runDocLinkPlaceholderCycle,
+  checkDocLinkPlaceholder,
 } = require('./doc-link-placeholder-phase.cjs');
 const { automatedInstall } = require('./apply-installation.cjs');
 
@@ -15,10 +15,10 @@ async function main() {
   checkCommonRequirements();
   console.log('✔ Common requirements satisfied');
   let config = {};
-  config = runCwdPackageRootCycle(config);
-  config = await runRemoteCycle(config);
-  config = await runPackageFilePathCycle(config);
-  config = await runDocLinkPlaceholderCycle(config);
+  config = checkCwdIsPackageRoot(config);
+  config = await checkGitRemote(config);
+  config = await checkPackageFilePath(config);
+  config = await checkDocLinkPlaceholder(config);
   automatedInstall(config);
 }
 
