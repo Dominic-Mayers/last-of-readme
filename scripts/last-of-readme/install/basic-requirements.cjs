@@ -7,11 +7,11 @@ const {
   assertPackageManifestReadableByNpm,
 } = require('../adapters/npm-adapter.cjs');
 
-function checkCommonRequirements() {
+function checkBasicRequirements() {
   assertInGitRepository();
   assertPackageManifestReadableByNpm();
 }
 
 module.exports = {
-  checkCommonRequirements,
+  checkBasicRequirements,
 };

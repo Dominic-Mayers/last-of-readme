@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { checkCommonRequirements } = require('./basic-requirements.cjs');
+const { checkBasicRequirements } = require('./basic-requirements.cjs');
 const { checkGitRemote } = require('./check-git-remote.cjs');
 const {
   checkCwdIsPackageRoot,
@@ -12,7 +12,7 @@ const {
 const { automatedInstall } = require('./apply-installation.cjs');
 
 async function main() {
-  checkCommonRequirements();
+  checkBasicRequirements();
   console.log('✔ Common requirements satisfied');
   let config = {};
   config = checkCwdIsPackageRoot(config);
