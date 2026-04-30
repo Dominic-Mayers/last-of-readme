@@ -135,9 +135,9 @@ function remoteName() {
 }
 
 module.exports = {
-  assertInGitRepository,
-  currentRepoNode,
-  setTag,
-  publishTag,
-  getRemotesFromGit,
+    assertInGitRepository,
+    currentRepoNode,
+    setTag,
+    publishTag,
+    getRemotesFromGit,
 };

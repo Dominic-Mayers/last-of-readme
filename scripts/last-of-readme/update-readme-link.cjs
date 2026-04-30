@@ -4,7 +4,18 @@
 // Must NOT depend on target repository hosting
 const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
 
-const workspace = require('./adapters/local-workspace-adapter.cjs');
+const { 
+    packageFilePath,
+    repositoryUrlPath,
+    currentPackageVersion,
+    packageName,
+    remoteConfiguration 
+} = require('./adapters/npm-adapter.cjs');
+
+const {
+    readPackageFileContent,
+    writePackageFileContent
+} = require('./adapters/filesystem-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
@@ -33,18 +44,18 @@ function resolveInputs() {
   }
 
   return {
-    documentationPath: workspace.packageFilePath(),
-    urlPath: workspace.repositoryUrlPath(),
+    documentationPath: packageFilePath(),
+    urlPath: repositoryUrlPath(),
   };
 }
 
 function buildResolverLink(urlPath = '') {
-  const version = workspace.currentPackageVersion();
-  const packageName = workspace.packageName();
-  const remote = workspace.remoteConfiguration();
+  const version = currentPackageVersion();
+  const pckName = packageName();
+  const remote  = remoteConfiguration();
 
   return (
-    `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(packageName)}` +
+    `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(pckName)}` +
     `&repositoryApiUrl=${encodeURIComponent(remote.repositoryApiUrl)}` +
     `&repositoryBrowserUrl=${encodeURIComponent(remote.repositoryBrowserUrl)}` +
     `&v=${encodeURIComponent(version)}` +
@@ -108,10 +119,10 @@ function main() {
 
   try {
     const link = buildResolverLink(urlPath);
-    const content = workspace.readPackageFileContent(documentationPath);
+    const content = readPackageFileContent(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
-    workspace.writePackageFileContent(documentationPath, updatedContent);
-    console.log(`✅ ${documentationPath} updated for version ${workspace.currentPackageVersion()}`);
+    writePackageFileContent(documentationPath, updatedContent);
+    console.log(`✅ ${documentationPath} updated for version ${currentPackageVersion()}`);
   } catch (err) {
     fail(err && err.message ? err.message : String(err));
   }

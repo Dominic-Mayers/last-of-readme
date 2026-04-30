@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-const workspace = require('./adapters/local-workspace-adapter.cjs');
+const { currentPackageVersion } = require('./adapters/npm-adapter.cjs');
+
+const { 
+    setTag,
+    publishTag,
+    currentRepoNode
+} = require('./adapters/git-adapter.cjs');
 
 const ALLOWED_KINDS = new Set(['last-doc', 'next-doc']);
 
@@ -36,15 +42,15 @@ function annotationFor(kind, version) {
 function main() {
   try {
     const { kind, push } = parseArgs(process.argv);
-    const version = workspace.currentPackageVersion();
-    const repoNode = workspace.currentRepoNode();
+    const version = currentPackageVersion();
+    const repoNode = currentRepoNode();
     const tag = `v${version}-${kind}`;
 
-    workspace.setTag(tag, repoNode, annotationFor(kind, version));
+    setTag(tag, repoNode, annotationFor(kind, version));
     console.log(`✅ Created tag ${tag}`);
 
     if (push) {
-      workspace.publishTag(tag);
+      publishTag(tag);
       console.log(`✅ Pushed tag ${tag}`);
     } else {
       console.log('ℹ️ Tag not pushed');

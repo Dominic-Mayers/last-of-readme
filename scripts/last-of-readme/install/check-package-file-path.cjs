@@ -3,26 +3,23 @@
 const {
   collectPackageFilePathInput,
   preparePackageFilePathInput,
-} = require('./user-input-step-logic.cjs');
+} = require('./step-logic-user-input.cjs');
 const {
   collectPackageFilePathEnvironmentInput,
   preparePackageFilePathEnvironmentInput,
   checkPackageFilePathRequirements,
   finalizePackageFilePathState,
-} = require('./filesystem-step-logic.cjs');
+} = require('./step-logic-filesystem.cjs');
 
 async function checkPackageFilePath(config = {}) {
-  const configWithCollectedUserInput = await collectPackageFilePathInput(config);
-  const configWithCleanedUserInput =
-    preparePackageFilePathInput(configWithCollectedUserInput);
-  const configWithCollectedEnvironmentInput =
-    collectPackageFilePathEnvironmentInput(configWithCleanedUserInput);
-  const configWithCleanedEnvironmentInput =
-    preparePackageFilePathEnvironmentInput(configWithCollectedEnvironmentInput);
-  const configWithCheckedRequirements =
-    checkPackageFilePathRequirements(configWithCleanedEnvironmentInput);
 
-  return finalizePackageFilePathState(configWithCheckedRequirements);
+  config = await collectPackageFilePathInput(config);
+  config = preparePackageFilePathInput(config);
+  config = collectPackageFilePathEnvironmentInput(config);
+  config = preparePackageFilePathEnvironmentInput(config);
+  config = checkPackageFilePathRequirements(config);
+
+  return finalizePackageFilePathState(config);
 }
 
 module.exports = {

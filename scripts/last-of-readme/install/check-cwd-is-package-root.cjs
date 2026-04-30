@@ -2,25 +2,22 @@
 
 const {
   collectNpmPackageRootEnvironmentInput,
-} = require('./npm-step-logic.cjs');
+} = require('./step-logic-npm.cjs');
 const {
   collectCwdEnvironmentInput,
   prepareCwdPackageRootEnvironmentInput,
   checkCwdPackageRootRequirements,
   finalizeCwdPackageRootState,
-} = require('./filesystem-step-logic.cjs');
+} = require('./step-logic-filesystem.cjs');
 
 function checkCwdIsPackageRoot(config = {}) {
-  const configWithCollectedNpmInput =
-    collectNpmPackageRootEnvironmentInput(config);
-  const configWithCollectedFilesystemInput =
-    collectCwdEnvironmentInput(configWithCollectedNpmInput);
-  const configWithCleanedEnvironmentInput =
-    prepareCwdPackageRootEnvironmentInput(configWithCollectedFilesystemInput);
-  const configWithCheckedRequirements =
-    checkCwdPackageRootRequirements(configWithCleanedEnvironmentInput);
 
-  return finalizeCwdPackageRootState(configWithCheckedRequirements);
+  config = collectNpmPackageRootEnvironmentInput(config);
+  config = collectCwdEnvironmentInput(config);
+  config = prepareCwdPackageRootEnvironmentInput(config);
+  config = checkCwdPackageRootRequirements(config);
+
+  return finalizeCwdPackageRootState(config);
 }
 
 module.exports = {

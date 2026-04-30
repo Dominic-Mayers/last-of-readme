@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { spawnSync } = require('child_process');
-const workspace = require('./last-of-readme/adapters/local-workspace-adapter.cjs');
+const { packageFilePath } = require('./last-of-readme/adapters/npm-adapter.cjs');
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -9,9 +9,9 @@ function fail(message) {
 }
 
 function main() {
-  const packageFilePath = workspace.packageFilePath();
+  const pckFilePath = packageFilePath();
 
-  const result = spawnSync('git', ['add', packageFilePath], {
+  const result = spawnSync('git', ['add', pckFilePath], {
     stdio: 'inherit',
   });
 

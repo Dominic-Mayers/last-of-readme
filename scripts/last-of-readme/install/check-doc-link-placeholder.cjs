@@ -3,29 +3,23 @@
 const {
   collectDocLinkPlaceholderInput,
   prepareDocLinkPlaceholderInput,
-} = require('./user-input-step-logic.cjs');
+} = require('./step-logic-user-input.cjs');
 const {
   collectDocLinkPlaceholderEnvironmentInput,
   prepareDocLinkPlaceholderEnvironmentInput,
   checkDocLinkPlaceholderRequirements,
   finalizeDocLinkPlaceholderState,
-} = require('./filesystem-step-logic.cjs');
+} = require('./step-logic-filesystem.cjs');
 
 async function checkDocLinkPlaceholder(config = {}) {
-  const configWithCollectedUserInput =
-    await collectDocLinkPlaceholderInput(config);
-  const configWithCleanedUserInput =
-    prepareDocLinkPlaceholderInput(configWithCollectedUserInput);
-  const configWithCollectedEnvironmentInput =
-    collectDocLinkPlaceholderEnvironmentInput(configWithCleanedUserInput);
-  const configWithCleanedEnvironmentInput =
-    prepareDocLinkPlaceholderEnvironmentInput(
-      configWithCollectedEnvironmentInput
-    );
-  const configWithCheckedRequirements =
-    checkDocLinkPlaceholderRequirements(configWithCleanedEnvironmentInput);
 
-  return finalizeDocLinkPlaceholderState(configWithCheckedRequirements);
+  config = await collectDocLinkPlaceholderInput(config);
+  config = prepareDocLinkPlaceholderInput(config);
+  config = collectDocLinkPlaceholderEnvironmentInput(config);
+  config = prepareDocLinkPlaceholderEnvironmentInput(config);
+  config = checkDocLinkPlaceholderRequirements(config);
+  
+  return finalizeDocLinkPlaceholderState(config);
 }
 
 module.exports = {

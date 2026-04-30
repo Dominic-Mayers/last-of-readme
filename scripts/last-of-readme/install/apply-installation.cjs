@@ -7,7 +7,7 @@ const {
 const {
   createPackageFileIfAbsent,
 } = require('../adapters/filesystem-adapter.cjs');
-const { START_MARKER, END_MARKER } = require('./filesystem-step-logic.cjs');
+const { START_MARKER, END_MARKER } = require('./step-logic-filesystem.cjs');
 
 function automatedInstall(config) {
   installDocLink(config);

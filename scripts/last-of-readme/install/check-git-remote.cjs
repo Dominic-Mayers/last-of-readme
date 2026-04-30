@@ -3,26 +3,23 @@
 const {
   collectRemoteInput,
   prepareRemoteInput,
-} = require('./user-input-step-logic.cjs');
+} = require('./step-logic-user-input.cjs');
 const {
   collectRemoteEnvironmentInput,
   prepareRemoteEnvironmentInput,
   checkRemoteRequirements,
   finalizeRemoteState,
-} = require('./git-step-logic.cjs');
+} = require('./step-logic-git.cjs');
 
 async function checkGitRemote(config = {}) {
-  const configWithCollectedUserInput = await collectRemoteInput(config);
-  const configWithCleanedUserInput =
-    prepareRemoteInput(configWithCollectedUserInput);
-  const configWithCollectedEnvironmentInput =
-    collectRemoteEnvironmentInput(configWithCleanedUserInput);
-  const configWithCleanedEnvironmentInput =
-    prepareRemoteEnvironmentInput(configWithCollectedEnvironmentInput);
-  const configWithCheckedRequirements =
-    checkRemoteRequirements(configWithCleanedEnvironmentInput);
 
-  return finalizeRemoteState(configWithCheckedRequirements);
+  config = await collectRemoteInput(config);
+  config = prepareRemoteInput(config);
+  config = collectRemoteEnvironmentInput(config);
+  config = prepareRemoteEnvironmentInput(config);
+  config = checkRemoteRequirements(config);
+
+  return finalizeRemoteState(config);
 }
 
 module.exports = {
