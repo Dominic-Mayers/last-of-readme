@@ -11,20 +11,15 @@ function currentWorkingDirectory() {
 }
 
 /**
- * Checks that the current working directory is the package root.
+ * Checks that the process current working directory is the npm package root.
  *
- * This filesystem adapter receives the package root as an input from the npm
- * authority. It crosses only the filesystem/process boundary by reading the
- * current working directory.
- *
- * TODO architecture:
- * The current compatibility signature still accepts an explicit cwd as the
- * first argument because the previous phase logic collected it explicitly.
- * After callers are migrated, prefer assertCwdIsPackageRoot(packageRoot) and
- * obtain cwd only through currentWorkingDirectory().
+ * The package root is supplied by the npm side of the installer pipeline. This
+ * adapter crosses only the filesystem/process boundary: it reads the current
+ * working directory itself and compares that filesystem fact with the npm fact
+ * already collected by the phase orchestrator.
  */
-function assertCwdIsPackageRoot(cwd = currentWorkingDirectory(), packageRoot) {
-  const resolvedCwd = path.resolve(cwd);
+function assertCwdIsPackageRoot(packageRoot) {
+  const resolvedCwd = path.resolve(currentWorkingDirectory());
   const resolvedPackageRoot = path.resolve(packageRoot);
 
   if (resolvedCwd !== resolvedPackageRoot) {

@@ -4,7 +4,6 @@ const path = require('path');
 const { normalizePackageFilePath } = require('./utils.cjs');
 
 const {
-  currentWorkingDirectory,
   assertCwdIsPackageRoot,
   validateExistingPackageFile,
   assertPackageFileReadyForPlaceholderInspection,
@@ -18,25 +17,12 @@ const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
-function collectCwdEnvironmentInput(config = {}) {
-  return {
-    ...config,
-    _cwdPackageRootEnvironmentInput: {
-      ...(config._cwdPackageRootEnvironmentInput || {}),
-      currentWorkingDirectoryAnswer: currentWorkingDirectory(),
-    },
-  };
-}
-
 function prepareCwdPackageRootEnvironmentInput(config = {}) {
   const environmentInput = config._cwdPackageRootEnvironmentInput || {};
 
   return {
     ...config,
     _cwdPackageRootEnvironmentInput: {
-      currentWorkingDirectory: path.resolve(
-        String(environmentInput.currentWorkingDirectoryAnswer || '')
-      ),
       npmPackageRoot: path.resolve(
         String(environmentInput.npmPackageRootAnswer || '')
       ),
@@ -47,10 +33,7 @@ function prepareCwdPackageRootEnvironmentInput(config = {}) {
 function checkCwdPackageRootRequirements(config = {}) {
   const environmentInput = config._cwdPackageRootEnvironmentInput || {};
 
-  assertCwdIsPackageRoot(
-    environmentInput.currentWorkingDirectory,
-    environmentInput.npmPackageRoot
-  );
+  assertCwdIsPackageRoot(environmentInput.npmPackageRoot);
 
   return config;
 }
@@ -310,7 +293,6 @@ module.exports = {
   END_MARKER,
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
-  collectCwdEnvironmentInput,
   prepareCwdPackageRootEnvironmentInput,
   checkCwdPackageRootRequirements,
   finalizeCwdPackageRootState,
