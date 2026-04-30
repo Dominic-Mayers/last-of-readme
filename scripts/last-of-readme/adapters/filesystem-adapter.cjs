@@ -14,9 +14,11 @@ function currentWorkingDirectory() {
  * Checks that the process current working directory is the npm package root.
  *
  * The package root is supplied by the npm side of the installer pipeline. This
- * adapter crosses only the filesystem/process boundary: it reads the current
- * working directory itself and compares that filesystem fact with the npm fact
- * already collected by the phase orchestrator.
+ * adapter crosses only the filesystem/process boundary.
+ *
+ * @remarks This assertion and code using it should eventually be replaced by 
+ * direct uses of packageRoot to resolve paths more reliably, avoiding implicit
+ * reliance on process cwd.      
  */
 function assertCwdIsPackageRoot(packageRoot) {
   const resolvedCwd = path.resolve(currentWorkingDirectory());
