@@ -30,7 +30,7 @@ function prepareCwdPackageRootEnvironmentInput(config = {}) {
   };
 }
 
-function checkCwdPackageRootRequirements(config = {}) {
+function checkCwdIsPackageRootRequirements(config = {}) {
   const environmentInput = config._cwdPackageRootEnvironmentInput || {};
 
   assertCwdIsPackageRoot(environmentInput.npmPackageRoot);
@@ -294,7 +294,7 @@ module.exports = {
   EXAMPLE_START_MARKER,
   EXAMPLE_END_MARKER,
   prepareCwdPackageRootEnvironmentInput,
-  checkCwdPackageRootRequirements,
+  checkCwdIsPackageRootRequirements,
   finalizeCwdPackageRootState,
   validatePackageFilePath,
   validateWritableBaseDirectoryForNewFile: assertPackageFileCanBeCreated,
