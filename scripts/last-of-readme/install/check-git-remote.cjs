@@ -7,7 +7,7 @@ const {
 const {
   collectRemoteEnvironmentInput,
   prepareRemoteEnvironmentInput,
-  checkRemoteRequirements,
+  checkGitRemoteRequirements,
   finalizeRemoteState,
 } = require('./step-logic-git.cjs');
 
@@ -17,7 +17,7 @@ async function checkGitRemote(config = {}) {
   config = prepareRemoteInput(config);
   config = collectRemoteEnvironmentInput(config);
   config = prepareRemoteEnvironmentInput(config);
-  config = checkRemoteRequirements(config);
+  config = checkGitRemoteRequirements(config);
 
   return finalizeRemoteState(config);
 }

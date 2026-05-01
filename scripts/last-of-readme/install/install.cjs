@@ -13,7 +13,7 @@ const { automatedInstall } = require('./apply-installation.cjs');
 
 async function main() {
   checkBasicRequirements();
-  console.log('✔ Common requirements satisfied');
+  console.log('✔ Basic requirements satisfied');
   let config = {};
   config = checkCwdIsPackageRoot(config);
   config = await checkGitRemote(config);

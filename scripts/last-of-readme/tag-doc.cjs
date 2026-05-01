@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
-const { currentPackageVersion } = require('./adapters/npm-adapter.cjs');
+const { 
+    currentPackageVersion,
+    configuredRemoteName
+} = require('./adapters/npm-adapter.cjs');
 
 const { 
     setTag,
@@ -50,7 +53,8 @@ function main() {
     console.log(`✅ Created tag ${tag}`);
 
     if (push) {
-      publishTag(tag);
+      remote = configuredRemoteName(); 
+      publishTag(tag, remote);
       console.log(`✅ Pushed tag ${tag}`);
     } else {
       console.log('ℹ️ Tag not pushed');

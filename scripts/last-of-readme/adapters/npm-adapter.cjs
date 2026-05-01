@@ -8,6 +8,24 @@ const { runNpmPkg } = require('../runNpmPkg.cjs');
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
+function configuredRemoteName() {
+  // TODO architecture:
+  // This reads npm/package configuration to find a Git remote name. It is kept
+  // here to preserve behavior while the tag publishing flow is separated into
+  // explicit npm and git steps.
+  const { getPackageJsonField } = require('./npm-adapter.cjs');
+  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
+    allowEmpty: true,
+  });
+
+  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
+    return configuredRemoteName;
+  }
+
+  fail('No Last of Readme remoteName configured in package.json');
+}
+
+
 function npmPackageRoot() {
   try {
     return execFileSync('npm', ['prefix'], {
@@ -259,6 +277,7 @@ function fail(message) {
 }
 
 module.exports = {
+  configuredRemoteName,
   npmPackageRoot,
   remoteConfiguration,
   currentPackageVersion,
@@ -273,6 +292,5 @@ module.exports = {
   getCurrentRepositoryBrowserUrl,
   getCurrentRepositoryUrlPath,
   deriveGitHubRemoteUrls,
-  tryDeriveGitHubRemoteUrls,
-  getPackageJsonField,
+  tryDeriveGitHubRemoteUrls
 };

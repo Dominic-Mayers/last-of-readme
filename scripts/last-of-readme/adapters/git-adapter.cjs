@@ -117,23 +117,6 @@ function ensureGitWorkspace() {
   }
 }
 
-function remoteName() {
-  // TODO architecture:
-  // This reads npm/package configuration to find a Git remote name. It is kept
-  // here to preserve behavior while the tag publishing flow is separated into
-  // explicit npm and git steps.
-  const { getPackageJsonField } = require('./npm-adapter.cjs');
-  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
-    allowEmpty: true,
-  });
-
-  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
-    return configuredRemoteName;
-  }
-
-  fail('No Last of Readme remoteName configured in package.json');
-}
-
 module.exports = {
     assertInGitRepository,
     currentRepoNode,

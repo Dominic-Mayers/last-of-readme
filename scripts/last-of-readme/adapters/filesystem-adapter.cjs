@@ -6,10 +6,6 @@ const {
   assertExistingReadableWritableRegularFile,
 } = require('../install/utils.cjs');
 
-function currentWorkingDirectory() {
-  return process.cwd();
-}
-
 /**
  * Checks that the process current working directory is the npm package root.
  *
@@ -21,7 +17,7 @@ function currentWorkingDirectory() {
  * reliance on process cwd.      
  */
 function assertCwdIsPackageRoot(packageRoot) {
-  const resolvedCwd = path.resolve(currentWorkingDirectory());
+  const resolvedCwd = path.resolve(process.cwd());
   const resolvedPackageRoot = path.resolve(packageRoot);
 
   if (resolvedCwd !== resolvedPackageRoot) {
@@ -106,7 +102,6 @@ function createPackageFileIfAbsent(packageFilePath, content) {
 }
 
 module.exports = {
-  currentWorkingDirectory,
   assertCwdIsPackageRoot,
   validateExistingPackageFile,
   assertPackageFileReadyForPlaceholderInspection,

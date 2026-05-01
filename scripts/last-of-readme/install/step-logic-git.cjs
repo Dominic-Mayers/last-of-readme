@@ -33,7 +33,7 @@ function prepareRemoteEnvironmentInput(config = {}) {
   };
 }
 
-function checkRemoteRequirements(config = {}) {
+function checkGitRemoteRequirements(config = {}) {
   const localName = config?.remote?.localName;
 
   if (!localName || typeof localName !== 'string') {
@@ -100,6 +100,6 @@ function assertHttpUrl(value, message) {
 module.exports = {
   collectRemoteEnvironmentInput,
   prepareRemoteEnvironmentInput,
-  checkRemoteRequirements,
+  checkGitRemoteRequirements,
   finalizeRemoteState,
 };
