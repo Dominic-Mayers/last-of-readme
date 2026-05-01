@@ -53,7 +53,7 @@ function main() {
     console.log(`✅ Created tag ${tag}`);
 
     if (push) {
-      remote = configuredRemoteName(); 
+      const remote = configuredRemoteName(); 
       publishTag(tag, remote);
       console.log(`✅ Pushed tag ${tag}`);
     } else {
