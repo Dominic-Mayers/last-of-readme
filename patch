@@ -1,0 +1,194 @@
+diff --git a/scripts/last-of-readme/adapters/filesystem-adapter.cjs b/scripts/last-of-readme/adapters/filesystem-adapter.cjs
+index 7e16593..7ee268d 100644
+--- a/scripts/last-of-readme/adapters/filesystem-adapter.cjs
++++ b/scripts/last-of-readme/adapters/filesystem-adapter.cjs
+@@ -6,10 +6,6 @@ const {
+   assertExistingReadableWritableRegularFile,
+ } = require('../install/utils.cjs');
+ 
+-function currentWorkingDirectory() {
+-  return process.cwd();
+-}
+-
+ /**
+  * Checks that the process current working directory is the npm package root.
+  *
+@@ -21,7 +17,7 @@ function currentWorkingDirectory() {
+  * reliance on process cwd.      
+  */
+ function assertCwdIsPackageRoot(packageRoot) {
+-  const resolvedCwd = path.resolve(currentWorkingDirectory());
++  const resolvedCwd = path.resolve(process.cwd());
+   const resolvedPackageRoot = path.resolve(packageRoot);
+ 
+   if (resolvedCwd !== resolvedPackageRoot) {
+@@ -106,7 +102,6 @@ function createPackageFileIfAbsent(packageFilePath, content) {
+ }
+ 
+ module.exports = {
+-  currentWorkingDirectory,
+   assertCwdIsPackageRoot,
+   validateExistingPackageFile,
+   assertPackageFileReadyForPlaceholderInspection,
+diff --git a/scripts/last-of-readme/adapters/git-adapter.cjs b/scripts/last-of-readme/adapters/git-adapter.cjs
+index e269d42..8954b76 100644
+--- a/scripts/last-of-readme/adapters/git-adapter.cjs
++++ b/scripts/last-of-readme/adapters/git-adapter.cjs
+@@ -45,7 +45,7 @@ function setTag(tag, repoNode, annotation) {
+   );
+ }
+ 
+-function publishTag(tag, remote = remoteName()) {
++function publishTag(tag, remote) {
+   ensureGitWorkspace();
+   cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
+     stdio: 'inherit',
+@@ -117,23 +117,6 @@ function ensureGitWorkspace() {
+   }
+ }
+ 
+-function remoteName() {
+-  // TODO architecture:
+-  // This reads npm/package configuration to find a Git remote name. It is kept
+-  // here to preserve behavior while the tag publishing flow is separated into
+-  // explicit npm and git steps.
+-  const { getPackageJsonField } = require('./npm-adapter.cjs');
+-  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
+-    allowEmpty: true,
+-  });
+-
+-  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
+-    return configuredRemoteName;
+-  }
+-
+-  fail('No Last of Readme remoteName configured in package.json');
+-}
+-
+ module.exports = {
+     assertInGitRepository,
+     currentRepoNode,
+diff --git a/scripts/last-of-readme/adapters/npm-adapter.cjs b/scripts/last-of-readme/adapters/npm-adapter.cjs
+index 2e0e07b..cc0d2a3 100644
+--- a/scripts/last-of-readme/adapters/npm-adapter.cjs
++++ b/scripts/last-of-readme/adapters/npm-adapter.cjs
+@@ -8,6 +8,23 @@ const { runNpmPkg } = require('../runNpmPkg.cjs');
+ const WORKSPACE_ROOT = process.cwd();
+ const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
+ 
++function configuredRemoteName() {
++  // TODO architecture:
++  // This reads npm/package configuration to find a Git remote name. It is kept
++  // here to preserve behavior while the tag publishing flow is separated into
++  // explicit npm and git steps.
++  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
++    allowEmpty: true,
++  });
++
++  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
++    return configuredRemoteName;
++  }
++
++  fail('No Last of Readme remoteName configured in package.json');
++}
++
++
+ function npmPackageRoot() {
+   try {
+     return execFileSync('npm', ['prefix'], {
+@@ -259,6 +276,7 @@ function fail(message) {
+ }
+ 
+ module.exports = {
++  configuredRemoteName,
+   npmPackageRoot,
+   remoteConfiguration,
+   currentPackageVersion,
+@@ -273,6 +291,5 @@ module.exports = {
+   getCurrentRepositoryBrowserUrl,
+   getCurrentRepositoryUrlPath,
+   deriveGitHubRemoteUrls,
+-  tryDeriveGitHubRemoteUrls,
+-  getPackageJsonField,
++  tryDeriveGitHubRemoteUrls
+ };
+diff --git a/scripts/last-of-readme/install/check-git-remote.cjs b/scripts/last-of-readme/install/check-git-remote.cjs
+index b5b6ea1..0fd90dc 100644
+--- a/scripts/last-of-readme/install/check-git-remote.cjs
++++ b/scripts/last-of-readme/install/check-git-remote.cjs
+@@ -7,7 +7,7 @@ const {
+ const {
+   collectRemoteEnvironmentInput,
+   prepareRemoteEnvironmentInput,
+-  checkRemoteRequirements,
++  checkGitRemoteRequirements,
+   finalizeRemoteState,
+ } = require('./step-logic-git.cjs');
+ 
+@@ -17,7 +17,7 @@ async function checkGitRemote(config = {}) {
+   config = prepareRemoteInput(config);
+   config = collectRemoteEnvironmentInput(config);
+   config = prepareRemoteEnvironmentInput(config);
+-  config = checkRemoteRequirements(config);
++  config = checkGitRemoteRequirements(config);
+ 
+   return finalizeRemoteState(config);
+ }
+diff --git a/scripts/last-of-readme/install/install.cjs b/scripts/last-of-readme/install/install.cjs
+index aa9c2c2..605808e 100644
+--- a/scripts/last-of-readme/install/install.cjs
++++ b/scripts/last-of-readme/install/install.cjs
+@@ -13,7 +13,7 @@ const { automatedInstall } = require('./apply-installation.cjs');
+ 
+ async function main() {
+   checkBasicRequirements();
+-  console.log('✔ Common requirements satisfied');
++  console.log('✔ Basic requirements satisfied');
+   let config = {};
+   config = checkCwdIsPackageRoot(config);
+   config = await checkGitRemote(config);
+diff --git a/scripts/last-of-readme/install/step-logic-git.cjs b/scripts/last-of-readme/install/step-logic-git.cjs
+index 29310a6..a109368 100644
+--- a/scripts/last-of-readme/install/step-logic-git.cjs
++++ b/scripts/last-of-readme/install/step-logic-git.cjs
+@@ -33,7 +33,7 @@ function prepareRemoteEnvironmentInput(config = {}) {
+   };
+ }
+ 
+-function checkRemoteRequirements(config = {}) {
++function checkGitRemoteRequirements(config = {}) {
+   const localName = config?.remote?.localName;
+ 
+   if (!localName || typeof localName !== 'string') {
+@@ -100,6 +100,6 @@ function assertHttpUrl(value, message) {
+ module.exports = {
+   collectRemoteEnvironmentInput,
+   prepareRemoteEnvironmentInput,
+-  checkRemoteRequirements,
++  checkGitRemoteRequirements,
+   finalizeRemoteState,
+ };
+diff --git a/scripts/last-of-readme/tag-doc.cjs b/scripts/last-of-readme/tag-doc.cjs
+index 8e761a9..15d4158 100644
+--- a/scripts/last-of-readme/tag-doc.cjs
++++ b/scripts/last-of-readme/tag-doc.cjs
+@@ -1,6 +1,9 @@
+ #!/usr/bin/env node
+ 
+-const { currentPackageVersion } = require('./adapters/npm-adapter.cjs');
++const { 
++    currentPackageVersion,
++    configuredRemoteName
++} = require('./adapters/npm-adapter.cjs');
+ 
+ const { 
+     setTag,
+@@ -50,7 +53,8 @@ function main() {
+     console.log(`✅ Created tag ${tag}`);
+ 
+     if (push) {
+-      publishTag(tag);
++      remote = configuredRemoteName(); 
++      publishTag(tag, remote);
+       console.log(`✅ Pushed tag ${tag}`);
+     } else {
+       console.log('ℹ️ Tag not pushed');
