@@ -13,7 +13,6 @@ function configuredRemoteName() {
   // This reads npm/package configuration to find a Git remote name. It is kept
   // here to preserve behavior while the tag publishing flow is separated into
   // explicit npm and git steps.
-  const { getPackageJsonField } = require('./npm-adapter.cjs');
   const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
     allowEmpty: true,
   });

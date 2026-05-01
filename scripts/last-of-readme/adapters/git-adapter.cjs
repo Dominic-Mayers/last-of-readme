@@ -45,7 +45,7 @@ function setTag(tag, repoNode, annotation) {
   );
 }
 
-function publishTag(tag, remote = remoteName()) {
+function publishTag(tag, remote) {
   ensureGitWorkspace();
   cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
     stdio: 'inherit',
