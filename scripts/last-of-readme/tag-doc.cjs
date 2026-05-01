@@ -6,9 +6,8 @@ const {
 } = require('./adapters/npm-adapter.cjs');
 
 const { 
-    setTag,
-    publishTag,
-    currentRepoNode
+    setTagAtCurrentCommit,
+    publishTag
 } = require('./adapters/git-adapter.cjs');
 
 const ALLOWED_KINDS = new Set(['last-doc', 'next-doc']);
@@ -46,10 +45,9 @@ function main() {
   try {
     const { kind, push } = parseArgs(process.argv);
     const version = currentPackageVersion();
-    const repoNode = currentRepoNode();
     const tag = `v${version}-${kind}`;
 
-    setTag(tag, repoNode, annotationFor(kind, version));
+    setTagAtCurrentCommit(tag, annotationFor(kind, version));
     console.log(`✅ Created tag ${tag}`);
 
     if (push) {

@@ -36,21 +36,12 @@ function assertInGitRepository() {
 }
 
 /**
- * Returns the repository node to which documentation tags should be attached.
- */
-function currentRepoNode() {
-  ensureGitWorkspace();
-  return run('git rev-parse HEAD');
-}
-
-/**
- * Creates an annotated documentation tag at the supplied repository node.
+ * Creates an annotated documentation tag at the current repository commit.
  *
  * @param {string} tag - Must not already exist in the local repository.
- * @param {string} repoNode - Git object or revision to tag.
  * @param {string} annotation - Annotation message stored in the annotated tag.
  */
-function setTag(tag, repoNode, annotation) {
+function setTagAtCurrentCommit(tag, annotation) {
   ensureGitWorkspace();
 
   try {
@@ -63,7 +54,7 @@ function setTag(tag, repoNode, annotation) {
   }
 
   cp.execSync(
-    `git tag -a ${JSON.stringify(tag)} ${JSON.stringify(repoNode)} -m ${JSON.stringify(annotation)}`,
+    `git tag -a ${JSON.stringify(tag)} -m ${JSON.stringify(annotation)}`,
     { stdio: 'inherit' }
   );
 }
@@ -151,8 +142,7 @@ function ensureGitWorkspace() {
 
 module.exports = {
     assertInGitRepository,
-    currentRepoNode,
-    setTag,
+    setTagAtCurrentCommit,
     publishTag,
     getRemotesFromGit,
 };
