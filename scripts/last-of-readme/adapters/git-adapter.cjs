@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const cp = require('child_process');
 const { execFileSync } = require('child_process');
 
 const WORKSPACE_ROOT = process.cwd();
@@ -24,14 +23,22 @@ function assertInGitRepository() {
 
 function currentRepoNode() {
   ensureGitWorkspace();
-  return run('git rev-parse HEAD');
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: WORKSPACE_ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  }).trim();
 }
 
 function setTag(tag, repoNode, annotation) {
   ensureGitWorkspace();
 
   try {
-    run(`git rev-parse -q --verify refs/tags/${JSON.stringify(tag)}`);
+    execFileSync('git', ['rev-parse', '-q', '--verify', `refs/tags/${tag}`], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
     fail(`Tag already exists: ${tag}`);
   } catch (err) {
     if (err.isWorkspaceApiError) {
@@ -39,15 +46,16 @@ function setTag(tag, repoNode, annotation) {
     }
   }
 
-  cp.execSync(
-    `git tag -a ${JSON.stringify(tag)} ${JSON.stringify(repoNode)} -m ${JSON.stringify(annotation)}`,
-    { stdio: 'inherit' }
-  );
+  execFileSync('git', ['tag', '-a', tag, repoNode, '-m', annotation], {
+    cwd: WORKSPACE_ROOT,
+    stdio: 'inherit',
+  });
 }
 
 function publishTag(tag, remote) {
   ensureGitWorkspace();
-  cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
+  execFileSync('git', ['push', remote, tag], {
+    cwd: WORKSPACE_ROOT,
     stdio: 'inherit',
   });
 }
@@ -63,14 +71,6 @@ function fail(message) {
   const error = new Error(message);
   error.isWorkspaceApiError = true;
   throw error;
-}
-
-function run(command, options = {}) {
-  return cp.execSync(command, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
-  }).trim();
 }
 
 function gitVersion() {
@@ -111,7 +111,11 @@ function gitRemoteUrl(remoteName) {
 
 function ensureGitWorkspace() {
   try {
-    run('git rev-parse --is-inside-work-tree');
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
   } catch {
     fail('Current directory is not a Git repository');
   }
