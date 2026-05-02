@@ -15,9 +15,6 @@ const {
   askCreateMinimalPackageFile,
 } = require('./prompt-user-input.cjs');
 const {
-  getRemotesFromGit,
-} = require('./git-adapter.cjs');
-const {
   getCurrentFilesField,
   getCurrentInstalledPackageFilePath,
   getCurrentRepositoryApiUrl,
@@ -27,10 +24,10 @@ const {
 } = require('./npm-adapter.cjs');
 
 // TODO architecture:
-// These collection adapters still obtain defaults and choices from git/npm in
-// order to preserve current behavior. Later, phases should collect those inputs
-// from the git/npm step logic and pass them into user-input step logic before
-// these prompt-only adapters are called.
+// These collection adapters still obtain some defaults from npm in order to
+// preserve current behavior. Later, phases should collect those inputs from
+// npm step logic and pass them into user-input step logic before these
+// prompt-only adapters are called.
 
 async function collectDocLinkPlaceholderInput(config = {}) {
   const docLink = config.docLink || {};
@@ -125,8 +122,14 @@ async function collectPackageFilePathInput(config = {}) {
 }
 
 async function collectRemoteInput(config = {}) {
-  const remotes = getRemotesFromGit();
-  const defaultRemoteName = chooseDefaultRemoteName(remotes);
+  const remotes = Array.isArray(config?.remote?.availableRemotes)
+    ? config.remote.availableRemotes
+    : [];
+  const configuredRemoteName = config?.remote?.configuredRemoteName;
+  const defaultRemoteName = chooseDefaultRemoteName(
+    remotes,
+    configuredRemoteName
+  );
   const rl = createInterface();
 
   try {
@@ -216,7 +219,14 @@ function parseBooleanAnswer(value, defaultValue) {
   throw new Error('Please answer yes or no');
 }
 
-function chooseDefaultRemoteName(remotes) {
+function chooseDefaultRemoteName(remotes, configuredRemoteName = '') {
+  if (
+    typeof configuredRemoteName === 'string' &&
+    remotes.some(({ name }) => name === configuredRemoteName)
+  ) {
+    return configuredRemoteName;
+  }
+
   if (remotes.length === 1) {
     return remotes[0].name;
   }

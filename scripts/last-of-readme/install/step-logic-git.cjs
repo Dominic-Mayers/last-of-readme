@@ -2,7 +2,18 @@
 
 const {
   assertCanDryRunPublishTag,
+  getRemotesFromGit,
 } = require('../adapters/git-adapter.cjs');
+
+function collectGitRemotesEnvironmentInput(config = {}) {
+  return {
+    ...config,
+    remote: {
+      ...(config.remote || {}),
+      availableRemotes: getRemotesFromGit(),
+    },
+  };
+}
 
 function collectRemoteEnvironmentInput(config = {}) {
   const localName = config?.remote?.localName;
@@ -104,6 +115,7 @@ function assertHttpUrl(value, message) {
 }
 
 module.exports = {
+  collectGitRemotesEnvironmentInput,
   collectRemoteEnvironmentInput,
   prepareRemoteEnvironmentInput,
   checkGitRemoteRequirements,
