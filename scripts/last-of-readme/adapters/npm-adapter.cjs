@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * Adapter over npm and the package manifest used by Last of Readme.
+ * Adapter over npm used by Last of Readme.
  *
  * The exported operations assume that npm is available and can read its
  * configuration values. This is checked as a basic requirements 
  * assertPackageManifestReadableByNpm().
  *
  */
-
+ 
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -18,11 +18,34 @@ const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
 /**
+ * Asserts that npm can read the package manifest, part of basic requirements.
+ *
+ * @remarks Simple environmental probe with no Last-of-Readme-specific
+ * requirements.
+ */
+function assertPackageManifestReadableByNpm() {
+  if (!fs.existsSync(PACKAGE_PATH)) {
+    throw new Error('package.json must exist at the repository root');
+  }
+
+  try {
+    execFileSync('npm', ['pkg', 'get', 'version'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+  } catch (error) {
+    const detail = error && error.stderr ? String(error.stderr).trim() : '';
+    const suffix = detail ? `\n${detail}` : '';
+    throw new Error(
+      `npm must recognize package.json as the package manifest in this repository${suffix}`
+    );
+  }
+}
+
+/**
  * Returns the remote name installed in package.json. Used for tag publication
  * by tag-doc.cjs and to determine the default in collectRemoteEnvironmentInput.
- *
- * @remarks Requires installation to have written lastOfReadme.remoteName in the
- * package manifest.
  */
 function configuredRemoteName() {
   // TODO architecture:
@@ -40,15 +63,19 @@ function configuredRemoteName() {
   fail('No Last of Readme remoteName configured in package.json');
 }
 
-
 /**
- * Collects the npm package root for collectNpmPackageRootEnvironmentInput().
+ * Collects the npm package root for package-relative path resolution.
+ *
+ * Used currently by collectNpmPackageRootEnvironmentInput() to support
+ * checkCwdIsPackageRootRequirements(). Longer term, this package root should
+ * anchor direct resolution of package-relative paths without relying on
+ * process cwd.
  *
  * @remarks Simple npm environmental probe with no Last-of-Readme-specific
  * configuration requirements beyond the module-level package-manifest
  * expectation.
  */
-function npmPackageRoot() {
+ function npmPackageRoot() {
   try {
     return execFileSync('npm', ['prefix'], {
       cwd: WORKSPACE_ROOT,
@@ -180,32 +207,6 @@ function repositoryUrlPath() {
 function getCurrentFilesField() {
   const files = getPackageJsonField('files', { allowEmpty: true });
   return Array.isArray(files) ? files : null;
-}
-
-/**
- * Asserts that npm can read the package manifest, part of basic requirements.
- *
- * @remarks Simple environmental probe with no Last-of-Readme-specific
- * requirements.
- */
-function assertPackageManifestReadableByNpm() {
-  if (!fs.existsSync(PACKAGE_PATH)) {
-    throw new Error('package.json must exist at the repository root');
-  }
-
-  try {
-    execFileSync('npm', ['pkg', 'get', 'version'], {
-      cwd: WORKSPACE_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    });
-  } catch (error) {
-    const detail = error && error.stderr ? String(error.stderr).trim() : '';
-    const suffix = detail ? `\n${detail}` : '';
-    throw new Error(
-      `npm must recognize package.json as the package manifest in this repository${suffix}`
-    );
-  }
 }
 
 /**
