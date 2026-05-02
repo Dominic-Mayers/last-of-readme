@@ -89,6 +89,79 @@ function getRemotesFromGit() {
   }));
 }
 
+
+/**
+ * Verifies that a Git remote accepts temporary tag publication and deletion.
+ *
+ * @param {string} remote - Git remote to probe with a temporary tag.
+ */
+function assertCanPublishAndDeleteProbeTag(remote) {
+  ensureGitWorkspace();
+  ensureCurrentCommitExists();
+
+  const probeTag = `last-of-readme-probe-${Date.now()}-${process.pid}`;
+  let localTagCreated = false;
+  let remoteTagCreated = false;
+  let remoteTagDeleted = false;
+  let failure = null;
+
+  try {
+    execFileSync('git', ['tag', probeTag], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+    localTagCreated = true;
+
+    execFileSync('git', ['push', remote, probeTag], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+    remoteTagCreated = true;
+
+    execFileSync('git', ['push', remote, `:refs/tags/${probeTag}`], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+    remoteTagDeleted = true;
+  } catch (error) {
+    failure = error;
+  } finally {
+    if (remoteTagCreated && !remoteTagDeleted) {
+      try {
+        execFileSync('git', ['push', remote, `:refs/tags/${probeTag}`], {
+          cwd: WORKSPACE_ROOT,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          encoding: 'utf8',
+        });
+      } catch {
+        // Preserve the original failure; the probe tag may need manual cleanup.
+      }
+    }
+
+    if (localTagCreated) {
+      try {
+        execFileSync('git', ['tag', '-d', probeTag], {
+          cwd: WORKSPACE_ROOT,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          encoding: 'utf8',
+        });
+      } catch {
+        // Preserve the original failure; the probe tag may need manual cleanup.
+      }
+    }
+  }
+
+  if (failure) {
+    fail(
+      `Selected Git remote cannot publish and delete probe tags: ${remote}` +
+        commandErrorDetail(failure)
+    );
+  }
+}
+
 function fail(message) {
   const error = new Error(message);
   error.isWorkspaceApiError = true;
@@ -155,9 +228,15 @@ function ensureCurrentCommitExists() {
   }
 }
 
+function commandErrorDetail(error) {
+  const stderr = error && error.stderr ? String(error.stderr).trim() : '';
+  return stderr ? `\n${stderr}` : '';
+}
+
 module.exports = {
     assertInGitRepository,
     setTagAtCurrentCommit,
     publishTag,
     getRemotesFromGit,
+    assertCanPublishAndDeleteProbeTag,
 };
