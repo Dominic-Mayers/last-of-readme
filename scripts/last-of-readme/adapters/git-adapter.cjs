@@ -91,73 +91,28 @@ function getRemotesFromGit() {
 
 
 /**
- * Verifies that a Git remote accepts temporary tag publication and deletion.
+ * Verifies that a Git remote accepts dry-run publication of a documentation
+ * tag.
  *
- * @param {string} remote - Git remote to probe with a temporary tag.
+ * @param {string} remote - Git remote to probe for tag publication.
  */
-function assertCanPublishAndDeleteProbeTag(remote) {
+function assertCanDryRunPublishTag(remote) {
   ensureGitWorkspace();
   ensureCurrentCommitExists();
 
-  const probeTag = `last-of-readme-probe-${Date.now()}-${process.pid}`;
-  let localTagCreated = false;
-  let remoteTagCreated = false;
-  let remoteTagDeleted = false;
-  let failure = null;
-
   try {
-    execFileSync('git', ['tag', probeTag], {
-      cwd: WORKSPACE_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    });
-    localTagCreated = true;
-
-    execFileSync('git', ['push', remote, probeTag], {
-      cwd: WORKSPACE_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    });
-    remoteTagCreated = true;
-
-    execFileSync('git', ['push', remote, `:refs/tags/${probeTag}`], {
-      cwd: WORKSPACE_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    });
-    remoteTagDeleted = true;
+    execFileSync(
+      'git',
+      ['push', remote, 'HEAD:refs/tags/last-of-readme-install-probe', '--dry-run'],
+      {
+        cwd: WORKSPACE_ROOT,
+        stdio: ['ignore', 'pipe', 'pipe']
+      }
+    );
   } catch (error) {
-    failure = error;
-  } finally {
-    if (remoteTagCreated && !remoteTagDeleted) {
-      try {
-        execFileSync('git', ['push', remote, `:refs/tags/${probeTag}`], {
-          cwd: WORKSPACE_ROOT,
-          stdio: ['ignore', 'pipe', 'pipe'],
-          encoding: 'utf8',
-        });
-      } catch {
-        // Preserve the original failure; the probe tag may need manual cleanup.
-      }
-    }
-
-    if (localTagCreated) {
-      try {
-        execFileSync('git', ['tag', '-d', probeTag], {
-          cwd: WORKSPACE_ROOT,
-          stdio: ['ignore', 'pipe', 'pipe'],
-          encoding: 'utf8',
-        });
-      } catch {
-        // Preserve the original failure; the probe tag may need manual cleanup.
-      }
-    }
-  }
-
-  if (failure) {
     fail(
-      `Selected Git remote cannot publish and delete probe tags: ${remote}` +
-        commandErrorDetail(failure)
+      `Selected Git remote cannot dry-run publish tags: ${remote}` +
+        commandErrorDetail(error)
     );
   }
 }
@@ -238,5 +193,5 @@ module.exports = {
     setTagAtCurrentCommit,
     publishTag,
     getRemotesFromGit,
-    assertCanPublishAndDeleteProbeTag,
+    assertCanDryRunPublishTag,
 };

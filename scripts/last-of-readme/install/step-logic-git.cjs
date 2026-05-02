@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const {
-  assertCanPublishAndDeleteProbeTag,
+  assertCanDryRunPublishTag,
 } = require('../adapters/git-adapter.cjs');
 
 function collectRemoteEnvironmentInput(config = {}) {
@@ -50,7 +50,7 @@ function checkGitRemoteRequirements(config = {}) {
     throw new Error(`Selected Git remote does not exist: ${localName}`);
   }
 
-  assertCanPublishAndDeleteProbeTag(localName);
+  assertCanDryRunPublishTag(localName);
 
   assertHttpUrl(
     config?.remote?.repositoryApiUrl,
