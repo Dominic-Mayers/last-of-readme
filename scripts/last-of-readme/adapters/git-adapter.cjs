@@ -14,7 +14,6 @@
  * as Last-of-Readme installation requirements.
  */
 
-const cp = require('child_process');
 const { execFileSync } = require('child_process');
 
 const WORKSPACE_ROOT = process.cwd();
@@ -40,12 +39,18 @@ function assertInGitRepository() {
  *
  * @param {string} tag - Must not already exist in the local repository.
  * @param {string} annotation - Annotation message stored in the annotated tag.
+ * @remarks Git repository must contain a current commit.
  */
 function setTagAtCurrentCommit(tag, annotation) {
   ensureGitWorkspace();
-
+  ensureCurrentCommitExists();
+  
   try {
-    run(`git rev-parse -q --verify refs/tags/${JSON.stringify(tag)}`);
+    execFileSync('git', ['rev-parse', '-q', '--verify', `refs/tags/${tag}`], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
     fail(`Tag already exists: ${tag}`);
   } catch (err) {
     if (err.isWorkspaceApiError) {
@@ -53,10 +58,10 @@ function setTagAtCurrentCommit(tag, annotation) {
     }
   }
 
-  cp.execSync(
-    `git tag -a ${JSON.stringify(tag)} -m ${JSON.stringify(annotation)}`,
-    { stdio: 'inherit' }
-  );
+  execFileSync('git', ['tag', '-a', tag, '-m', annotation], {
+    cwd: WORKSPACE_ROOT,
+    stdio: 'inherit',
+  });
 }
 
 /**
@@ -64,10 +69,12 @@ function setTagAtCurrentCommit(tag, annotation) {
  *
  * @param {string} tag - Must identify an existing local tag.
  * @param {string} remote - Git remote to which the tag should be pushed.
+ * @remarks The configured runtime remote name must resolve to a Git remote that can accept tag pushes.
  */
 function publishTag(tag, remote) {
   ensureGitWorkspace();
-  cp.execSync(`git push ${JSON.stringify(remote)} ${JSON.stringify(tag)}`, {
+  execFileSync('git', ['push', remote, tag], {
+    cwd: WORKSPACE_ROOT,
     stdio: 'inherit',
   });
 }
@@ -86,14 +93,6 @@ function fail(message) {
   const error = new Error(message);
   error.isWorkspaceApiError = true;
   throw error;
-}
-
-function run(command, options = {}) {
-  return cp.execSync(command, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    ...options,
-  }).trim();
 }
 
 function gitVersion() {
@@ -134,9 +133,25 @@ function gitRemoteUrl(remoteName) {
 
 function ensureGitWorkspace() {
   try {
-    run('git rev-parse --is-inside-work-tree');
+    execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
   } catch {
     fail('Current directory is not a Git repository');
+  }
+}
+
+function ensureCurrentCommitExists() {
+  try {
+    execFileSync('git', ['rev-parse', '--verify', 'HEAD'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    }).trim();
+  } catch {
+    fail('Git repository has no current commit');
   }
 }
 
