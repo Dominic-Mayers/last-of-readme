@@ -90,53 +90,17 @@ function configuredRemoteName() {
 }
 
 /**
- * Returns repository API/browser URLs used by update-readme-link.cjs to build
- * the resolver link.
+ * Returns repository API/browser URLs needed in the resolver link.
  *
- * @remarks Requires installation to have written lastOfReadme.remote.kind,
- * lastOfReadme.remote.repositoryApiUrl, and
- * lastOfReadme.remote.repositoryBrowserUrl. The fallback to package.json
- * repository metadata is kept for compatibility with manifests that have not
- * yet been installed with the current Last of Readme configuration shape.
+ * @remarks If there is eventually a need to tell the resolver what kind of API
+ * is offered by the remote, then a kind value might be added. For now, the
+ * resolver uses GitHub API endpoints.
  */
 function remoteConfiguration() {
-  const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
-  const repositoryApiUrl = getPackageJsonField(
-    'lastOfReadme.remote.repositoryApiUrl',
-    { allowEmpty: true }
-  );
-  const repositoryBrowserUrl = getPackageJsonField(
-    'lastOfReadme.remote.repositoryBrowserUrl',
-    { allowEmpty: true }
-  );
-
-  if (kind !== undefined && kind !== null && kind !== '') {
-    if (kind !== 'github') {
-      fail('package.json lastOfReadme.remote.kind must be "github"');
-    }
-
-    if (repositoryApiUrl && repositoryBrowserUrl) {
-      return {
-        kind: 'github',
-        repositoryApiUrl: String(repositoryApiUrl),
-        repositoryBrowserUrl: String(repositoryBrowserUrl),
-      };
-    }
-
-    // Backward-compatible read path for manifests installed by earlier versions.
-    const host = getPackageJsonField('lastOfReadme.remote.host', { allowEmpty: true });
-    const repository = getPackageJsonField('lastOfReadme.remote.repository', { allowEmpty: true });
-
-    if (host && repository) {
-      return githubRemoteUrlsFromHostRepository(String(host), String(repository));
-    }
-
-    fail(
-      'package.json lastOfReadme.remote must include repositoryApiUrl and repositoryBrowserUrl'
-    );
-  }
-
-  return deriveGitHubRemoteUrls(getPackageJsonField('repository'));
+  return {
+    repositoryApiUrl: String(getPackageJsonField('lastOfReadme.remote.repositoryApiUrl')),
+    repositoryBrowserUrl: String(getPackageJsonField('lastOfReadme.remote.repositoryBrowserUrl')),
+  };
 }
 
 /**
