@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 
+/**
+ * Adapter over npm and the package manifest used by Last of Readme.
+ *
+ * The exported operations assume that npm is available and can read its
+ * configuration values. This is checked as a basic requirements 
+ * assertPackageManifestReadableByNpm().
+ *
+ */
+
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -8,6 +17,13 @@ const { runNpmPkg } = require('../runNpmPkg.cjs');
 const WORKSPACE_ROOT = process.cwd();
 const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
+/**
+ * Returns the remote name installed in package.json. Used for tag publication
+ * by tag-doc.cjs and to determine the default in collectRemoteEnvironmentInput.
+ *
+ * @remarks Requires installation to have written lastOfReadme.remoteName in the
+ * package manifest.
+ */
 function configuredRemoteName() {
   // TODO architecture:
   // This reads npm/package configuration to find a Git remote name. It is kept
@@ -25,6 +41,13 @@ function configuredRemoteName() {
 }
 
 
+/**
+ * Collects the npm package root for collectNpmPackageRootEnvironmentInput().
+ *
+ * @remarks Simple npm environmental probe with no Last-of-Readme-specific
+ * configuration requirements beyond the module-level package-manifest
+ * expectation.
+ */
 function npmPackageRoot() {
   try {
     return execFileSync('npm', ['prefix'], {
@@ -39,7 +62,16 @@ function npmPackageRoot() {
   }
 }
 
-// In update-readme-link.cjs.
+/**
+ * Returns repository API/browser URLs used by update-readme-link.cjs to build
+ * the resolver link.
+ *
+ * @remarks Requires installation to have written lastOfReadme.remote.kind,
+ * lastOfReadme.remote.repositoryApiUrl, and
+ * lastOfReadme.remote.repositoryBrowserUrl. The fallback to package.json
+ * repository metadata is kept for compatibility with manifests that have not
+ * yet been installed with the current Last of Readme configuration shape.
+ */
 function remoteConfiguration() {
   const kind = getPackageJsonField('lastOfReadme.remote.kind', { allowEmpty: true });
   const repositoryApiUrl = getPackageJsonField(
@@ -80,14 +112,33 @@ function remoteConfiguration() {
   return deriveGitHubRemoteUrls(getPackageJsonField('repository'));
 }
 
+/**
+ * Returns the package version used by update-readme-link.cjs and tag-doc.cjs.
+ *
+ * @remarks Requires the package manifest to expose a version field readable by
+ * npm.
+ */
 function currentPackageVersion() {
   return String(getPackageJsonField('version'));
 }
 
+/**
+ * Returns the package name used by update-readme-link.cjs to identify the
+ * package in resolver links.
+ *
+ * @remarks Requires the package manifest to expose a name field readable by npm.
+ */
 function packageName() {
   return String(getPackageJsonField('name'));
 }
 
+/**
+ * Returns the installed documentation package-file path used by
+ * update-readme-link.cjs when no path is supplied on the command line.
+ *
+ * @remarks Requires installation to have written
+ * lastOfReadme.packageFilePath in the package manifest.
+ */
 function packageFilePath() {
   const value = getPackageJsonField('lastOfReadme.packageFilePath', { allowEmpty: true });
   if (!value || typeof value !== 'string') {
@@ -96,6 +147,13 @@ function packageFilePath() {
   return value;
 }
 
+/**
+ * Returns the installed repository URL path used by update-readme-link.cjs when
+ * no URL path is supplied on the command line.
+ *
+ * @remarks Requires installation to have written a Last of Readme configuration
+ * object with a string repositoryUrlPath in the package manifest.
+ */
 function repositoryUrlPath() {
   const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
 
@@ -112,11 +170,24 @@ function repositoryUrlPath() {
   return value;
 }
 
+/**
+ * Reads the current package.json files field for collectPackageFilePathInput()
+ * defaults and apply-installation package-file updates.
+ *
+ * @remarks No Last-of-Readme-specific configuration is required; absence of a
+ * files array is represented as null.
+ */
 function getCurrentFilesField() {
   const files = getPackageJsonField('files', { allowEmpty: true });
   return Array.isArray(files) ? files : null;
 }
 
+/**
+ * Asserts that npm can read the package manifest, part of basic requirements.
+ *
+ * @remarks Simple environmental probe with no Last-of-Readme-specific
+ * requirements.
+ */
 function assertPackageManifestReadableByNpm() {
   if (!fs.existsSync(PACKAGE_PATH)) {
     throw new Error('package.json must exist at the repository root');
@@ -137,6 +208,13 @@ function assertPackageManifestReadableByNpm() {
   }
 }
 
+/**
+ * Writes package.json fields during apply-installation.
+ *
+ * @param {Record<string, unknown>} updates - npm pkg set assignments keyed by
+ * package.json field path.
+ * @remarks Requires the package manifest to be writable by npm.
+ */
 function updatePackageJsonFields(updates) {
   const assignments = Object.entries(updates).map(
     ([key, value]) => `${key}=${JSON.stringify(value)}`
@@ -151,6 +229,13 @@ function updatePackageJsonFields(updates) {
   );
 }
 
+/**
+ * Reads the previously installed package-file path for
+ * collectPackageFilePathInput().
+ *
+ * @remarks Requires no current installation; absence of Last of Readme package
+ * configuration is represented as null.
+ */
 function getCurrentInstalledPackageFilePath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
   if (!lastOfReadme || typeof lastOfReadme !== 'object') {
@@ -161,6 +246,13 @@ function getCurrentInstalledPackageFilePath() {
     : null;
 }
 
+/**
+ * Reads the previously installed repository API URL for collectRemoteInput()
+ * defaults.
+ *
+ * @remarks Requires no current installation; absence of Last of Readme remote
+ * configuration is represented as an empty string.
+ */
 function getCurrentRepositoryApiUrl() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
   if (!lastOfReadme || typeof lastOfReadme !== 'object') {
@@ -173,6 +265,13 @@ function getCurrentRepositoryApiUrl() {
     : '';
 }
 
+/**
+ * Reads the previously installed repository browser URL for collectRemoteInput()
+ * defaults.
+ *
+ * @remarks Requires no current installation; absence of Last of Readme remote
+ * configuration is represented as an empty string.
+ */
 function getCurrentRepositoryBrowserUrl() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
   if (!lastOfReadme || typeof lastOfReadme !== 'object') {
@@ -185,6 +284,13 @@ function getCurrentRepositoryBrowserUrl() {
     : '';
 }
 
+/**
+ * Reads the previously installed repository URL path for
+ * collectPackageFilePathInput() defaults.
+ *
+ * @remarks Requires no current installation; absence of Last of Readme package
+ * configuration is represented as an empty string.
+ */
 function getCurrentRepositoryUrlPath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
   if (!lastOfReadme || typeof lastOfReadme !== 'object') {
@@ -195,6 +301,14 @@ function getCurrentRepositoryUrlPath() {
     : '';
 }
 
+/**
+ * Derives GitHub API/browser URLs from package repository metadata for
+ * remoteConfiguration() and collectRemoteInput() defaults.
+ *
+ * @param {string|{url?: string}} repository - package.json repository value or
+ * repository URL to interpret as a GitHub repository.
+ * @remarks Requires repository metadata to identify a GitHub repository.
+ */
 function deriveGitHubRemoteUrls(repository) {
   let url =
     typeof repository === 'string'
@@ -235,6 +349,14 @@ function deriveGitHubRemoteUrls(repository) {
   fail('repository.url must point to a GitHub repository');
 }
 
+/**
+ * Attempts to derive GitHub API/browser URLs for collectRemoteInput() defaults
+ * without forcing the selected Git remote to be GitHub-derived.
+ *
+ * @param {string} repositoryUrl - Git remote URL selected during installation.
+ * @remarks No Last-of-Readme-specific configuration is required; unsupported
+ * URL shapes are represented as null.
+ */
 function tryDeriveGitHubRemoteUrls(repositoryUrl) {
   try {
     return deriveGitHubRemoteUrls(repositoryUrl);
