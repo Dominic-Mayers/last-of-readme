@@ -105,9 +105,6 @@ function remoteConfiguration() {
 
 /**
  * Returns the package version used by update-readme-link.cjs and tag-doc.cjs.
- *
- * @remarks Requires the package manifest to expose a version field readable by
- * npm.
  */
 function currentPackageVersion() {
   return String(getPackageJsonField('version'));
@@ -116,8 +113,6 @@ function currentPackageVersion() {
 /**
  * Returns the package name used by update-readme-link.cjs to identify the
  * package in resolver links.
- *
- * @remarks Requires the package manifest to expose a name field readable by npm.
  */
 function packageName() {
   return String(getPackageJsonField('name'));
@@ -126,9 +121,6 @@ function packageName() {
 /**
  * Returns the installed documentation package-file path used by
  * update-readme-link.cjs when no path is supplied on the command line.
- *
- * @remarks Requires installation to have written
- * lastOfReadme.packageFilePath in the package manifest.
  */
 function packageFilePath() {
   const value = getPackageJsonField('lastOfReadme.packageFilePath', { allowEmpty: true });
@@ -141,9 +133,6 @@ function packageFilePath() {
 /**
  * Returns the installed repository URL path used by update-readme-link.cjs when
  * no URL path is supplied on the command line.
- *
- * @remarks Requires installation to have written a Last of Readme configuration
- * object with a string repositoryUrlPath in the package manifest.
  */
 function repositoryUrlPath() {
   const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
@@ -267,60 +256,10 @@ function getCurrentRepositoryUrlPath() {
 }
 
 /**
- * Derives GitHub API/browser URLs from package repository metadata for
- * remoteConfiguration() and collectRemoteInput() defaults.
+ * Attempts to derive GitHub API/browser URLs for collectRemoteInput() defaults.
  *
  * @param {string|{url?: string}} repository - package.json repository value or
- * repository URL to interpret as a GitHub repository.
- * @remarks Requires repository metadata to identify a GitHub repository.
- */
-function deriveGitHubRemoteUrls(repository) {
-  let url =
-    typeof repository === 'string'
-      ? repository
-      : repository && typeof repository.url === 'string'
-        ? repository.url
-        : null;
-
-  if (!url) {
-    fail('package.json has no valid repository.url');
-  }
-
-  url = url.trim();
-
-  if (url.startsWith('git+')) {
-    url = url.slice(4);
-  }
-
-  if (url.endsWith('.git')) {
-    url = url.slice(0, -4);
-  }
-
-  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
-  if (match) {
-    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
-  }
-
-  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
-  if (match) {
-    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
-  }
-
-  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
-  if (match) {
-    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
-  }
-
-  fail('repository.url must point to a GitHub repository');
-}
-
-/**
- * Attempts to derive GitHub API/browser URLs for collectRemoteInput() defaults
- * without forcing the selected Git remote to be GitHub-derived.
- *
  * @param {string} repositoryUrl - Git remote URL selected during installation.
- * @remarks No Last-of-Readme-specific configuration is required; unsupported
- * URL shapes are represented as null.
  */
 function tryDeriveGitHubRemoteUrls(repositoryUrl) {
   try {
@@ -362,6 +301,46 @@ function fail(message) {
   throw error;
 }
 
+function deriveGitHubRemoteUrls(repository) {
+  let url =
+    typeof repository === 'string'
+      ? repository
+      : repository && typeof repository.url === 'string'
+        ? repository.url
+        : null;
+
+  if (!url) {
+    fail('package.json has no valid repository.url');
+  }
+
+  url = url.trim();
+
+  if (url.startsWith('git+')) {
+    url = url.slice(4);
+  }
+
+  if (url.endsWith('.git')) {
+    url = url.slice(0, -4);
+  }
+
+  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
+  if (match) {
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
+  }
+
+  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
+  if (match) {
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
+  }
+
+  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
+  if (match) {
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
+  }
+
+  fail('repository.url must point to a GitHub repository');
+}
+
 module.exports = {
   configuredRemoteName,
   npmPackageRoot,
@@ -377,6 +356,5 @@ module.exports = {
   getCurrentRepositoryApiUrl,
   getCurrentRepositoryBrowserUrl,
   getCurrentRepositoryUrlPath,
-  deriveGitHubRemoteUrls,
   tryDeriveGitHubRemoteUrls
 };
