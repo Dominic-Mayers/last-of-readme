@@ -102,12 +102,12 @@ function createPackageFileIfAbsent(packageFilePath, content) {
 }
 
 module.exports = {
-  assertCwdIsPackageRoot,
-  validateExistingPackageFile,
-  assertPackageFileReadyForPlaceholderInspection,
-  assertPackageFileCanBeCreated,
-  packageFileExists,
-  readPackageFileContent,
-  writePackageFileContent,
-  createPackageFileIfAbsent,
+    assertCwdIsPackageRoot,
+    validateExistingPackageFile,
+    assertPackageFileReadyForPlaceholderInspection,
+    assertPackageFileCanBeCreated,
+    packageFileExists,
+    readPackageFileContent,
+    writePackageFileContent,
+    createPackageFileIfAbsent,
 };

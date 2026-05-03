@@ -3,7 +3,7 @@
 /**
  * Adapter over npm configuration operations used by Last of Readme.
  *
- * @envRequirement npm must be available and support `npm pkg` for reading and
+ * @assertRequirement npm must be available and support `npm pkg` for reading and
  * writing configuration fields. Asserted in
  * assertPackageManifestReadableByNpm().
  */
@@ -353,21 +353,21 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
 }
 
 module.exports = {
-  assertPackageManifestReadableByNpm,
-  npmPackageRoot,
-  currentPackageVersion,
-  packageName,
-  configuredRemoteName,
-  getCurrentConfiguredRemoteName,
-  remoteConfiguration,
-  getCurrentRemoteConfiguration,
-  packageFilePath,
-  getCurrentInstalledPackageFilePath,
-  repositoryUrlPath,
-  getCurrentRepositoryUrlPath,
-  getCurrentFilesField,
-  updatePackageJsonFields,
-  tryDeriveGitHubUrlsFromRemoteUrl
+    assertPackageManifestReadableByNpm,
+    npmPackageRoot,
+    currentPackageVersion,
+    packageName,
+    configuredRemoteName,
+    getCurrentConfiguredRemoteName,
+    remoteConfiguration,
+    getCurrentRemoteConfiguration,
+    packageFilePath,
+    getCurrentInstalledPackageFilePath,
+    repositoryUrlPath,
+    getCurrentRepositoryUrlPath,
+    getCurrentFilesField,
+    updatePackageJsonFields,
+    tryDeriveGitHubUrlsFromRemoteUrl
 };
 
 

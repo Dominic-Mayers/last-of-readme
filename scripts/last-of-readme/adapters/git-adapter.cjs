@@ -3,7 +3,7 @@
 /**
  * Adapter over the local Git repository used by Last of Readme.
  *
- * @envRequirement A Git executable and a local Git repository context must be
+ * @assertRequirement A Git executable and a local Git repository context must be
  * available to Git-backed installer and runtime operations. Asserted in
  * assertInGitRepository().
  */
@@ -68,7 +68,7 @@ function setTagAtCurrentCommit(tag, annotation) {
  * @param {string} remote - Git remote to which the tag should be pushed.
  * @configRequirement The remote name supplied at runtime must be installed as
  * Last of Readme package configuration. Configured in installRemotePackageJson().
- * @envRequirement The selected Git remote must accept dry-run tag publication.
+ * @assertRequirement The selected Git remote must accept dry-run tag publication.
  * Asserted in checkGitRemoteRequirements().
  * @returns {void}
  */
@@ -100,7 +100,7 @@ function getRemotesFromGit() {
  * checkGitRemoteRequirements() before the remote configuration is finalized.
  *
  * @param {string} remote - Git remote to probe for tag publication.
- * @envRequirement The selected Git remote must accept dry-run tag publication.
+ * @assertRequirement The selected Git remote must accept dry-run tag publication.
  * Asserted in checkGitRemoteRequirements().
  * @remarks Requires a current commit at installation time.
  * @returns {void}
