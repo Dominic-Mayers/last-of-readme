@@ -44,19 +44,44 @@ function assertPackageManifestReadableByNpm() {
 }
 
 /**
- * Reads the previously installed Git remote name for remote-selection defaults.
+ * Collects the npm package root for package-relative path resolution.
  *
- * @remarks Requires no current installation; absence of Last of Readme remote
- * configuration is represented as an empty string.
+ * Used currently by collectNpmPackageRootEnvironmentInput() to support
+ * checkCwdIsPackageRootRequirements(). Longer term, this package root should
+ * anchor direct resolution of package-relative paths without relying on
+ * process cwd.
+ *
+ * @remarks Simple npm environmental probe with no Last-of-Readme-specific
+ * configuration requirements beyond the module-level package-manifest
+ * expectation.
  */
-function getCurrentConfiguredRemoteName() {
-  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
-    allowEmpty: true,
-  });
+function npmPackageRoot() {
+  try {
+    return execFileSync('npm', ['prefix'], {
+      cwd: WORKSPACE_ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    }).trim();
+  } catch (error) {
+    const detail = error && error.stderr ? String(error.stderr).trim() : '';
+    const suffix = detail ? `\n${detail}` : '';
+    throw new Error(`Could not determine the npm package root${suffix}`);
+  }
+}
 
-  return configuredRemoteName && typeof configuredRemoteName === 'string'
-    ? configuredRemoteName
-    : '';
+/**
+ * Returns the package version used by update-readme-link.cjs and tag-doc.cjs.
+ */
+function currentPackageVersion() {
+  return String(getPackageJsonField('version'));
+}
+
+/**
+ * Returns the package name used by update-readme-link.cjs to identify the
+ * package in resolver links.
+ */
+function packageName() {
+  return String(getPackageJsonField('name'));
 }
 
 /**
@@ -74,29 +99,36 @@ function configuredRemoteName() {
 }
 
 /**
- * Collects the npm package root for package-relative path resolution.
+ * Reads the previously installed Git remote name for remote-selection defaults.
  *
- * Used currently by collectNpmPackageRootEnvironmentInput() to support
- * checkCwdIsPackageRootRequirements(). Longer term, this package root should
- * anchor direct resolution of package-relative paths without relying on
- * process cwd.
- *
- * @remarks Simple npm environmental probe with no Last-of-Readme-specific
- * configuration requirements beyond the module-level package-manifest
- * expectation.
+ * @remarks Requires no current installation; absence of Last of Readme remote
+ * configuration is represented as an empty string.
  */
- function npmPackageRoot() {
-  try {
-    return execFileSync('npm', ['prefix'], {
-      cwd: WORKSPACE_ROOT,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    }).trim();
-  } catch (error) {
-    const detail = error && error.stderr ? String(error.stderr).trim() : '';
-    const suffix = detail ? `\n${detail}` : '';
-    throw new Error(`Could not determine the npm package root${suffix}`);
+function getCurrentConfiguredRemoteName() {
+  const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
+    allowEmpty: true,
+  });
+
+  return configuredRemoteName && typeof configuredRemoteName === 'string'
+    ? configuredRemoteName
+    : '';
+}
+
+/**
+ * Returns repository API/browser URLs needed in the resolver link.
+ *
+ * @remarks If there is eventually a need to tell the resolver what kind of API
+ * is offered by the remote, then a kind value might be added. For now, the
+ * resolver uses GitHub API endpoints.
+ */
+function remoteConfiguration() {
+  const remote = getCurrentRemoteConfiguration();
+
+  if (!remote) {
+    fail('package.json has no valid lastOfReadme.remote configuration');
   }
+
+  return remote;
 }
 
 /**
@@ -128,38 +160,6 @@ function getCurrentRemoteConfiguration() {
 }
 
 /**
- * Returns repository API/browser URLs needed in the resolver link.
- *
- * @remarks If there is eventually a need to tell the resolver what kind of API
- * is offered by the remote, then a kind value might be added. For now, the
- * resolver uses GitHub API endpoints.
- */
-function remoteConfiguration() {
-  const remote = getCurrentRemoteConfiguration();
-
-  if (!remote) {
-    fail('package.json has no valid lastOfReadme.remote configuration');
-  }
-
-  return remote;
-}
-
-/**
- * Returns the package version used by update-readme-link.cjs and tag-doc.cjs.
- */
-function currentPackageVersion() {
-  return String(getPackageJsonField('version'));
-}
-
-/**
- * Returns the package name used by update-readme-link.cjs to identify the
- * package in resolver links.
- */
-function packageName() {
-  return String(getPackageJsonField('name'));
-}
-
-/**
  * Returns the installed documentation package-file path used by
  * update-readme-link.cjs when no path is supplied on the command line.
  */
@@ -171,53 +171,6 @@ function packageFilePath() {
   }
 
   return value;
-}
-
-/**
- * Returns the installed repository URL path used by update-readme-link.cjs when
- * no URL path is supplied on the command line.
- */
-function repositoryUrlPath() {
-  const value = getCurrentRepositoryUrlPath();
-
-  if (value === null) {
-    fail('package.json has no valid lastOfReadme.repositoryUrlPath');
-  }
-
-  return value;
-}
-
-/**
- * Reads the current package.json files field for collectPackageFilePathInput()
- * defaults and apply-installation package-file updates.
- *
- * @remarks No Last-of-Readme-specific configuration is required; absence of a
- * files array is represented as null.
- */
-function getCurrentFilesField() {
-  const files = getPackageJsonField('files', { allowEmpty: true });
-  return Array.isArray(files) ? files : null;
-}
-
-/**
- * Writes package.json fields during apply-installation.
- *
- * @param {Record<string, unknown>} updates - npm pkg set assignments keyed by
- * package.json field path.
- * @remarks Requires the package manifest to be writable by npm.
- */
-function updatePackageJsonFields(updates) {
-  const assignments = Object.entries(updates).map(
-    ([key, value]) => `${key}=${JSON.stringify(value)}`
-  );
-
-  runNpmPkg(
-    ['set', '--json', ...assignments],
-    {
-      allowEmpty: true,
-      failureMessage: 'Could not update package.json',
-    }
-  );
 }
 
 /**
@@ -238,6 +191,20 @@ function getCurrentInstalledPackageFilePath() {
 }
 
 /**
+ * Returns the installed repository URL path used by update-readme-link.cjs when
+ * no URL path is supplied on the command line.
+ */
+function repositoryUrlPath() {
+  const value = getCurrentRepositoryUrlPath();
+
+  if (value === null) {
+    fail('package.json has no valid lastOfReadme.repositoryUrlPath');
+  }
+
+  return value;
+}
+
+/**
  * Reads the previously installed repository URL path for
  * collectPackageFilePathInput() defaults.
  *
@@ -253,6 +220,38 @@ function getCurrentRepositoryUrlPath() {
   return typeof lastOfReadme.repositoryUrlPath === 'string'
     ? lastOfReadme.repositoryUrlPath
     : null;
+}
+
+/**
+ * Reads the current package.json files field for collectPackageFilePathInput()
+ * defaults and apply-installation package-file updates.
+ *
+ * @remarks No Last-of-Readme-specific configuration is required; absence of a
+ * files array is represented as null.
+ */
+function getCurrentFilesField() {
+  const files = getPackageJsonField('files', { allowEmpty: true });
+  return Array.isArray(files) ? files : null;
+}
+
+/**
+ * Writes package.json fields during apply-installation.
+ *
+ * @param {Record<string, unknown>} updates - npm pkg set assignments keyed by
+ * package.json field path.
+ */
+function updatePackageJsonFields(updates) {
+  const assignments = Object.entries(updates).map(
+    ([key, value]) => `${key}=${JSON.stringify(value)}`
+  );
+
+  runNpmPkg(
+    ['set', '--json', ...assignments],
+    {
+      allowEmpty: true,
+      failureMessage: 'Could not update package.json',
+    }
+  );
 }
 
 /**
@@ -335,19 +334,21 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
 }
 
 module.exports = {
-  getCurrentConfiguredRemoteName,
-  configuredRemoteName,
+  assertPackageManifestReadableByNpm,
   npmPackageRoot,
-  remoteConfiguration,
   currentPackageVersion,
   packageName,
-  packageFilePath,
-  repositoryUrlPath,
-  getCurrentFilesField,
-  assertPackageManifestReadableByNpm,
-  updatePackageJsonFields,
-  getCurrentInstalledPackageFilePath,
+  configuredRemoteName,
+  getCurrentConfiguredRemoteName,
+  remoteConfiguration,
   getCurrentRemoteConfiguration,
+  packageFilePath,
+  getCurrentInstalledPackageFilePath,
+  repositoryUrlPath,
   getCurrentRepositoryUrlPath,
+  getCurrentFilesField,
+  updatePackageJsonFields,
   tryDeriveGitHubUrlsFromRemoteUrl
 };
+
+
