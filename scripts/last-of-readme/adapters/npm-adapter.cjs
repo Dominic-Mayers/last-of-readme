@@ -44,23 +44,33 @@ function assertPackageManifestReadableByNpm() {
 }
 
 /**
- * Returns the remote name installed in package.json. Used for tag publication
- * by tag-doc.cjs and to determine the default in collectRemoteEnvironmentInput.
+ * Reads the previously installed Git remote name for remote-selection defaults.
+ *
+ * @remarks Requires no current installation; absence of Last of Readme remote
+ * configuration is represented as an empty string.
  */
-function configuredRemoteName() {
-  // TODO architecture:
-  // This reads npm/package configuration to find a Git remote name. It is kept
-  // here to preserve behavior while the tag publishing flow is separated into
-  // explicit npm and git steps.
+function getCurrentConfiguredRemoteName() {
   const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
     allowEmpty: true,
   });
 
-  if (configuredRemoteName && typeof configuredRemoteName === 'string') {
-    return configuredRemoteName;
+  return configuredRemoteName && typeof configuredRemoteName === 'string'
+    ? configuredRemoteName
+    : '';
+}
+
+/**
+ * Returns the remote name installed in package.json for tag publication by
+ * tag-doc.cjs.
+ */
+function configuredRemoteName() {
+  const remoteName = getCurrentConfiguredRemoteName();
+
+  if (!remoteName) {
+    fail('No Last of Readme remoteName configured in package.json');
   }
 
-  fail('No Last of Readme remoteName configured in package.json');
+  return remoteName;
 }
 
 /**
@@ -90,6 +100,34 @@ function configuredRemoteName() {
 }
 
 /**
+ * Reads the previously installed repository API/browser URLs for
+ * collectRemoteInput() defaults.
+ *
+ * @remarks Requires no current installation; absence of Last of Readme remote
+ * configuration is represented as null.
+ */
+function getCurrentRemoteConfiguration() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
+    return null;
+  }
+
+  const remote = lastOfReadme.remote;
+  if (
+    !remote ||
+    typeof remote.repositoryApiUrl !== 'string' ||
+    typeof remote.repositoryBrowserUrl !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    repositoryApiUrl: remote.repositoryApiUrl,
+    repositoryBrowserUrl: remote.repositoryBrowserUrl,
+  };
+}
+
+/**
  * Returns repository API/browser URLs needed in the resolver link.
  *
  * @remarks If there is eventually a need to tell the resolver what kind of API
@@ -97,10 +135,13 @@ function configuredRemoteName() {
  * resolver uses GitHub API endpoints.
  */
 function remoteConfiguration() {
-  return {
-    repositoryApiUrl: String(getPackageJsonField('lastOfReadme.remote.repositoryApiUrl')),
-    repositoryBrowserUrl: String(getPackageJsonField('lastOfReadme.remote.repositoryBrowserUrl')),
-  };
+  const remote = getCurrentRemoteConfiguration();
+
+  if (!remote) {
+    fail('package.json has no valid lastOfReadme.remote configuration');
+  }
+
+  return remote;
 }
 
 /**
@@ -123,10 +164,12 @@ function packageName() {
  * update-readme-link.cjs when no path is supplied on the command line.
  */
 function packageFilePath() {
-  const value = getPackageJsonField('lastOfReadme.packageFilePath', { allowEmpty: true });
-  if (!value || typeof value !== 'string') {
+  const value = getCurrentInstalledPackageFilePath();
+
+  if (!value) {
     fail('package.json has no lastOfReadme.packageFilePath');
   }
+
   return value;
 }
 
@@ -135,15 +178,9 @@ function packageFilePath() {
  * no URL path is supplied on the command line.
  */
 function repositoryUrlPath() {
-  const config = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  const value = getCurrentRepositoryUrlPath();
 
-  if (!config || typeof config !== 'object') {
-    fail('package.json has no lastOfReadme configuration');
-  }
-
-  const value = config.repositoryUrlPath;
-
-  if (typeof value !== 'string') {
+  if (value === null) {
     fail('package.json has no valid lastOfReadme.repositoryUrlPath');
   }
 
@@ -201,58 +238,21 @@ function getCurrentInstalledPackageFilePath() {
 }
 
 /**
- * Reads the previously installed repository API URL for collectRemoteInput()
- * defaults.
- *
- * @remarks Requires no current installation; absence of Last of Readme remote
- * configuration is represented as an empty string.
- */
-function getCurrentRepositoryApiUrl() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return '';
-  }
-
-  const remote = lastOfReadme.remote;
-  return remote && typeof remote.repositoryApiUrl === 'string'
-    ? remote.repositoryApiUrl
-    : '';
-}
-
-/**
- * Reads the previously installed repository browser URL for collectRemoteInput()
- * defaults.
- *
- * @remarks Requires no current installation; absence of Last of Readme remote
- * configuration is represented as an empty string.
- */
-function getCurrentRepositoryBrowserUrl() {
-  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
-  if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return '';
-  }
-
-  const remote = lastOfReadme.remote;
-  return remote && typeof remote.repositoryBrowserUrl === 'string'
-    ? remote.repositoryBrowserUrl
-    : '';
-}
-
-/**
  * Reads the previously installed repository URL path for
  * collectPackageFilePathInput() defaults.
  *
  * @remarks Requires no current installation; absence of Last of Readme package
- * configuration is represented as an empty string.
+ * configuration is represented as null.
  */
 function getCurrentRepositoryUrlPath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
   if (!lastOfReadme || typeof lastOfReadme !== 'object') {
-    return '';
+    return null;
   }
+
   return typeof lastOfReadme.repositoryUrlPath === 'string'
     ? lastOfReadme.repositoryUrlPath
-    : '';
+    : null;
 }
 
 /**
@@ -335,6 +335,7 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
 }
 
 module.exports = {
+  getCurrentConfiguredRemoteName,
   configuredRemoteName,
   npmPackageRoot,
   remoteConfiguration,
@@ -346,8 +347,7 @@ module.exports = {
   assertPackageManifestReadableByNpm,
   updatePackageJsonFields,
   getCurrentInstalledPackageFilePath,
-  getCurrentRepositoryApiUrl,
-  getCurrentRepositoryBrowserUrl,
+  getCurrentRemoteConfiguration,
   getCurrentRepositoryUrlPath,
   tryDeriveGitHubUrlsFromRemoteUrl
 };

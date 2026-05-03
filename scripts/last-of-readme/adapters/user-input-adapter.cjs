@@ -17,8 +17,7 @@ const {
 const {
   getCurrentFilesField,
   getCurrentInstalledPackageFilePath,
-  getCurrentRepositoryApiUrl,
-  getCurrentRepositoryBrowserUrl,
+  getCurrentRemoteConfiguration,
   getCurrentRepositoryUrlPath,
   tryDeriveGitHubUrlsFromRemoteUrl,
 } = require('./npm-adapter.cjs');
@@ -149,12 +148,15 @@ async function collectRemoteInput(config = {}) {
       ? tryDeriveGitHubUrlsFromRemoteUrl(selectedRemote.url)
       : null;
 
+    const currentRemoteConfiguration = getCurrentRemoteConfiguration();
     const defaultRepositoryApiUrl =
-      getCurrentRepositoryApiUrl() ||
-      (derivedRemote ? derivedRemote.repositoryApiUrl : '');
+      (currentRemoteConfiguration
+        ? currentRemoteConfiguration.repositoryApiUrl
+        : '') || (derivedRemote ? derivedRemote.repositoryApiUrl : '');
     const defaultRepositoryBrowserUrl =
-      getCurrentRepositoryBrowserUrl() ||
-      (derivedRemote ? derivedRemote.repositoryBrowserUrl : '');
+      (currentRemoteConfiguration
+        ? currentRemoteConfiguration.repositoryBrowserUrl
+        : '') || (derivedRemote ? derivedRemote.repositoryBrowserUrl : '');
 
     const repositoryApiUrlAnswer = await askRepositoryApiUrl({
       askQuestion: (question) => ask(rl, question),

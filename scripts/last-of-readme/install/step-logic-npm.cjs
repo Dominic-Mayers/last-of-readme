@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const {
-  configuredRemoteName,
+  getCurrentConfiguredRemoteName,
   npmPackageRoot,
 } = require('../adapters/npm-adapter.cjs');
 
@@ -16,13 +16,7 @@ function collectNpmPackageRootEnvironmentInput(config = {}) {
 }
 
 function collectConfiguredRemoteNameEnvironmentInput(config = {}) {
-  let configuredRemoteNameAnswer = '';
-
-  try {
-    configuredRemoteNameAnswer = configuredRemoteName();
-  } catch {
-    configuredRemoteNameAnswer = '';
-  }
+  const configuredRemoteNameAnswer = getCurrentConfiguredRemoteName();
 
   return {
     ...config,
