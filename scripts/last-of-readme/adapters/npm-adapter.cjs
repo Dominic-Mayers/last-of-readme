@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Adapter over npm used by Last of Readme.
+ * Adapter over npm package-manifest operations used by Last of Readme.
  *
- * The exported operations assume that npm is available and can read its
- * configuration values. This is checked as a basic requirements 
+ * The exported operations assume that npm is available and supports `npm pkg`
+ * for reading and writing configuration fields. This is checked by
  * assertPackageManifestReadableByNpm().
- *
  */
  
 const fs = require('fs');
@@ -19,9 +18,6 @@ const PACKAGE_PATH = path.join(WORKSPACE_ROOT, 'package.json');
 
 /**
  * Asserts that npm can read the package manifest, part of basic requirements.
- *
- * @remarks Simple environmental probe with no Last-of-Readme-specific
- * requirements.
  */
 function assertPackageManifestReadableByNpm() {
   if (!fs.existsSync(PACKAGE_PATH)) {
@@ -50,10 +46,6 @@ function assertPackageManifestReadableByNpm() {
  * checkCwdIsPackageRootRequirements(). Longer term, this package root should
  * anchor direct resolution of package-relative paths without relying on
  * process cwd.
- *
- * @remarks Simple npm environmental probe with no Last-of-Readme-specific
- * configuration requirements beyond the module-level package-manifest
- * expectation.
  */
 function npmPackageRoot() {
   try {
@@ -100,9 +92,6 @@ function configuredRemoteName() {
 
 /**
  * Reads the previously installed Git remote name for remote-selection defaults.
- *
- * @remarks Requires no current installation; absence of Last of Readme remote
- * configuration is represented as an empty string.
  */
 function getCurrentConfiguredRemoteName() {
   const configuredRemoteName = getPackageJsonField('lastOfReadme.remoteName', {
@@ -117,7 +106,7 @@ function getCurrentConfiguredRemoteName() {
 /**
  * Returns repository API/browser URLs needed in the resolver link.
  *
- * @remarks If there is eventually a need to tell the resolver what kind of API
+ * @todo Maybe, if there is eventually a need to tell the resolver what kind of API
  * is offered by the remote, then a kind value might be added. For now, the
  * resolver uses GitHub API endpoints.
  */
@@ -134,9 +123,6 @@ function remoteConfiguration() {
 /**
  * Reads the previously installed repository API/browser URLs for
  * collectRemoteInput() defaults.
- *
- * @remarks Requires no current installation; absence of Last of Readme remote
- * configuration is represented as null.
  */
 function getCurrentRemoteConfiguration() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
@@ -176,9 +162,6 @@ function packageFilePath() {
 /**
  * Reads the previously installed package-file path for
  * collectPackageFilePathInput().
- *
- * @remarks Requires no current installation; absence of Last of Readme package
- * configuration is represented as null.
  */
 function getCurrentInstalledPackageFilePath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
@@ -207,9 +190,6 @@ function repositoryUrlPath() {
 /**
  * Reads the previously installed repository URL path for
  * collectPackageFilePathInput() defaults.
- *
- * @remarks Requires no current installation; absence of Last of Readme package
- * configuration is represented as null.
  */
 function getCurrentRepositoryUrlPath() {
   const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
@@ -225,9 +205,6 @@ function getCurrentRepositoryUrlPath() {
 /**
  * Reads the current package.json files field for collectPackageFilePathInput()
  * defaults and apply-installation package-file updates.
- *
- * @remarks No Last-of-Readme-specific configuration is required; absence of a
- * files array is represented as null.
  */
 function getCurrentFilesField() {
   const files = getPackageJsonField('files', { allowEmpty: true });
