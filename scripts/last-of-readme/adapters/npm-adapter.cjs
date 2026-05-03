@@ -44,8 +44,11 @@ function assertPackageManifestReadableByNpm() {
  *
  * Used currently by collectNpmPackageRootEnvironmentInput() to support
  * checkCwdIsPackageRootRequirements(). 
+ *
  * @todo Longer term, this package root should anchor direct resolution of
  * package-relative paths without relying on process cwd.
+ * @todo In collectNpmPackageRootEnvironmentInput, the value should be used as
+ * a default in a user prompt and the user response should be authoritative. 
  */
 function npmPackageRoot() {
   try {
