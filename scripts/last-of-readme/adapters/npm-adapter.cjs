@@ -256,14 +256,14 @@ function getCurrentRepositoryUrlPath() {
 }
 
 /**
- * Attempts to derive GitHub API/browser URLs for collectRemoteInput() defaults.
+ * Attempts to derive GitHub API/browser URL defaults from a Git remote URL
+ * selected during installation.
  *
- * @param {string|{url?: string}} repository - package.json repository value or
- * @param {string} repositoryUrl - Git remote URL selected during installation.
+ * @param {string} remoteUrl - Git remote URL selected during installation.
  */
-function tryDeriveGitHubRemoteUrls(repositoryUrl) {
+function tryDeriveGitHubUrlsFromRemoteUrl(remoteUrl) {
   try {
-    return deriveGitHubRemoteUrls(repositoryUrl);
+    return deriveGitHubUrlsFromRemoteUrl(remoteUrl);
   } catch {
     return null;
   }
@@ -301,19 +301,12 @@ function fail(message) {
   throw error;
 }
 
-function deriveGitHubRemoteUrls(repository) {
-  let url =
-    typeof repository === 'string'
-      ? repository
-      : repository && typeof repository.url === 'string'
-        ? repository.url
-        : null;
-
-  if (!url) {
-    fail('package.json has no valid repository.url');
+function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
+  if (typeof remoteUrl !== 'string' || !remoteUrl.trim()) {
+    fail('Git remote URL is empty');
   }
 
-  url = url.trim();
+  const url = remoteUrl.trim();
 
   if (url.startsWith('git+')) {
     url = url.slice(4);
@@ -338,7 +331,7 @@ function deriveGitHubRemoteUrls(repository) {
     return githubRemoteUrlsFromHostRepository(match[1], match[2]);
   }
 
-  fail('repository.url must point to a GitHub repository');
+  fail('Git remote URL must point to a GitHub repository');
 }
 
 module.exports = {
@@ -356,5 +349,5 @@ module.exports = {
   getCurrentRepositoryApiUrl,
   getCurrentRepositoryBrowserUrl,
   getCurrentRepositoryUrlPath,
-  tryDeriveGitHubRemoteUrls
+  tryDeriveGitHubUrlsFromRemoteUrl
 };

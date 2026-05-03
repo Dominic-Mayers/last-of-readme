@@ -20,7 +20,7 @@ const {
   getCurrentRepositoryApiUrl,
   getCurrentRepositoryBrowserUrl,
   getCurrentRepositoryUrlPath,
-  tryDeriveGitHubRemoteUrls,
+  tryDeriveGitHubUrlsFromRemoteUrl,
 } = require('./npm-adapter.cjs');
 
 // TODO architecture:
@@ -146,7 +146,7 @@ async function collectRemoteInput(config = {}) {
     );
 
     const derivedRemote = selectedRemote
-      ? tryDeriveGitHubRemoteUrls(selectedRemote.url)
+      ? tryDeriveGitHubUrlsFromRemoteUrl(selectedRemote.url)
       : null;
 
     const defaultRepositoryApiUrl =
