@@ -3,15 +3,9 @@
 /**
  * Adapter over the local Git repository used by Last of Readme.
  *
- * The exported operations assume a Git executable and a local Git repository
- * context. These are checked during the installer basic requirements by
- * assertInGitRepository(). Runtime/core scripts that use this adapter have the
- * same environmental expectation, but do not inherit any process-state
- * guarantee from installation.
- *
- * Function-level comments describe each Git capability. Argument constraints
- * that affect Git command success are documented with @param tags rather than
- * as Last-of-Readme installation requirements.
+ * @envRequirement A Git executable and a local Git repository context must be
+ * available to Git-backed installer and runtime operations. Asserted in
+ * assertInGitRepository().
  */
 
 const { execFileSync } = require('child_process');
@@ -19,11 +13,10 @@ const { execFileSync } = require('child_process');
 const WORKSPACE_ROOT = process.cwd();
 
 /**
- * Asserts the existence of a Git repository context for Git-backed
- * documentation operations.
+ * Asserts the basic Git environment needed by the installer before Git-backed
+ * phases such as checkGitRemote() run.
  *
- * @remarks Simple environmental probe with no Last-of-Readme-specific
- * requirements.
+ * @returns {void}
  */
 function assertInGitRepository() {
   try {
@@ -35,16 +28,19 @@ function assertInGitRepository() {
 }
 
 /**
- * Creates an annotated documentation tag at the current repository commit.
+ * Creates the documentation tag requested by tag-doc.cjs at the current
+ * repository commit.
  *
- * @param {string} tag - Must not already exist in the local repository.
+ * @param {string} tag - Git tag name. Must be valid as refs/tags/<tag> and
+ * must not already exist in the local repository.
  * @param {string} annotation - Annotation message stored in the annotated tag.
- * @remarks Git repository must contain a current commit.
+ * @remarks Requires a current commit at runtime.
+ * @returns {void}
  */
 function setTagAtCurrentCommit(tag, annotation) {
   ensureGitWorkspace();
   ensureCurrentCommitExists();
-  
+
   try {
     execFileSync('git', ['rev-parse', '-q', '--verify', `refs/tags/${tag}`], {
       cwd: WORKSPACE_ROOT,
@@ -65,11 +61,16 @@ function setTagAtCurrentCommit(tag, annotation) {
 }
 
 /**
- * Publishes an existing documentation tag to a Git remote.
+ * Publishes the documentation tag requested by tag-doc.cjs to the configured
+ * Git remote.
  *
  * @param {string} tag - Must identify an existing local tag.
  * @param {string} remote - Git remote to which the tag should be pushed.
- * @remarks The configured runtime remote name must resolve to a Git remote that can accept tag pushes.
+ * @configRequirement The remote name supplied at runtime must be installed as
+ * Last of Readme package configuration. Configured in installRemotePackageJson().
+ * @envRequirement The selected Git remote must accept dry-run tag publication.
+ * Asserted in checkGitRemoteRequirements().
+ * @returns {void}
  */
 function publishTag(tag, remote) {
   ensureGitWorkspace();
@@ -80,7 +81,11 @@ function publishTag(tag, remote) {
 }
 
 /**
- * Lists local Git remotes that installation can offer as repository choices.
+ * Collects the local Git remotes used by collectGitRemotesEnvironmentInput()
+ * before checkGitRemote() asks the user to select the Last of Readme remote.
+ *
+ * @returns {{name: string, url: string}[]} Local Git remotes available for
+ * remote-selection prompts.
  */
 function getRemotesFromGit() {
   return gitRemoteNames().map((name) => ({
@@ -91,10 +96,14 @@ function getRemotesFromGit() {
 
 
 /**
- * Verifies that a Git remote accepts dry-run publication of a documentation
- * tag.
+ * Asserts the selected remote publication capability used by
+ * checkGitRemoteRequirements() before the remote configuration is finalized.
  *
  * @param {string} remote - Git remote to probe for tag publication.
+ * @envRequirement The selected Git remote must accept dry-run tag publication.
+ * Asserted in checkGitRemoteRequirements().
+ * @remarks Requires a current commit at installation time.
+ * @returns {void}
  */
 function assertCanDryRunPublishTag(remote) {
   ensureGitWorkspace();
