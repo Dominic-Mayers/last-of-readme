@@ -61,16 +61,20 @@ function setTagAtCurrentCommit(tag, annotation) {
 }
 
 /**
- * Publishes the documentation tag requested by tag-doc.cjs to the configured
- * Git remote.
+ * Publish a documentation tag to the configured remote. Used by tag-doc.cjs.
  *
- * @param {string} tag - Must identify an existing local tag.
- * @param {string} remote - Git remote to which the tag should be pushed.
+ * @param {string} remoteName - The configured Git remote to publish to.
+ * @param {string} tagName - The documentation tag to publish.
+ * @returns {void}
+ *
  * @configRequirement The remote name supplied at runtime must be installed as
  * Last of Readme package configuration. Configured in installRemotePackageJson().
- * @assertRequirement The selected Git remote must accept dry-run tag publication.
- * Asserted in checkGitRemoteRequirements().
- * @returns {void}
+ *
+ * @assertRequirement The configured remote must accept tag publication.
+ * Checked during installation by assertCanDryRunPublishTag().
+ *
+ * @remarks The actual push is still subject to runtime Git, network,
+ * authentication, and remote-state failures.
  */
 function publishTag(tag, remote) {
   ensureGitWorkspace();
@@ -116,7 +120,9 @@ function assertCanDryRunPublishTag(remote) {
       {
         cwd: WORKSPACE_ROOT,
         stdio: ['ignore', 'pipe', 'pipe']
-      }
+      }/**
+ * Reassert that the current working directory is inside a Git work tree.
+ */
     );
   } catch (error) {
     fail(
@@ -168,6 +174,9 @@ function gitRemoteUrl(remoteName) {
   }).trim();
 }
 
+/**
+ * Reassert that the current working directory is inside a Git work tree.
+ */
 function ensureGitWorkspace() {
   try {
     execFileSync('git', ['rev-parse', '--is-inside-work-tree'], {
