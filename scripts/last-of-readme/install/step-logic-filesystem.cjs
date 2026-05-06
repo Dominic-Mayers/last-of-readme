@@ -235,7 +235,7 @@ function prepareDocLinkPlaceholderEnvironmentInput(pipelineState = {}) {
   };
 }
 
-function checkDocLinkPlaceholderRequirements(pipelineState = {}) {
+function checkLinkPlaceholderRequirements(pipelineState = {}) {
   const control = pipelineState.control || {};
   const packageFilePath = normalizePackageFilePath(
     pipelineState.config?.npm?.packageFilePath
@@ -315,6 +315,6 @@ module.exports = {
   finalizePackageFilePathState,
   collectDocLinkPlaceholderEnvironmentInput,
   prepareDocLinkPlaceholderEnvironmentInput,
-  checkDocLinkPlaceholderRequirements,
+  checkLinkPlaceholderRequirements,
   finalizeDocLinkPlaceholderState,
 };

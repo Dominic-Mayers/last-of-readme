@@ -7,21 +7,21 @@ const {
 const {
   collectDocLinkPlaceholderEnvironmentInput,
   prepareDocLinkPlaceholderEnvironmentInput,
-  checkDocLinkPlaceholderRequirements,
+  checkLinkPlaceholderRequirements,
   finalizeDocLinkPlaceholderState,
 } = require('./step-logic-filesystem.cjs');
 
-async function checkDocLinkPlaceholder(pipelineState = {}) {
+async function checkLinkPlaceholder(pipelineState = {}) {
 
   pipelineState = await collectDocLinkPlaceholderInput(pipelineState);
   pipelineState = prepareDocLinkPlaceholderInput(pipelineState);
   pipelineState = collectDocLinkPlaceholderEnvironmentInput(pipelineState);
   pipelineState = prepareDocLinkPlaceholderEnvironmentInput(pipelineState);
-  pipelineState = checkDocLinkPlaceholderRequirements(pipelineState);
+  pipelineState = checkLinkPlaceholderRequirements(pipelineState);
   
   return finalizeDocLinkPlaceholderState(pipelineState);
 }
 
 module.exports = {
-  checkDocLinkPlaceholder,
+  checkLinkPlaceholder,
 };

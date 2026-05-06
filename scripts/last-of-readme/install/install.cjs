@@ -7,8 +7,8 @@ const {
 } = require('./check-cwd-is-package-root.cjs');
 const { checkPackageFilePath } = require('./check-package-file-path.cjs');
 const {
-  checkDocLinkPlaceholder,
-} = require('./check-doc-link-placeholder.cjs');
+  checkLinkPlaceholder,
+} = require('./check-link-placeholder.cjs');
 const { automatedInstall } = require('./apply-installation.cjs');
 
 async function main() {
@@ -21,7 +21,7 @@ async function main() {
   pipelineState = checkCwdIsPackageRoot(pipelineState);
   pipelineState = await checkGitRemote(pipelineState);
   pipelineState = await checkPackageFilePath(pipelineState);
-  pipelineState = await checkDocLinkPlaceholder(pipelineState);
+  pipelineState = await checkLinkPlaceholder(pipelineState);
   automatedInstall(pipelineState);
 }
 
