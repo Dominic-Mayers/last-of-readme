@@ -35,7 +35,7 @@ async function collectDocLinkPlaceholderInput(pipelineState = {}) {
     return pipelineState;
   }
 
-  const packageFilePath = pipelineState.config?.npm?.packageFilePath;
+  const packageFilePath = pipelineState.config?.packageFilePath;
   const rl = createInterface();
 
   try {

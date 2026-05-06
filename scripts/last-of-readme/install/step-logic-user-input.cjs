@@ -49,11 +49,8 @@ function preparePackageFilePathInput(pipelineState = {}) {
     ...pipelineState,
     config: {
       ...config,
-      npm: {
-        ...(config.npm || {}),
-        packageFilePath,
-        repositoryUrlPath,
-      },
+      packageFilePath,
+      repositoryUrlPath,
     },
   };
 }

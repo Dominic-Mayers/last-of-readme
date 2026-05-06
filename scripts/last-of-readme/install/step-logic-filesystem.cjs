@@ -67,7 +67,7 @@ function validatePackageFilePath(packageFilePath) {
 
 function collectPackageFilePathEnvironmentInput(pipelineState = {}) {
   const control = pipelineState.control || {};
-  const packageFilePath = pipelineState.config?.npm?.packageFilePath;
+  const packageFilePath = pipelineState.config?.packageFilePath;
 
   return {
     ...pipelineState,
@@ -92,7 +92,7 @@ function preparePackageFilePathEnvironmentInput(pipelineState = {}) {
 
 function checkPackageFilePathRequirements(pipelineState = {}) {
   const control = pipelineState.control || {};
-  const packageFilePath = pipelineState.config?.npm?.packageFilePath;
+  const packageFilePath = pipelineState.config?.packageFilePath;
 
   validatePackageFilePath(packageFilePath);
 
@@ -204,7 +204,7 @@ function validateExistingDocLinkFile(packageFilePath) {
 function collectDocLinkPlaceholderEnvironmentInput(pipelineState = {}) {
   const control = pipelineState.control || {};
   const packageFilePath = normalizePackageFilePath(
-    pipelineState.config?.npm?.packageFilePath
+    pipelineState.config?.packageFilePath
   );
 
   if (!control.packageFileExists) {
@@ -238,7 +238,7 @@ function prepareDocLinkPlaceholderEnvironmentInput(pipelineState = {}) {
 function checkLinkPlaceholderRequirements(pipelineState = {}) {
   const control = pipelineState.control || {};
   const packageFilePath = normalizePackageFilePath(
-    pipelineState.config?.npm?.packageFilePath
+    pipelineState.config?.packageFilePath
   );
 
   validatePackageFilePath(packageFilePath);

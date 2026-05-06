@@ -74,12 +74,9 @@ function finalizeRemoteState(pipelineState = {}) {
     ...pipelineState,
     config: {
       ...config,
-      git: {
-        ...(config.git || {}),
-        remoteName: control.localName,
-      },
-      remoteRepository: {
-        ...(config.remoteRepository || {}),
+      remoteName: control.localName,
+      remote: {
+        ...(config.remote || {}),
         kind: 'github',
         repositoryApiUrl: control.repositoryApiUrl,
         repositoryBrowserUrl: control.repositoryBrowserUrl,

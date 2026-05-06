@@ -22,9 +22,8 @@ function setPackageJsonFields(updates) {
 function installRemotePackageJson(pipelineState = {}) {
   const config = pipelineState.config || {};
   const control = pipelineState.control || {};
-  const gitConfig = config.git || {};
-  const remoteRepositoryConfig = config.remoteRepository || {};
-  const remoteName = gitConfig.remoteName;
+  const remoteConfig = config.remote || {};
+  const remoteName = config.remoteName;
 
   if (!remoteName || !control.repositoryUrl) {
     throw new Error('Remote installation requires resolved remote cycle state');
@@ -32,28 +31,28 @@ function installRemotePackageJson(pipelineState = {}) {
 
   setPackageJsonFields({
     'lastOfReadme.remoteName': remoteName,
-    'lastOfReadme.remote.kind': remoteRepositoryConfig.kind,
+    'lastOfReadme.remote.kind': remoteConfig.kind,
     'lastOfReadme.remote.repositoryApiUrl':
-      remoteRepositoryConfig.repositoryApiUrl,
+      remoteConfig.repositoryApiUrl,
     'lastOfReadme.remote.repositoryBrowserUrl':
-      remoteRepositoryConfig.repositoryBrowserUrl,
+      remoteConfig.repositoryBrowserUrl,
   });
 
   return {
     path: 'package.json',
     remote: {
       localName: remoteName,
-      kind: remoteRepositoryConfig.kind,
-      repositoryApiUrl: remoteRepositoryConfig.repositoryApiUrl,
-      repositoryBrowserUrl: remoteRepositoryConfig.repositoryBrowserUrl,
+      kind: remoteConfig.kind,
+      repositoryApiUrl: remoteConfig.repositoryApiUrl,
+      repositoryBrowserUrl: remoteConfig.repositoryBrowserUrl,
     },
   };
 }
 
 function installDocLinkPackageJson(pipelineState = {}) {
-  const npmConfig = pipelineState.config?.npm || {};
+  const config = pipelineState.config || {};
   const control = pipelineState.control || {};
-  const packageFilePath = npmConfig.packageFilePath;
+  const packageFilePath = config.packageFilePath;
 
   if (!packageFilePath) {
     throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
@@ -61,8 +60,8 @@ function installDocLinkPackageJson(pipelineState = {}) {
 
   setPackageJsonFields({
     'lastOfReadme.packageFilePath': packageFilePath,
-    ...(typeof npmConfig.repositoryUrlPath === 'string'
-      ? { 'lastOfReadme.repositoryUrlPath': npmConfig.repositoryUrlPath }
+    ...(typeof config.repositoryUrlPath === 'string'
+      ? { 'lastOfReadme.repositoryUrlPath': config.repositoryUrlPath }
       : {}),
   });
 
@@ -90,9 +89,9 @@ function installDocLinkPackageJson(pipelineState = {}) {
 // TODO: The return value is not currently used by the installer.
 // Decide whether installation steps should report results in a structured way.
 function installDocLink(pipelineState = {}) {
-  const npmConfig = pipelineState.config?.npm || {};
+  const config = pipelineState.config || {};
   const control = pipelineState.control || {};
-  const packageFilePath = npmConfig.packageFilePath;
+  const packageFilePath = config.packageFilePath;
 
   if (!packageFilePath || !control.mode) {
     throw new Error('Doc-link installation requires resolved doc-link cycle state');
