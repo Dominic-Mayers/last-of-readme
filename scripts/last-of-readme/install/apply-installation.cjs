@@ -9,18 +9,18 @@ const {
 } = require('../adapters/filesystem-adapter.cjs');
 const { START_MARKER, END_MARKER } = require('./step-logic-filesystem.cjs');
 
-function automatedInstall(config) {
-  installDocLink(config);
-  installRemotePackageJson(config);
-  installDocLinkPackageJson(config);
+function automatedInstall(pipelineState) {
+  installDocLink(pipelineState);
+  installRemotePackageJson(pipelineState);
+  installDocLinkPackageJson(pipelineState);
 }
 
 function setPackageJsonFields(updates) {
   updatePackageJsonFields(updates);
 }
 
-function installRemotePackageJson(config = {}) {
-  const remote = config.remote;
+function installRemotePackageJson(pipelineState = {}) {
+  const remote = pipelineState.remote;
 
   if (!remote || !remote.localName || !remote.repositoryUrl) {
     throw new Error('Remote installation requires resolved remote cycle state');
@@ -44,8 +44,8 @@ function installRemotePackageJson(config = {}) {
   };
 }
 
-function installDocLinkPackageJson(config = {}) {
-  const docLink = config.docLink;
+function installDocLinkPackageJson(pipelineState = {}) {
+  const docLink = pipelineState.docLink;
 
   if (!docLink || !docLink.packageFilePath) {
     throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
@@ -81,8 +81,8 @@ function installDocLinkPackageJson(config = {}) {
 
 // TODO: The return value is not currently used by the installer.
 // Decide whether installation steps should report results in a structured way.
-function installDocLink(config = {}) {
-  const docLink = config.docLink;
+function installDocLink(pipelineState = {}) {
+  const docLink = pipelineState.docLink;
   if (!docLink || !docLink.packageFilePath || !docLink.mode) {
     throw new Error('Doc-link installation requires resolved doc-link cycle state');
   }

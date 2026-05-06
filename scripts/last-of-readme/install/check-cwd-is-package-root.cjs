@@ -9,13 +9,13 @@ const {
   finalizeCwdPackageRootState,
 } = require('./step-logic-filesystem.cjs');
 
-function checkCwdIsPackageRoot(config = {}) {
+function checkCwdIsPackageRoot(pipelineState = {}) {
 
-  config = collectNpmPackageRootEnvironmentInput(config);
-  config = prepareCwdPackageRootEnvironmentInput(config);
-  config = checkCwdIsPackageRootRequirements(config);
+  pipelineState = collectNpmPackageRootEnvironmentInput(pipelineState);
+  pipelineState = prepareCwdPackageRootEnvironmentInput(pipelineState);
+  pipelineState = checkCwdIsPackageRootRequirements(pipelineState);
 
-  return finalizeCwdPackageRootState(config);
+  return finalizeCwdPackageRootState(pipelineState);
 }
 
 module.exports = {

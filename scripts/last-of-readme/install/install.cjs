@@ -14,12 +14,12 @@ const { automatedInstall } = require('./apply-installation.cjs');
 async function main() {
   checkBasicRequirements();
   console.log('✔ Basic requirements satisfied');
-  let config = {};
-  config = checkCwdIsPackageRoot(config);
-  config = await checkGitRemote(config);
-  config = await checkPackageFilePath(config);
-  config = await checkDocLinkPlaceholder(config);
-  automatedInstall(config);
+  let pipelineState = {};
+  pipelineState = checkCwdIsPackageRoot(pipelineState);
+  pipelineState = await checkGitRemote(pipelineState);
+  pipelineState = await checkPackageFilePath(pipelineState);
+  pipelineState = await checkDocLinkPlaceholder(pipelineState);
+  automatedInstall(pipelineState);
 }
 
 main().catch((error) => {

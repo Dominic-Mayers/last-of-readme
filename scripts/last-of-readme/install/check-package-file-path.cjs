@@ -11,15 +11,15 @@ const {
   finalizePackageFilePathState,
 } = require('./step-logic-filesystem.cjs');
 
-async function checkPackageFilePath(config = {}) {
+async function checkPackageFilePath(pipelineState = {}) {
 
-  config = await collectPackageFilePathInput(config);
-  config = preparePackageFilePathInput(config);
-  config = collectPackageFilePathEnvironmentInput(config);
-  config = preparePackageFilePathEnvironmentInput(config);
-  config = checkPackageFilePathRequirements(config);
+  pipelineState = await collectPackageFilePathInput(pipelineState);
+  pipelineState = preparePackageFilePathInput(pipelineState);
+  pipelineState = collectPackageFilePathEnvironmentInput(pipelineState);
+  pipelineState = preparePackageFilePathEnvironmentInput(pipelineState);
+  pipelineState = checkPackageFilePathRequirements(pipelineState);
 
-  return finalizePackageFilePathState(config);
+  return finalizePackageFilePathState(pipelineState);
 }
 
 module.exports = {
