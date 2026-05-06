@@ -10,8 +10,8 @@ const {
   collectDocLinkPlaceholderInput,
 } = require('../adapters/user-input-adapter.cjs');
 
-function prepareRemoteInput(config = {}) {
-  return config;
+function prepareRemoteInput(pipelineState = {}) {
+  return pipelineState;
 }
 
 function resolvePackageFilePathFromCollectedInput({
@@ -32,28 +32,34 @@ function resolveRepositoryUrlPathFromCollectedInput({
   return normalizeOptionalText(repositoryUrlPathAnswer);
 }
 
-function preparePackageFilePathInput(config = {}) {
-  const input = config.docLink || {};
+function preparePackageFilePathInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const config = pipelineState.config || {};
   const resolvedPackageFilePath = resolvePackageFilePathFromCollectedInput({
-    packageFilePathAnswer: input.packageFilePathAnswer,
-    defaultPackageFilePath: input.defaultPackageFilePath,
+    packageFilePathAnswer: control.packageFilePathAnswer,
+    defaultPackageFilePath: control.defaultPackageFilePath,
+  });
+  const packageFilePath = normalizePackageFilePath(resolvedPackageFilePath);
+  const repositoryUrlPath = resolveRepositoryUrlPathFromCollectedInput({
+    repositoryUrlPathAnswer: control.repositoryUrlPathAnswer,
+    defaultRepositoryUrlPath: control.defaultRepositoryUrlPath,
   });
 
   return {
-    ...config,
-    docLink: {
-      ...input,
-      packageFilePath: normalizePackageFilePath(resolvedPackageFilePath),
-      repositoryUrlPath: resolveRepositoryUrlPathFromCollectedInput({
-        repositoryUrlPathAnswer: input.repositoryUrlPathAnswer,
-        defaultRepositoryUrlPath: input.defaultRepositoryUrlPath,
-      }),
+    ...pipelineState,
+    config: {
+      ...config,
+      npm: {
+        ...(config.npm || {}),
+        packageFilePath,
+        repositoryUrlPath,
+      },
     },
   };
 }
 
-function prepareDocLinkPlaceholderInput(config = {}) {
-  return config;
+function prepareDocLinkPlaceholderInput(pipelineState = {}) {
+  return pipelineState;
 }
 
 module.exports = {

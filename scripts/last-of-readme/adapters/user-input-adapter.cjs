@@ -28,14 +28,14 @@ const {
 // npm step logic and pass them into user-input step logic before these
 // prompt-only adapters are called.
 
-async function collectDocLinkPlaceholderInput(config = {}) {
-  const docLink = config.docLink || {};
+async function collectDocLinkPlaceholderInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
 
-  if (docLink.packageFileExists) {
-    return config;
+  if (control.packageFileExists) {
+    return pipelineState;
   }
 
-  const packageFilePath = docLink.packageFilePath;
+  const packageFilePath = pipelineState.config?.npm?.packageFilePath;
   const rl = createInterface();
 
   try {
@@ -48,9 +48,9 @@ async function collectDocLinkPlaceholderInput(config = {}) {
       parseBooleanAnswer(createMinimalFileAnswer, false);
 
     return {
-      ...config,
-      docLink: {
-        ...(config.docLink || {}),
+      ...pipelineState,
+      control: {
+        ...control,
         shouldCreateMinimalFile,
       },
     };
@@ -59,7 +59,7 @@ async function collectDocLinkPlaceholderInput(config = {}) {
   }
 }
 
-async function collectPackageFilePathInput(config = {}) {
+async function collectPackageFilePathInput(pipelineState = {}) {
   const previousPackageFilePath = getCurrentInstalledPackageFilePath();
   const currentFiles = getCurrentFilesField();
   const defaultPackageFilePath = getDefaultPackageFilePath();
@@ -104,9 +104,9 @@ async function collectPackageFilePathInput(config = {}) {
     }
 
     return {
-      ...config,
-      docLink: {
-        ...(config.docLink || {}),
+      ...pipelineState,
+      control: {
+        ...(pipelineState.control || {}),
         packageFilePathAnswer,
         repositoryUrlPathAnswer,
         previousPackageFilePath,
@@ -120,11 +120,12 @@ async function collectPackageFilePathInput(config = {}) {
   }
 }
 
-async function collectRemoteInput(config = {}) {
-  const remotes = Array.isArray(config?.remote?.availableRemotes)
-    ? config.remote.availableRemotes
+async function collectRemoteInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const remotes = Array.isArray(control.availableRemotes)
+    ? control.availableRemotes
     : [];
-  const configuredRemoteName = config?.remote?.configuredRemoteName;
+  const configuredRemoteName = control.configuredRemoteNameAnswer;
   const defaultRemoteName = chooseDefaultRemoteName(
     remotes,
     configuredRemoteName
@@ -177,12 +178,11 @@ async function collectRemoteInput(config = {}) {
     );
 
     return {
-      ...config,
-      remote: {
-        ...(config.remote || {}),
+      ...pipelineState,
+      control: {
+        ...control,
         localName: selectedRemote ? selectedRemote.name : null,
         repositoryUrl: selectedRemote ? selectedRemote.url : null,
-        kind: 'github',
         repositoryApiUrl,
         repositoryBrowserUrl,
       },

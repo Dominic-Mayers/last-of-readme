@@ -5,57 +5,48 @@ const {
   getRemotesFromGit,
 } = require('../adapters/git-adapter.cjs');
 
-function collectGitRemotesEnvironmentInput(config = {}) {
+function collectGitRemotesEnvironmentInput(pipelineState = {}) {
   return {
-    ...config,
-    remote: {
-      ...(config.remote || {}),
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
       availableRemotes: getRemotesFromGit(),
     },
   };
 }
 
-function collectRemoteEnvironmentInput(config = {}) {
-  const localName = config?.remote?.localName;
-  const repositoryUrl = config?.remote?.repositoryUrl;
-  const repositoryApiUrl = config?.remote?.repositoryApiUrl;
-  const repositoryBrowserUrl = config?.remote?.repositoryBrowserUrl;
+function collectRemoteEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
 
-  if (!localName || typeof localName !== 'string') {
-    return config;
+  if (!control.localName || typeof control.localName !== 'string') {
+    return pipelineState;
   }
 
+  return pipelineState;
+}
+
+function prepareRemoteEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+
   return {
-    ...config,
-    remote: {
-      ...config.remote,
-      localName,
-      repositoryUrl,
-      repositoryApiUrl,
-      repositoryBrowserUrl,
+    ...pipelineState,
+    control: {
+      ...control,
+      repositoryApiUrl: normalizeUrl(control.repositoryApiUrl),
+      repositoryBrowserUrl: normalizeUrl(control.repositoryBrowserUrl),
     },
   };
 }
 
-function prepareRemoteEnvironmentInput(config = {}) {
-  return {
-    ...config,
-    remote: {
-      ...(config.remote || {}),
-      repositoryApiUrl: normalizeUrl(config?.remote?.repositoryApiUrl),
-      repositoryBrowserUrl: normalizeUrl(config?.remote?.repositoryBrowserUrl),
-    },
-  };
-}
-
-function checkGitRemoteRequirements(config = {}) {
-  const localName = config?.remote?.localName;
+function checkGitRemoteRequirements(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const localName = control.localName;
 
   if (!localName || typeof localName !== 'string') {
     throw new Error('A Git remote must be selected for Last of Readme');
   }
 
-  const repositoryUrl = config?.remote?.repositoryUrl;
+  const repositoryUrl = control.repositoryUrl;
 
   if (!repositoryUrl) {
     throw new Error(`Selected Git remote does not exist: ${localName}`);
@@ -64,31 +55,35 @@ function checkGitRemoteRequirements(config = {}) {
   assertCanDryRunPublishTag(localName);
 
   assertHttpUrl(
-    config?.remote?.repositoryApiUrl,
+    control.repositoryApiUrl,
     'A GitHub repository API URL must be provided for Last of Readme'
   );
   assertHttpUrl(
-    config?.remote?.repositoryBrowserUrl,
+    control.repositoryBrowserUrl,
     'A GitHub repository browser URL must be provided for Last of Readme'
   );
 
-  return config;
+  return pipelineState;
 }
 
-function finalizeRemoteState(config = {}) {
-  const localName = config?.remote?.localName;
-  const repositoryUrl = config?.remote?.repositoryUrl;
-  const repositoryApiUrl = config?.remote?.repositoryApiUrl;
-  const repositoryBrowserUrl = config?.remote?.repositoryBrowserUrl;
+function finalizeRemoteState(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const config = pipelineState.config || {};
 
   return {
-    ...config,
-    remote: {
-      localName,
-      repositoryUrl,
-      kind: 'github',
-      repositoryApiUrl,
-      repositoryBrowserUrl,
+    ...pipelineState,
+    config: {
+      ...config,
+      git: {
+        ...(config.git || {}),
+        remoteName: control.localName,
+      },
+      remoteRepository: {
+        ...(config.remoteRepository || {}),
+        kind: 'github',
+        repositoryApiUrl: control.repositoryApiUrl,
+        repositoryBrowserUrl: control.repositoryBrowserUrl,
+      },
     },
   };
 }

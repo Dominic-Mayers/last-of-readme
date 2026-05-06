@@ -5,24 +5,24 @@ const {
   npmPackageRoot,
 } = require('../adapters/npm-adapter.cjs');
 
-function collectNpmPackageRootEnvironmentInput(config = {}) {
+function collectNpmPackageRootEnvironmentInput(pipelineState = {}) {
   return {
-    ...config,
-    _cwdPackageRootEnvironmentInput: {
-      ...(config._cwdPackageRootEnvironmentInput || {}),
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
       npmPackageRootAnswer: npmPackageRoot(),
     },
   };
 }
 
-function collectConfiguredRemoteNameEnvironmentInput(config = {}) {
+function collectConfiguredRemoteNameEnvironmentInput(pipelineState = {}) {
   const configuredRemoteNameAnswer = getCurrentConfiguredRemoteName();
 
   return {
-    ...config,
-    remote: {
-      ...(config.remote || {}),
-      configuredRemoteName: configuredRemoteNameAnswer,
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
+      configuredRemoteNameAnswer,
     },
   };
 }

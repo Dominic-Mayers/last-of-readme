@@ -14,7 +14,10 @@ const { automatedInstall } = require('./apply-installation.cjs');
 async function main() {
   checkBasicRequirements();
   console.log('✔ Basic requirements satisfied');
-  let pipelineState = {};
+  let pipelineState = {
+    config: {},
+    control: {},
+  };
   pipelineState = checkCwdIsPackageRoot(pipelineState);
   pipelineState = await checkGitRemote(pipelineState);
   pipelineState = await checkPackageFilePath(pipelineState);

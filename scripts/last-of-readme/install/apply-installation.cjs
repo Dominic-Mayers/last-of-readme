@@ -20,50 +20,58 @@ function setPackageJsonFields(updates) {
 }
 
 function installRemotePackageJson(pipelineState = {}) {
-  const remote = pipelineState.remote;
+  const config = pipelineState.config || {};
+  const control = pipelineState.control || {};
+  const gitConfig = config.git || {};
+  const remoteRepositoryConfig = config.remoteRepository || {};
+  const remoteName = gitConfig.remoteName;
 
-  if (!remote || !remote.localName || !remote.repositoryUrl) {
+  if (!remoteName || !control.repositoryUrl) {
     throw new Error('Remote installation requires resolved remote cycle state');
   }
 
   setPackageJsonFields({
-    'lastOfReadme.remoteName': remote.localName,
-    'lastOfReadme.remote.kind': remote.kind,
-    'lastOfReadme.remote.repositoryApiUrl': remote.repositoryApiUrl,
-    'lastOfReadme.remote.repositoryBrowserUrl': remote.repositoryBrowserUrl,
+    'lastOfReadme.remoteName': remoteName,
+    'lastOfReadme.remote.kind': remoteRepositoryConfig.kind,
+    'lastOfReadme.remote.repositoryApiUrl':
+      remoteRepositoryConfig.repositoryApiUrl,
+    'lastOfReadme.remote.repositoryBrowserUrl':
+      remoteRepositoryConfig.repositoryBrowserUrl,
   });
 
   return {
     path: 'package.json',
     remote: {
-      localName: remote.localName,
-      kind: remote.kind,
-      repositoryApiUrl: remote.repositoryApiUrl,
-      repositoryBrowserUrl: remote.repositoryBrowserUrl,
+      localName: remoteName,
+      kind: remoteRepositoryConfig.kind,
+      repositoryApiUrl: remoteRepositoryConfig.repositoryApiUrl,
+      repositoryBrowserUrl: remoteRepositoryConfig.repositoryBrowserUrl,
     },
   };
 }
 
 function installDocLinkPackageJson(pipelineState = {}) {
-  const docLink = pipelineState.docLink;
+  const npmConfig = pipelineState.config?.npm || {};
+  const control = pipelineState.control || {};
+  const packageFilePath = npmConfig.packageFilePath;
 
-  if (!docLink || !docLink.packageFilePath) {
+  if (!packageFilePath) {
     throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
   }
 
   setPackageJsonFields({
-    'lastOfReadme.packageFilePath': docLink.packageFilePath,
-    ...(typeof docLink.repositoryUrlPath === 'string'
-      ? { 'lastOfReadme.repositoryUrlPath': docLink.repositoryUrlPath }
+    'lastOfReadme.packageFilePath': packageFilePath,
+    ...(typeof npmConfig.repositoryUrlPath === 'string'
+      ? { 'lastOfReadme.repositoryUrlPath': npmConfig.repositoryUrlPath }
       : {}),
   });
 
   const currentFiles = getCurrentFilesField();
   const updatedFiles = updateFilesField(
     currentFiles,
-    docLink.packageFilePath,
-    docLink.previousPackageFilePath,
-    Boolean(docLink.removePreviousPackageFileFromFiles)
+    packageFilePath,
+    control.previousPackageFilePath,
+    Boolean(control.removePreviousPackageFileFromFiles)
   );
 
   if (updatedFiles !== null) {
@@ -74,7 +82,7 @@ function installDocLinkPackageJson(pipelineState = {}) {
 
   return {
     path: 'package.json',
-    packageFilePath: docLink.packageFilePath,
+    packageFilePath,
     filesChanged: updatedFiles !== null,
   };
 }
@@ -82,26 +90,29 @@ function installDocLinkPackageJson(pipelineState = {}) {
 // TODO: The return value is not currently used by the installer.
 // Decide whether installation steps should report results in a structured way.
 function installDocLink(pipelineState = {}) {
-  const docLink = pipelineState.docLink;
-  if (!docLink || !docLink.packageFilePath || !docLink.mode) {
+  const npmConfig = pipelineState.config?.npm || {};
+  const control = pipelineState.control || {};
+  const packageFilePath = npmConfig.packageFilePath;
+
+  if (!packageFilePath || !control.mode) {
     throw new Error('Doc-link installation requires resolved doc-link cycle state');
   }
 
-  if (docLink.mode === 'existing-file') {
+  if (control.mode === 'existing-file') {
     return {
       mode: 'existing-file',
-      path: docLink.packageFilePath,
+      path: packageFilePath,
       changed: false,
     };
   }
 
   const minimalContent = `Last of Readme : ${START_MARKER}${END_MARKER}
 `;
-  createPackageFileIfAbsent(docLink.packageFilePath, minimalContent);
+  createPackageFileIfAbsent(packageFilePath, minimalContent);
 
   return {
     mode: 'created-minimal-file',
-    path: docLink.packageFilePath,
+    path: packageFilePath,
     changed: true,
   };
 }

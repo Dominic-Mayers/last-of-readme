@@ -17,32 +17,39 @@ const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
-function prepareCwdPackageRootEnvironmentInput(config = {}) {
-  const environmentInput = config._cwdPackageRootEnvironmentInput || {};
+function prepareCwdPackageRootEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
 
   return {
-    ...config,
-    _cwdPackageRootEnvironmentInput: {
+    ...pipelineState,
+    control: {
+      ...control,
       npmPackageRoot: path.resolve(
-        String(environmentInput.npmPackageRootAnswer || '')
+        String(control.npmPackageRootAnswer || '')
       ),
     },
   };
 }
 
-function checkCwdIsPackageRootRequirements(config = {}) {
-  const environmentInput = config._cwdPackageRootEnvironmentInput || {};
+function checkCwdIsPackageRootRequirements(pipelineState = {}) {
+  const control = pipelineState.control || {};
 
-  assertCwdIsPackageRoot(environmentInput.npmPackageRoot);
+  assertCwdIsPackageRoot(control.npmPackageRoot);
 
-  return config;
+  return pipelineState;
 }
 
-function finalizeCwdPackageRootState(config = {}) {
-  const { _cwdPackageRootEnvironmentInput, ...configWithoutEnvironmentInput } =
-    config;
+function finalizeCwdPackageRootState(pipelineState = {}) {
+  const {
+    npmPackageRootAnswer,
+    npmPackageRoot,
+    ...controlWithoutCwdPackageRoot
+  } = pipelineState.control || {};
 
-  return configWithoutEnvironmentInput;
+  return {
+    ...pipelineState,
+    control: controlWithoutCwdPackageRoot,
+  };
 }
 
 function validatePackageFilePath(packageFilePath) {
@@ -58,62 +65,59 @@ function validatePackageFilePath(packageFilePath) {
   }
 }
 
-function collectPackageFilePathEnvironmentInput(config = {}) {
-  const input = config.docLink || {};
-  const packageFilePath = input.packageFilePath;
+function collectPackageFilePathEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const packageFilePath = pipelineState.config?.npm?.packageFilePath;
 
   return {
-    ...config,
-    _packageFilePathEnvironmentInput: {
+    ...pipelineState,
+    control: {
+      ...control,
       packageFileExistsAnswer: packageFileExists(packageFilePath),
     },
   };
 }
 
-function preparePackageFilePathEnvironmentInput(config = {}) {
-  const environmentInput = config._packageFilePathEnvironmentInput || {};
+function preparePackageFilePathEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
 
   return {
-    ...config,
-    _packageFilePathEnvironmentInput: {
-      packageFileExists: Boolean(environmentInput.packageFileExistsAnswer),
+    ...pipelineState,
+    control: {
+      ...control,
+      packageFileExists: Boolean(control.packageFileExistsAnswer),
     },
   };
 }
 
-function checkPackageFilePathRequirements(config = {}) {
-  const input = config.docLink || {};
-  const environmentInput = config._packageFilePathEnvironmentInput || {};
-  const packageFilePath = input.packageFilePath;
+function checkPackageFilePathRequirements(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const packageFilePath = pipelineState.config?.npm?.packageFilePath;
 
   validatePackageFilePath(packageFilePath);
 
-  if (environmentInput.packageFileExists) {
+  if (control.packageFileExists) {
     validateExistingPackageFile(packageFilePath);
   }
 
-  return config;
+  return pipelineState;
 }
 
-function finalizePackageFilePathState(config = {}) {
-  const input = config.docLink || {};
-  const environmentInput = config._packageFilePathEnvironmentInput || {};
-  const packageFilePath = input.packageFilePath;
-
-  const { _packageFilePathEnvironmentInput, ...configWithoutEnvironmentInput } =
-    config;
+function finalizePackageFilePathState(pipelineState = {}) {
   const {
+    packageFileExistsAnswer,
     packageFilePathAnswer,
     repositoryUrlPathAnswer,
-    ...docLinkWithoutRawAnswers
-  } = input;
+    defaultPackageFilePath,
+    defaultRepositoryUrlPath,
+    ...controlWithoutRawPackageFileInput
+  } = pipelineState.control || {};
 
   return {
-    ...configWithoutEnvironmentInput,
-    docLink: {
-      ...docLinkWithoutRawAnswers,
-      packageFilePath,
-      packageFileExists: Boolean(environmentInput.packageFileExists),
+    ...pipelineState,
+    control: {
+      ...controlWithoutRawPackageFileInput,
+      packageFileExists: Boolean(pipelineState.control?.packageFileExists),
     },
   };
 }
@@ -197,51 +201,50 @@ function validateExistingDocLinkFile(packageFilePath) {
   };
 }
 
-function collectDocLinkPlaceholderEnvironmentInput(config = {}) {
-  const input = config.docLink || {};
-  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+function collectDocLinkPlaceholderEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const packageFilePath = normalizePackageFilePath(
+    pipelineState.config?.npm?.packageFilePath
+  );
 
-  if (!input.packageFileExists) {
-    return {
-      ...config,
-      _docLinkPlaceholderEnvironmentInput: {},
-    };
+  if (!control.packageFileExists) {
+    return pipelineState;
   }
 
-  const content = readPackageFileContent(packageFilePath);
-
   return {
-    ...config,
-    _docLinkPlaceholderEnvironmentInput: {
-      content,
+    ...pipelineState,
+    control: {
+      ...control,
+      packageFileContent: readPackageFileContent(packageFilePath),
     },
   };
 }
 
-function prepareDocLinkPlaceholderEnvironmentInput(config = {}) {
-  const environmentInput = config._docLinkPlaceholderEnvironmentInput || {};
-  const managedPlaceholder = environmentInput.content
-    ? findManagedPlaceholder(environmentInput.content)
+function prepareDocLinkPlaceholderEnvironmentInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const managedPlaceholder = control.packageFileContent
+    ? findManagedPlaceholder(control.packageFileContent)
     : null;
 
   return {
-    ...config,
-    _docLinkPlaceholderEnvironmentInput: {
-      ...environmentInput,
+    ...pipelineState,
+    control: {
+      ...control,
       managedPlaceholder,
     },
   };
 }
 
-function checkDocLinkPlaceholderRequirements(config = {}) {
-  const input = config.docLink || {};
-  const environmentInput = config._docLinkPlaceholderEnvironmentInput || {};
-  const packageFilePath = normalizePackageFilePath(input.packageFilePath);
+function checkDocLinkPlaceholderRequirements(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const packageFilePath = normalizePackageFilePath(
+    pipelineState.config?.npm?.packageFilePath
+  );
 
   validatePackageFilePath(packageFilePath);
 
-  if (!input.packageFileExists) {
-    if (!input.shouldCreateMinimalFile) {
+  if (!control.packageFileExists) {
+    if (!control.shouldCreateMinimalFile) {
       throw new Error(
         `${packageFilePath} does not exist. Select minimal-file creation or create the file with the placeholder to allow installation.`
       );
@@ -250,8 +253,9 @@ function checkDocLinkPlaceholderRequirements(config = {}) {
     assertPackageFileCanBeCreated(packageFilePath);
 
     return {
-      ...config,
-      _docLinkPlaceholderCheck: {
+      ...pipelineState,
+      control: {
+        ...control,
         mode: 'create-minimal-file',
       },
     };
@@ -259,31 +263,36 @@ function checkDocLinkPlaceholderRequirements(config = {}) {
 
   validateExistingPackageFile(packageFilePath);
 
-  if (!environmentInput.managedPlaceholder) {
+  if (!control.managedPlaceholder) {
     throw new Error(
       `${packageFilePath} does not contain a managed placeholder outside example regions`
     );
   }
 
   return {
-    ...config,
-    _docLinkPlaceholderCheck: {
+    ...pipelineState,
+    control: {
+      ...control,
       mode: 'existing-file',
-      managedPlaceholder: environmentInput.managedPlaceholder,
     },
   };
 }
 
-function finalizeDocLinkPlaceholderState(config = {}) {
-  const checkResult = config._docLinkPlaceholderCheck || {};
-  const { _docLinkPlaceholderCheck, ...configWithoutCheck } = config;
+function finalizeDocLinkPlaceholderState(pipelineState = {}) {
+  const {
+    packageFileContent,
+    packageFileExistsAnswer,
+    managedPlaceholder,
+    mode,
+    ...controlWithoutPlaceholderInput
+  } = pipelineState.control || {};
 
   return {
-    ...configWithoutCheck,
-    docLink: {
-      ...(configWithoutCheck.docLink || {}),
-      mode: checkResult.mode,
-      managedPlaceholder: checkResult.managedPlaceholder,
+    ...pipelineState,
+    control: {
+      ...controlWithoutPlaceholderInput,
+      mode,
+      ...(managedPlaceholder ? { managedPlaceholder } : {}),
     },
   };
 }
