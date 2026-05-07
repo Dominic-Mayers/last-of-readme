@@ -260,9 +260,67 @@ function resolveCollectedRepositoryUrlPathAnswer(
   return normalizeOptionalText(repositoryUrlPathAnswer);
 }
 
+
+function tryDeriveGitHubUrlsFromRemoteUrl(remoteUrl) {
+  try {
+    return deriveGitHubUrlsFromRemoteUrl(remoteUrl);
+  } catch {
+    return null;
+  }
+}
+
+function githubRemoteUrlsFromHostRepository(host, repository) {
+  const normalizedHost = String(host).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  const normalizedRepository = String(repository).replace(/^\/+/, '').replace(/\/+$/, '');
+  const apiBase =
+    normalizedHost === 'github.com'
+      ? 'https://api.github.com'
+      : `https://${normalizedHost}/api/v3`;
+
+  return {
+    kind: 'github',
+    repositoryApiUrl: `${apiBase}/repos/${normalizedRepository}`,
+    repositoryBrowserUrl: `https://${normalizedHost}/${normalizedRepository}`,
+  };
+}
+
+function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
+  if (typeof remoteUrl !== 'string' || !remoteUrl.trim()) {
+    throw new Error('Git remote URL is empty');
+  }
+
+  let url = remoteUrl.trim();
+
+  if (url.startsWith('git+')) {
+    url = url.slice(4);
+  }
+
+  if (url.endsWith('.git')) {
+    url = url.slice(0, -4);
+  }
+
+  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
+  if (match) {
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
+  }
+
+  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
+  if (match) {
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
+  }
+
+  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
+  if (match) {
+    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
+  }
+
+  throw new Error('Git remote URL must point to a GitHub repository');
+}
+
 module.exports = {
   collectDocLinkPlaceholderInput,
   collectPackageFilePathInput,
   collectRemoteInput,
   collectRemoteUrlsInput,
+  tryDeriveGitHubUrlsFromRemoteUrl,
 };

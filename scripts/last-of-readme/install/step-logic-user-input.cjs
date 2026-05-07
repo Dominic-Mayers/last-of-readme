@@ -7,12 +7,10 @@ const {
 const {
   collectRemoteInput,
   collectRemoteUrlsInput,
+  tryDeriveGitHubUrlsFromRemoteUrl,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
 } = require('../adapters/user-input-adapter.cjs');
-const {
-  tryDeriveGitHubUrlsFromRemoteUrl,
-} = require('../adapters/npm-adapter.cjs');
 
 function prepareRemoteInput(pipelineState = {}) {
   const control = pipelineState.control || {};

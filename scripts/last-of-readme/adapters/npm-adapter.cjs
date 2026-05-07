@@ -271,37 +271,6 @@ function updatePackageJsonFields(updates) {
   );
 }
 
-/**
- * Attempts to derive GitHub API/browser URL defaults from a Git remote URL
- * selected during installation.
- *
- * @param {string} remoteUrl - Git remote URL selected during installation.
- * @returns {{kind: 'github', repositoryApiUrl: string, repositoryBrowserUrl: string} | null}
- * Derived GitHub URLs, or null when no GitHub URL can be derived.
- */
-function tryDeriveGitHubUrlsFromRemoteUrl(remoteUrl) {
-  try {
-    return deriveGitHubUrlsFromRemoteUrl(remoteUrl);
-  } catch {
-    return null;
-  }
-}
-
-function githubRemoteUrlsFromHostRepository(host, repository) {
-  const normalizedHost = String(host).replace(/^https?:\/\//, '').replace(/\/+$/, '');
-  const normalizedRepository = String(repository).replace(/^\/+/, '').replace(/\/+$/, '');
-  const apiBase =
-    normalizedHost === 'github.com'
-      ? 'https://api.github.com'
-      : `https://${normalizedHost}/api/v3`;
-
-  return {
-    kind: 'github',
-    repositoryApiUrl: `${apiBase}/repos/${normalizedRepository}`,
-    repositoryBrowserUrl: `https://${normalizedHost}/${normalizedRepository}`,
-  };
-}
-
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
   const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
   const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
@@ -319,39 +288,6 @@ function fail(message) {
   throw error;
 }
 
-function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
-  if (typeof remoteUrl !== 'string' || !remoteUrl.trim()) {
-    fail('Git remote URL is empty');
-  }
-
-  let url = remoteUrl.trim();
-
-  if (url.startsWith('git+')) {
-    url = url.slice(4);
-  }
-
-  if (url.endsWith('.git')) {
-    url = url.slice(0, -4);
-  }
-
-  let match = url.match(/^https:\/\/([^/]+)\/([^/]+\/[^/]+)\/?$/);
-  if (match) {
-    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
-  }
-
-  match = url.match(/^git@([^:]+):([^/]+\/[^/]+)$/);
-  if (match) {
-    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
-  }
-
-  match = url.match(/^ssh:\/\/git@([^/]+)\/([^/]+\/[^/]+)$/);
-  if (match) {
-    return githubRemoteUrlsFromHostRepository(match[1], match[2]);
-  }
-
-  fail('Git remote URL must point to a GitHub repository');
-}
-
 module.exports = {
     assertPackageManifestReadableByNpm,
     npmPackageRoot,
@@ -366,8 +302,7 @@ module.exports = {
     repositoryUrlPath,
     getCurrentRepositoryUrlPath,
     getCurrentFilesField,
-    updatePackageJsonFields,
-    tryDeriveGitHubUrlsFromRemoteUrl
+    updatePackageJsonFields
 };
 
 
