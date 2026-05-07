@@ -73,7 +73,7 @@ async function resolveUntilNextAfterContract(remoteRepository, version) {
 }
 
 const contractResolvers = {
-  'until-next-after': resolveUntilNextAfterContract,
+  'until-successor-of': resolveUntilNextAfterContract,
 };
 
 (async () => {
@@ -84,7 +84,7 @@ const contractResolvers = {
   const host = p.get('host') || 'github.com';
   const version = p.get('v');
   const urlPath = p.get('urlPath') || '';
-  const contract = p.get('contract') || 'until-next-after';
+  const contract = p.get('contract') || 'until-successor-of';
 
   if ((!repositoryApiUrl || !repositoryBrowserUrl) && !repository) {
     document.body.innerText = 'missing params';

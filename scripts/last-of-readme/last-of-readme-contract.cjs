@@ -7,7 +7,7 @@ const {
 } = require('./adapters/npm-adapter.cjs');
 
 const SUPPORTED_CONTRACTS = {
-  'until-next-after': describeUntilNextAfter,
+  'until-successor-of': describeUntilNextAfter,
 };
 
 function fail(message) {
@@ -17,7 +17,7 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: node scripts/last-of-readme/last-of-readme-contract.cjs <contract>');
-  console.error('Supported contracts: until-next-after');
+  console.error('Supported contracts: until-successor-of');
   process.exit(1);
 }
 
