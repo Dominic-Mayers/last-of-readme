@@ -27,7 +27,28 @@ function dispatchOutcome(outcome) {
 }
 
 function renderResolutionPage(page) {
-  document.body.innerText = page.message;
+  document.body.replaceChildren();
+
+  const message = document.createElement('p');
+  message.textContent = page.message;
+  document.body.appendChild(message);
+
+  if (!page.links.length) {
+    return;
+  }
+
+  const list = document.createElement('ul');
+
+  for (const link of page.links) {
+    const item = document.createElement('li');
+    const anchor = document.createElement('a');
+    anchor.href = link.url;
+    anchor.textContent = link.label;
+    item.appendChild(anchor);
+    list.appendChild(item);
+  }
+
+  document.body.appendChild(list);
 }
 
 async function resolveUntilNextAfterContract(remoteRepository, version) {
@@ -72,8 +93,76 @@ async function resolveUntilNextAfterContract(remoteRepository, version) {
   return redirectOutcome(remoteRepository.browseDocumentation(base));
 }
 
+async function resolveLastOfContract(remoteRepository, version) {
+  const base = `v${version}`;
+  const last = `${base}-last-doc`;
+  const next = `${base}-next-doc`;
+
+  if (await remoteRepository.resolveTag(last)) {
+    return redirectOutcome(remoteRepository.browseDocumentation(last));
+  }
+
+  const fallbackMessage =
+    'No last-doc tag was found. The following documentation is not marked as authoritative for this version.';
+
+  if (await remoteRepository.resolveTag(next)) {
+    return renderOutcome({
+      kind: 'fallback',
+      message: fallbackMessage,
+      links: [{
+        label: next,
+        url: remoteRepository.browseDocumentation(next),
+      }],
+    });
+  }
+
+  const baseRepoNode = await remoteRepository.resolveTag(base);
+  if (!baseRepoNode) {
+    return renderOutcome({
+      kind: 'not-found',
+      message: 'No last-doc tag was found, and the version tag was not found.',
+      links: [],
+    });
+  }
+
+  const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
+
+  if (containingBranches.length === 1) {
+    return renderOutcome({
+      kind: 'fallback',
+      message: fallbackMessage,
+      links: [{
+        label: containingBranches[0],
+        url: remoteRepository.browseDocumentation(containingBranches[0]),
+      }],
+    });
+  }
+
+  if (containingBranches.length > 1) {
+    return renderOutcome({
+      kind: 'ambiguous',
+      message:
+        'No last-doc tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.',
+      links: containingBranches.map((branch) => ({
+        label: branch,
+        url: remoteRepository.browseDocumentation(branch),
+      })),
+    });
+  }
+
+  return renderOutcome({
+    kind: 'fallback',
+    message: fallbackMessage,
+    links: [{
+      label: base,
+      url: remoteRepository.browseDocumentation(base),
+    }],
+  });
+}
+
 const contractResolvers = {
-  'until-successor-of': resolveUntilNextAfterContract,
+  'successor-of': resolveUntilNextAfterContract,
+  'last-of': resolveLastOfContract,
 };
 
 (async () => {
@@ -84,7 +173,7 @@ const contractResolvers = {
   const host = p.get('host') || 'github.com';
   const version = p.get('v');
   const urlPath = p.get('urlPath') || '';
-  const contract = p.get('contract') || 'until-successor-of';
+  const contract = p.get('contract') || 'successor-of';
 
   if ((!repositoryApiUrl || !repositoryBrowserUrl) && !repository) {
     document.body.innerText = 'missing params';

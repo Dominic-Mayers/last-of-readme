@@ -7,7 +7,8 @@ const {
 } = require('./adapters/npm-adapter.cjs');
 
 const SUPPORTED_CONTRACTS = {
-  'until-successor-of': describeUntilNextAfter,
+  'successor-of': describeSuccessorOf,
+  'last-of': describeLastOf,
 };
 
 function fail(message) {
@@ -17,11 +18,11 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: node scripts/last-of-readme/last-of-readme-contract.cjs <contract>');
-  console.error('Supported contracts: until-successor-of');
+  console.error('Supported contracts: successor-of, last-of');
   process.exit(1);
 }
 
-function describeUntilNextAfter(documentationPath) {
+function describeSuccessorOf(documentationPath) {
   return [
     `The documentation link will resolve ${documentationPath} using this order:`,
     '',
@@ -30,6 +31,23 @@ function describeUntilNextAfter(documentationPath) {
     '3. HEAD of a unique branch containing vX.Y.Z',
     '4. A page listing multiple branches containing vX.Y.Z',
     '5. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+function describeLastOf(documentationPath) {
+  return [
+    `The documentation link will redirect directly to ${documentationPath} only when vX.Y.Z-last-doc exists.`,
+    '',
+    'If vX.Y.Z-last-doc does not exist, the resolver will show an intermediary page saying that no authoritative documentation was found.',
+    '',
+    'The intermediary page will propose fallback documentation using this order:',
+    '',
+    '1. vX.Y.Z-next-doc',
+    '2. HEAD of a unique branch containing vX.Y.Z',
+    '3. A page listing multiple branches containing vX.Y.Z',
+    '4. vX.Y.Z itself',
     '',
     'Use this behavior for future version bumps?',
   ].join('\n');
