@@ -324,7 +324,7 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
     fail('Git remote URL is empty');
   }
 
-  const url = remoteUrl.trim();
+  let url = remoteUrl.trim();
 
   if (url.startsWith('git+')) {
     url = url.slice(4);
