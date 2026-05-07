@@ -55,7 +55,9 @@ function buildResolverLink(urlPath = '') {
   const pckName = packageName();
   const remote  = remoteConfiguration();
   const documentationContract = configuredDocumentationContract();
-
+  const badgeMessage = `${documentationContract} ${version}`; 
+  const badgeUrl = `https://img.shields.io/badge/README-${encodeBadgeField(badgeMessage)}-blue?logo=github`;
+  
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(pckName)}` +
     `&contract=${encodeURIComponent(documentationContract)}` +
@@ -64,7 +66,7 @@ function buildResolverLink(urlPath = '') {
     `&v=${encodeURIComponent(version)}` +
     `&urlPath=${encodeURIComponent(urlPath)}">` +
     `<img alt="README ${documentationContract} ${version}" ` +
-    `src="https://img.shields.io/badge/README-${encodeURIComponent(documentationContract)}%20${encodeURIComponent(version)}-blue?logo=github">` +
+    `src="${badgeUrl}">` +
     `</a>`
   );
 }
@@ -115,6 +117,10 @@ function replaceManagedBlock(content, replacement) {
   const before = content.slice(0, start);
   const after = content.slice(end + END_MARKER.length);
   return before + managedBlock + after;
+}
+
+function encodeBadgeField(value) {
+  return encodeURIComponent(value).replace(/-/g, '--');
 }
 
 function main() {
