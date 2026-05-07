@@ -6,7 +6,6 @@ const { normalizePackageFilePath } = require('./utils.cjs');
 const {
   assertCwdIsPackageRoot,
   validateExistingPackageFile,
-  assertPackageFileReadyForPlaceholderInspection,
   assertPackageFileCanBeCreated,
   packageFileExists,
   readPackageFileContent,
@@ -184,23 +183,6 @@ function findManagedPlaceholder(content) {
   return null;
 }
 
-function validateExistingDocLinkFile(packageFilePath) {
-  assertPackageFileReadyForPlaceholderInspection(packageFilePath);
-
-  const content = readPackageFileContent(packageFilePath);
-  const managedPlaceholder = findManagedPlaceholder(content);
-
-  if (!managedPlaceholder) {
-    throw new Error(
-      `${packageFilePath} does not contain a managed placeholder outside example regions`
-    );
-  }
-
-  return {
-    managedPlaceholder,
-  };
-}
-
 function collectDocLinkPlaceholderEnvironmentInput(pipelineState = {}) {
   const control = pipelineState.control || {};
   const packageFilePath = normalizePackageFilePath(
@@ -310,7 +292,6 @@ module.exports = {
   collectPackageFilePathEnvironmentInput,
   preparePackageFilePathEnvironmentInput,
   findManagedPlaceholder,
-  validateExistingDocLinkFile,
   checkPackageFilePathRequirements,
   finalizePackageFilePathState,
   collectDocLinkPlaceholderEnvironmentInput,
