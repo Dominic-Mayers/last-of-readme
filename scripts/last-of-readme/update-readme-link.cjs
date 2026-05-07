@@ -63,8 +63,8 @@ function buildResolverLink(urlPath = '') {
     `&repositoryBrowserUrl=${encodeURIComponent(remote.repositoryBrowserUrl)}` +
     `&v=${encodeURIComponent(version)}` +
     `&urlPath=${encodeURIComponent(urlPath)}">` +
-    `<img alt="README-last of ${version}" ` +
-    `src="https://img.shields.io/badge/README-last%20of%20${encodeURIComponent(version)}-blue?logo=github">` +
+    `<img alt="README ${documentationContract} ${version}" ` +
+    `src="https://img.shields.io/badge/README-${encodeURIComponent(documentationContract)}%20${encodeURIComponent(version)}-blue?logo=github">` +
     `</a>`
   );
 }

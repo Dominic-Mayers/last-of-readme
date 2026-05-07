@@ -30,7 +30,7 @@ function renderResolutionPage(page) {
   document.body.innerText = page.message;
 }
 
-async function resolveUntilNextDocContract(remoteRepository, version) {
+async function resolveUntilNextAfterContract(remoteRepository, version) {
   const base = `v${version}`;
   const last = `${base}-last-doc`;
   const next = `${base}-next-doc`;
@@ -73,7 +73,7 @@ async function resolveUntilNextDocContract(remoteRepository, version) {
 }
 
 const contractResolvers = {
-  'until-next-doc': resolveUntilNextDocContract,
+  'until-next-after': resolveUntilNextAfterContract,
 };
 
 (async () => {
@@ -84,7 +84,7 @@ const contractResolvers = {
   const host = p.get('host') || 'github.com';
   const version = p.get('v');
   const urlPath = p.get('urlPath') || '';
-  const contract = p.get('contract') || 'until-next-doc';
+  const contract = p.get('contract') || 'until-next-after';
 
   if ((!repositoryApiUrl || !repositoryBrowserUrl) && !repository) {
     document.body.innerText = 'missing params';

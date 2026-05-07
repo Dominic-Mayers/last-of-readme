@@ -7,7 +7,7 @@ const {
 } = require('./adapters/npm-adapter.cjs');
 
 const SUPPORTED_CONTRACTS = {
-  'until-next-doc': describeUntilNextDoc,
+  'until-next-after': describeUntilNextAfter,
 };
 
 function fail(message) {
@@ -17,11 +17,11 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: node scripts/last-of-readme/last-of-readme-contract.cjs <contract>');
-  console.error('Supported contracts: until-next-doc');
+  console.error('Supported contracts: until-next-after');
   process.exit(1);
 }
 
-function describeUntilNextDoc(documentationPath) {
+function describeUntilNextAfter(documentationPath) {
   return [
     `The documentation link will resolve ${documentationPath} using this order:`,
     '',
