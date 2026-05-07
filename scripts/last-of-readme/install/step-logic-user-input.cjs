@@ -162,7 +162,11 @@ function prepareDocLinkPlaceholderInput(pipelineState = {}) {
 }
 
 function resolveCollectedUrlAnswer(answer, defaultValue) {
-  return normalizeOptionalText(answer) || defaultValue || '';
+  return normalizeUrl(normalizeOptionalText(answer) || defaultValue || '');
+}
+
+function normalizeUrl(value) {
+  return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
 }
 
 module.exports = {

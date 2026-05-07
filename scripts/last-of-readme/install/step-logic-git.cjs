@@ -15,29 +15,6 @@ function collectGitRemotesEnvironmentInput(pipelineState = {}) {
   };
 }
 
-function collectRemoteEnvironmentInput(pipelineState = {}) {
-  const control = pipelineState.control || {};
-
-  if (!control.localName || typeof control.localName !== 'string') {
-    return pipelineState;
-  }
-
-  return pipelineState;
-}
-
-function prepareRemoteEnvironmentInput(pipelineState = {}) {
-  const control = pipelineState.control || {};
-
-  return {
-    ...pipelineState,
-    control: {
-      ...control,
-      repositoryApiUrl: normalizeUrl(control.repositoryApiUrl),
-      repositoryBrowserUrl: normalizeUrl(control.repositoryBrowserUrl),
-    },
-  };
-}
-
 function checkGitRemoteRequirements(pipelineState = {}) {
   const control = pipelineState.control || {};
   const localName = control.localName;
@@ -52,12 +29,18 @@ function checkGitRemoteRequirements(pipelineState = {}) {
     throw new Error(`Selected Git remote does not exist: ${localName}`);
   }
 
+  console.log("localName: ", localName ); 
+
   assertCanDryRunPublishTag(localName);
 
+  console.log("control.repositoryApiUrl: ", control.repositoryApiUrl); 
   assertHttpUrl(
     control.repositoryApiUrl,
     'A GitHub repository API URL must be provided for Last of Readme'
   );
+  
+  console.log("control.repositoryBrowserUrl: ", control.repositoryBrowserUrl ); 
+
   assertHttpUrl(
     control.repositoryBrowserUrl,
     'A GitHub repository browser URL must be provided for Last of Readme'
@@ -85,10 +68,6 @@ function finalizeRemoteState(pipelineState = {}) {
   };
 }
 
-function normalizeUrl(value) {
-  return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
-}
-
 function assertHttpUrl(value, message) {
   if (!value || typeof value !== 'string') {
     throw new Error(message);
@@ -108,8 +87,6 @@ function assertHttpUrl(value, message) {
 
 module.exports = {
   collectGitRemotesEnvironmentInput,
-  collectRemoteEnvironmentInput,
-  prepareRemoteEnvironmentInput,
   checkGitRemoteRequirements,
   finalizeRemoteState,
 };

@@ -13,8 +13,6 @@ const {
 } = require('./step-logic-user-input.cjs');
 const {
   collectGitRemotesEnvironmentInput,
-  collectRemoteEnvironmentInput,
-  prepareRemoteEnvironmentInput,
   checkGitRemoteRequirements,
   finalizeRemoteState,
 } = require('./step-logic-git.cjs');
@@ -29,8 +27,6 @@ async function checkGitRemote(pipelineState = {}) {
   pipelineState = prepareRemoteDefaultsInput(pipelineState);
   pipelineState = await collectRemoteUrlsInput(pipelineState);
   pipelineState = prepareRemoteUrlsInput(pipelineState);
-  pipelineState = collectRemoteEnvironmentInput(pipelineState);
-  pipelineState = prepareRemoteEnvironmentInput(pipelineState);
   pipelineState = checkGitRemoteRequirements(pipelineState);
 
   return finalizeRemoteState(pipelineState);
