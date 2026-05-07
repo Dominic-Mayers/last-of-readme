@@ -29,6 +29,7 @@
       "repositoryBrowserUrl": "https://github.com/Dominic-Mayers/last-of-readme"
     },
     "packageFilePath": "README.md",
-    "repositoryUrlPath": ""
+    "repositoryUrlPath": "",
+    "contract": "until-next-doc"
   }
 }
