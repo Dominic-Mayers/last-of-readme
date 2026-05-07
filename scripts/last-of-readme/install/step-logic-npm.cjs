@@ -2,6 +2,10 @@
 
 const {
   getCurrentConfiguredRemoteName,
+  getCurrentFilesField,
+  getCurrentInstalledPackageFilePath,
+  getCurrentRemoteConfiguration,
+  getCurrentRepositoryUrlPath,
   npmPackageRoot,
 } = require('../adapters/npm-adapter.cjs');
 
@@ -27,7 +31,39 @@ function collectConfiguredRemoteNameEnvironmentInput(pipelineState = {}) {
   };
 }
 
+function collectCurrentRemoteConfigurationEnvironmentInput(pipelineState = {}) {
+  const currentRemoteConfiguration = getCurrentRemoteConfiguration();
+
+  return {
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
+      currentRemoteConfiguration,
+    },
+  };
+}
+
+function collectPackageFilePathDefaultsEnvironmentInput(pipelineState = {}) {
+  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
+  const currentFiles = getCurrentFilesField();
+  const defaultPackageFilePath = previousPackageFilePath || 'README.md';
+  const defaultRepositoryUrlPath = getCurrentRepositoryUrlPath() || '';
+
+  return {
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
+      previousPackageFilePath,
+      currentFiles,
+      defaultPackageFilePath,
+      defaultRepositoryUrlPath,
+    },
+  };
+}
+
 module.exports = {
   collectNpmPackageRootEnvironmentInput,
   collectConfiguredRemoteNameEnvironmentInput,
+  collectCurrentRemoteConfigurationEnvironmentInput,
+  collectPackageFilePathDefaultsEnvironmentInput,
 };

@@ -14,19 +14,6 @@ const {
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
 } = require('./prompt-user-input.cjs');
-const {
-  getCurrentFilesField,
-  getCurrentInstalledPackageFilePath,
-  getCurrentRemoteConfiguration,
-  getCurrentRepositoryUrlPath,
-  tryDeriveGitHubUrlsFromRemoteUrl,
-} = require('./npm-adapter.cjs');
-
-// TODO architecture:
-// These collection adapters still obtain some defaults from npm in order to
-// preserve current behavior. Later, phases should collect those inputs from
-// npm step logic and pass them into user-input step logic before these
-// prompt-only adapters are called.
 
 async function collectDocLinkPlaceholderInput(pipelineState = {}) {
   const control = pipelineState.control || {};
@@ -60,10 +47,11 @@ async function collectDocLinkPlaceholderInput(pipelineState = {}) {
 }
 
 async function collectPackageFilePathInput(pipelineState = {}) {
-  const previousPackageFilePath = getCurrentInstalledPackageFilePath();
-  const currentFiles = getCurrentFilesField();
-  const defaultPackageFilePath = getDefaultPackageFilePath();
-  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
+  const control = pipelineState.control || {};
+  const previousPackageFilePath = control.previousPackageFilePath;
+  const currentFiles = control.currentFiles;
+  const defaultPackageFilePath = control.defaultPackageFilePath || 'README.md';
+  const defaultRepositoryUrlPath = control.defaultRepositoryUrlPath || '';
 
   const rl = createInterface();
 
@@ -78,13 +66,17 @@ async function collectPackageFilePathInput(pipelineState = {}) {
       defaultRepositoryUrlPath,
       shouldShowRepositoryUrlPathInformationForAnswer: (answer) =>
         shouldShowRepositoryUrlPathInformation(
-          resolveCollectedRepositoryUrlPathAnswer(answer)
+          resolveCollectedRepositoryUrlPathAnswer(
+            answer,
+            defaultRepositoryUrlPath
+          )
         ),
     });
 
     let removePreviousPackageFileFromFiles = false;
     const effectivePackageFilePath = resolveCollectedPackageFilePathAnswer(
-      packageFilePathAnswer
+      packageFilePathAnswer,
+      defaultPackageFilePath
     );
 
     if (
@@ -106,12 +98,9 @@ async function collectPackageFilePathInput(pipelineState = {}) {
     return {
       ...pipelineState,
       control: {
-        ...(pipelineState.control || {}),
+        ...control,
         packageFilePathAnswer,
         repositoryUrlPathAnswer,
-        previousPackageFilePath,
-        defaultPackageFilePath,
-        defaultRepositoryUrlPath,
         removePreviousPackageFileFromFiles,
       },
     };
@@ -139,26 +128,26 @@ async function collectRemoteInput(pipelineState = {}) {
       defaultRemoteName,
     });
 
-    const selectedRemote = resolveSelectedRemote(
-      remoteAnswer,
-      remotes,
-      defaultRemoteName
-    );
+    return {
+      ...pipelineState,
+      control: {
+        ...control,
+        defaultRemoteName,
+        remoteAnswer,
+      },
+    };
+  } finally {
+    rl.close();
+  }
+}
 
-    const derivedRemote = selectedRemote
-      ? tryDeriveGitHubUrlsFromRemoteUrl(selectedRemote.url)
-      : null;
+async function collectRemoteUrlsInput(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const defaultRepositoryApiUrl = control.defaultRepositoryApiUrl || '';
+  const defaultRepositoryBrowserUrl = control.defaultRepositoryBrowserUrl || '';
+  const rl = createInterface();
 
-    const currentRemoteConfiguration = getCurrentRemoteConfiguration();
-    const defaultRepositoryApiUrl =
-      (currentRemoteConfiguration
-        ? currentRemoteConfiguration.repositoryApiUrl
-        : '') || (derivedRemote ? derivedRemote.repositoryApiUrl : '');
-    const defaultRepositoryBrowserUrl =
-      (currentRemoteConfiguration
-        ? currentRemoteConfiguration.repositoryBrowserUrl
-        : '') || (derivedRemote ? derivedRemote.repositoryBrowserUrl : '');
-
+  try {
     const repositoryApiUrlAnswer = await askRepositoryApiUrl({
       askQuestion: (question) => ask(rl, question),
       defaultRepositoryApiUrl,
@@ -168,23 +157,12 @@ async function collectRemoteInput(pipelineState = {}) {
       defaultRepositoryBrowserUrl,
     });
 
-    const repositoryApiUrl = resolveCollectedUrlAnswer(
-      repositoryApiUrlAnswer,
-      defaultRepositoryApiUrl
-    );
-    const repositoryBrowserUrl = resolveCollectedUrlAnswer(
-      repositoryBrowserUrlAnswer,
-      defaultRepositoryBrowserUrl
-    );
-
     return {
       ...pipelineState,
       control: {
         ...control,
-        localName: selectedRemote ? selectedRemote.name : null,
-        repositoryUrl: selectedRemote ? selectedRemote.url : null,
-        repositoryApiUrl,
-        repositoryBrowserUrl,
+        repositoryApiUrlAnswer,
+        repositoryBrowserUrlAnswer,
       },
     };
   } finally {
@@ -246,45 +224,6 @@ function formatRemoteChoices(remotes) {
     .join('\n');
 }
 
-function resolveSelectedRemote(answer, remotes, defaultRemoteName) {
-  const trimmed = normalizeOptionalText(answer);
-  const value = trimmed || defaultRemoteName;
-
-  if (!value) {
-    return null;
-  }
-
-  if (['none', 'no', 'skip'].includes(value.toLowerCase())) {
-    return null;
-  }
-
-  if (/^\d+$/.test(value)) {
-    const index = Number(value) - 1;
-
-    if (index >= 0 && index < remotes.length) {
-      return remotes[index];
-    }
-
-    throw new Error('Please choose a listed remote by number or by name');
-  }
-
-  const byName = remotes.find(({ name }) => name === value);
-
-  if (byName) {
-    return byName;
-  }
-
-  throw new Error('Please choose a listed remote by number or by name');
-}
-
-function getDefaultPackageFilePath() {
-  return getCurrentInstalledPackageFilePath() || 'README.md';
-}
-
-function getDefaultRepositoryUrlPath() {
-  return getCurrentRepositoryUrlPath() || '';
-}
-
 function shouldAskToRemovePreviousPackageFile({
   previousPackageFilePath,
   nextPackageFilePath,
@@ -303,14 +242,17 @@ function shouldShowRepositoryUrlPathInformation(repositoryUrlPath) {
   return !repositoryUrlPath;
 }
 
-function resolveCollectedPackageFilePathAnswer(packageFilePathAnswer) {
-  const defaultPackageFilePath = getDefaultPackageFilePath();
+function resolveCollectedPackageFilePathAnswer(
+  packageFilePathAnswer,
+  defaultPackageFilePath
+) {
   return normalizeOptionalText(packageFilePathAnswer) || defaultPackageFilePath;
 }
 
-function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
-  const defaultRepositoryUrlPath = getDefaultRepositoryUrlPath();
-
+function resolveCollectedRepositoryUrlPathAnswer(
+  repositoryUrlPathAnswer,
+  defaultRepositoryUrlPath
+) {
   if (repositoryUrlPathAnswer === '') {
     return defaultRepositoryUrlPath;
   }
@@ -318,12 +260,9 @@ function resolveCollectedRepositoryUrlPathAnswer(repositoryUrlPathAnswer) {
   return normalizeOptionalText(repositoryUrlPathAnswer);
 }
 
-function resolveCollectedUrlAnswer(answer, defaultValue) {
-  return normalizeOptionalText(answer) || defaultValue || '';
-}
-
 module.exports = {
   collectDocLinkPlaceholderInput,
   collectPackageFilePathInput,
   collectRemoteInput,
+  collectRemoteUrlsInput,
 };

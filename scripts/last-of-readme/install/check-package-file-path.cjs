@@ -5,6 +5,9 @@ const {
   preparePackageFilePathInput,
 } = require('./step-logic-user-input.cjs');
 const {
+  collectPackageFilePathDefaultsEnvironmentInput,
+} = require('./step-logic-npm.cjs');
+const {
   collectPackageFilePathEnvironmentInput,
   preparePackageFilePathEnvironmentInput,
   checkPackageFilePathRequirements,
@@ -13,6 +16,7 @@ const {
 
 async function checkPackageFilePath(pipelineState = {}) {
 
+  pipelineState = collectPackageFilePathDefaultsEnvironmentInput(pipelineState);
   pipelineState = await collectPackageFilePathInput(pipelineState);
   pipelineState = preparePackageFilePathInput(pipelineState);
   pipelineState = collectPackageFilePathEnvironmentInput(pipelineState);
