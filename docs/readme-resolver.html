@@ -84,6 +84,7 @@ const contractResolvers = {
   const host = p.get('host') || 'github.com';
   const version = p.get('v');
   const urlPath = p.get('urlPath') || '';
+  const contract = p.get('contract') || 'until-next-doc';
 
   if ((!repositoryApiUrl || !repositoryBrowserUrl) && !repository) {
     document.body.innerText = 'missing params';
@@ -101,7 +102,16 @@ const contractResolvers = {
     repositoryBrowserUrl,
   }, urlPath);
 
-  const contractResolver = contractResolvers['until-next-doc'];
+  const contractResolver = contractResolvers[contract];
+  if (!contractResolver) {
+    dispatchOutcome(renderOutcome({
+      kind: 'not-found',
+      message: `unsupported documentation contract: ${contract}`,
+      links: [],
+    }));
+    return;
+  }
+
   const outcome = await contractResolver(remoteRepository, version);
   dispatchOutcome(outcome);
 })();

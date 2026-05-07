@@ -21,6 +21,7 @@ const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
+const DOCUMENTATION_CONTRACT = 'until-next-doc';
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -56,6 +57,7 @@ function buildResolverLink(urlPath = '') {
 
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(pckName)}` +
+    `&contract=${encodeURIComponent(DOCUMENTATION_CONTRACT)}` +
     `&repositoryApiUrl=${encodeURIComponent(remote.repositoryApiUrl)}` +
     `&repositoryBrowserUrl=${encodeURIComponent(remote.repositoryBrowserUrl)}` +
     `&v=${encodeURIComponent(version)}` +
