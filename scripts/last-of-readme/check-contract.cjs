@@ -22,7 +22,7 @@ function main() {
   } catch (err) {
     fail(
       (err && err.message ? err.message : String(err)) +
-      '\n👉 Run "node scripts/last-of-readme/last-of-readme-contract.cjs until-next-doc" before bumping the version.'
+      '\n👉 Run "node scripts/last-of-readme/last-of-readme-contract.cjs until-next-doc" before bumping the version.\n'
     );
   }
 }
