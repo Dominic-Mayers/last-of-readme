@@ -5,6 +5,73 @@
 <p>Resolving…</p>
 <script src="./remote-repository-adapter.js"></script>
 <script>
+function redirectOutcome(url) {
+  return { action: 'redirect', url };
+}
+
+function renderOutcome(page) {
+  return { action: 'render', page };
+}
+
+function dispatchOutcome(outcome) {
+  if (outcome.action === 'redirect') {
+    location.href = outcome.url;
+    return;
+  }
+
+  renderResolutionPage(outcome.page);
+}
+
+function renderResolutionPage(page) {
+  document.body.innerText = page.message;
+}
+
+async function resolveUntilNextDocContract(remoteRepository, version) {
+  const base = `v${version}`;
+  const last = `${base}-last-doc`;
+  const next = `${base}-next-doc`;
+
+  if (await remoteRepository.resolveTag(last)) {
+    return redirectOutcome(remoteRepository.browseDocumentation(last));
+  }
+
+  if (await remoteRepository.resolveTag(next)) {
+    return redirectOutcome(remoteRepository.browseDocumentation(next));
+  }
+
+  const baseRepoNode = await remoteRepository.resolveTag(base);
+  if (!baseRepoNode) {
+    return renderOutcome({
+      kind: 'not-found',
+      message: 'version tag not found',
+      links: [],
+    });
+  }
+
+  const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
+
+  if (containingBranches.length === 1) {
+    return redirectOutcome(remoteRepository.browseDocumentation(containingBranches[0]));
+  }
+
+  if (containingBranches.length > 1) {
+    return renderOutcome({
+      kind: 'ambiguous',
+      message: 'multiple branches: ' + containingBranches.join(', '),
+      links: containingBranches.map((branch) => ({
+        label: branch,
+        url: remoteRepository.browseDocumentation(branch),
+      })),
+    });
+  }
+
+  return redirectOutcome(remoteRepository.browseDocumentation(base));
+}
+
+const contractResolvers = {
+  'until-next-doc': resolveUntilNextDocContract,
+};
+
 (async () => {
   const p = new URLSearchParams(location.search);
   const repositoryApiUrl = p.get('repositoryApiUrl');
@@ -30,39 +97,9 @@
     repositoryBrowserUrl,
   }, urlPath);
 
-  const base = `v${version}`;
-  const last = `${base}-last-doc`;
-  const next = `${base}-next-doc`;
-
-  if (await remoteRepository.resolveTag(last)) {
-    location.href = remoteRepository.browseDocumentation(last);
-    return;
-  }
-
-  if (await remoteRepository.resolveTag(next)) {
-    location.href = remoteRepository.browseDocumentation(next);
-    return;
-  }
-
-  const baseRepoNode = await remoteRepository.resolveTag(base);
-  if (!baseRepoNode) {
-    document.body.innerText = 'version tag not found';
-    return;
-  }
-
-  const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
-
-  if (containingBranches.length === 1) {
-    location.href = remoteRepository.browseDocumentation(containingBranches[0]);
-    return;
-  }
-
-  if (containingBranches.length > 1) {
-    document.body.innerText = 'multiple branches: ' + containingBranches.join(', ');
-    return;
-  }
-
-  location.href = remoteRepository.browseDocumentation(base);
+  const contractResolver = contractResolvers['until-next-doc'];
+  const outcome = await contractResolver(remoteRepository, version);
+  dispatchOutcome(outcome);
 })();
 </script>
 </body>
