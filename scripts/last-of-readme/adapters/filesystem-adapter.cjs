@@ -65,26 +65,6 @@ function validateExistingPackageFile(packageFilePath) {
 }
 
 /**
- * Reassert that the existing package documentation file can still be inspected
- * while validating its managed placeholder.
- *
- * @param {string} packageFilePath - Existing package documentation file path.
- * @returns {void}
- *
- * @remarks This is a runtime reassertion inside placeholder inspection. The
- * installation requirement is checked earlier by validateExistingPackageFile().
- */
-function assertPackageFileReadyForPlaceholderInspection(packageFilePath) {
-  try {
-    assertExistingReadableWritableRegularFile(packageFilePath);
-  } catch (error) {
-    throw new Error(
-      `Unexpected package-file access failure while inspecting the managed placeholder in ${packageFilePath}`
-    );
-  }
-}
-
-/**
  * Assert that the selected location can support creation of a missing package
  * documentation file.
  *
@@ -195,7 +175,6 @@ function createPackageFileIfAbsent(packageFilePath, content) {
 module.exports = {
     assertCwdIsPackageRoot,
     validateExistingPackageFile,
-    assertPackageFileReadyForPlaceholderInspection,
     assertPackageFileCanBeCreated,
     packageFileExists,
     readPackageFileContent,
