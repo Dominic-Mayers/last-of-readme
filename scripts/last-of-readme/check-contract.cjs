@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { configuredDocumentationContract } = require('./adapters/npm-adapter.cjs');
+const { configuredNextDocumentationContract } = require('./adapters/npm-adapter.cjs');
 
 const SUPPORTED_CONTRACTS = new Set(['until-successor-of', 'last-of', 'correction-of']);
 
@@ -11,7 +11,7 @@ function fail(message) {
 
 function main() {
   try {
-    const contract = configuredDocumentationContract();
+    const contract = configuredNextDocumentationContract();
 
     if (!SUPPORTED_CONTRACTS.has(contract)) {
       fail(

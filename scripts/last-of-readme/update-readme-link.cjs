@@ -10,7 +10,7 @@ const {
     currentPackageVersion,
     packageName,
     remoteConfiguration,
-    configuredDocumentationContract
+    configuredNextDocumentationContract
 } = require('./adapters/npm-adapter.cjs');
 
 const {
@@ -54,7 +54,7 @@ function buildResolverLink(urlPath = '') {
   const version = currentPackageVersion();
   const pckName = packageName();
   const remote  = remoteConfiguration();
-  const documentationContract = configuredDocumentationContract();
+  const documentationContract = configuredNextDocumentationContract();
   const badgeMessage = `${documentationContract} ${version}`; 
   const badgeUrl = `https://img.shields.io/badge/README-${encodeBadgeField(badgeMessage)}-blue?logo=github`;
   

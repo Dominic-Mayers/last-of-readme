@@ -31,6 +31,6 @@
     },
     "packageFilePath": "README.md",
     "repositoryUrlPath": "",
-    "contract": "until-successor-of"
+    "nextContract": "until-successor-of"
   }
 }

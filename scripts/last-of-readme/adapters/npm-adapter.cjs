@@ -120,31 +120,31 @@ function getCurrentConfiguredRemoteName() {
 }
 
 /**
- * Returns the documentation contract used by update-readme-link.cjs to build
+ * Returns the next documentation contract used by update-readme-link.cjs to build
  * resolver links.
  *
- * @configRequirement The Last of Readme documentation contract must be
+ * @configRequirement The Last of Readme next documentation contract must be
  * configured before a version bump. Configured by
  * last-of-readme-contract.cjs.
- * @returns {string} Installed documentation contract.
+ * @returns {string} Installed next documentation contract.
  */
-function configuredDocumentationContract() {
-  const contract = getCurrentDocumentationContract();
+function configuredNextDocumentationContract() {
+  const contract = getCurrentNextDocumentationContract();
 
   if (!contract) {
-    fail('package.json has no lastOfReadme.contract');
+    fail('package.json has no lastOfReadme.nextContract');
   }
 
   return contract;
 }
 
 /**
- * Reads the previously selected documentation contract.
+ * Reads the previously selected next documentation contract.
  *
- * @returns {string} Installed documentation contract, or an empty string when absent.
+ * @returns {string} Installed next documentation contract, or an empty string when absent.
  */
-function getCurrentDocumentationContract() {
-  const contract = getPackageJsonField('lastOfReadme.contract', {
+function getCurrentNextDocumentationContract() {
+  const contract = getPackageJsonField('lastOfReadme.nextContract', {
     allowEmpty: true,
   });
 
@@ -327,8 +327,8 @@ module.exports = {
     packageName,
     configuredRemoteName,
     getCurrentConfiguredRemoteName,
-    configuredDocumentationContract,
-    getCurrentDocumentationContract,
+    configuredNextDocumentationContract,
+    getCurrentNextDocumentationContract,
     remoteConfiguration,
     getCurrentRemoteConfiguration,
     packageFilePath,

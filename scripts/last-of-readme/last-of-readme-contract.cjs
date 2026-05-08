@@ -103,10 +103,10 @@ async function main() {
     }
 
     updatePackageJsonFields({
-      'lastOfReadme.contract': contract,
+      'lastOfReadme.nextContract': contract,
     });
 
-    console.log(`✅ Last of Readme contract set to ${contract}`);
+    console.log(`✅ Last of Readme next contract set to ${contract}`);
   } catch (err) {
     fail(err && err.message ? err.message : String(err));
   }
