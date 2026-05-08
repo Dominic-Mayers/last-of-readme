@@ -61,6 +61,26 @@ function setTagAtCurrentCommit(tag, annotation) {
 }
 
 /**
+ * Creates or replaces a movable documentation tag at the current repository
+ * commit.
+ *
+ * @param {string} tag - Git tag name. Must be valid as refs/tags/<tag>.
+ * @param {string} annotation - Annotation message stored in the annotated tag.
+ * @remarks Used for correction-doc tags, which are movable documentation
+ * pointers.
+ * @returns {void}
+ */
+function setMovableTagAtCurrentCommit(tag, annotation) {
+  ensureGitWorkspace();
+  ensureCurrentCommitExists();
+
+  execFileSync('git', ['tag', '-f', '-a', tag, '-m', annotation], {
+    cwd: WORKSPACE_ROOT,
+    stdio: 'inherit',
+  });
+}
+
+/**
  * Publish a documentation tag to the configured remote. Used by tag-doc.cjs.
  *
  * @param {string} remoteName - The configured Git remote to publish to.
@@ -79,6 +99,23 @@ function setTagAtCurrentCommit(tag, annotation) {
 function publishTag(tag, remote) {
   ensureGitWorkspace();
   execFileSync('git', ['push', remote, tag], {
+    cwd: WORKSPACE_ROOT,
+    stdio: 'inherit',
+  });
+}
+
+/**
+ * Publishes a movable documentation tag to the configured remote.
+ *
+ * @param {string} tag - The movable documentation tag to publish.
+ * @param {string} remote - The configured Git remote to publish to.
+ * @remarks Used for correction-doc tags. The remote tag is force-updated
+ * because the tag represents the current correction pointer for a version.
+ * @returns {void}
+ */
+function publishMovableTag(tag, remote) {
+  ensureGitWorkspace();
+  execFileSync('git', ['push', '--force', remote, tag], {
     cwd: WORKSPACE_ROOT,
     stdio: 'inherit',
   });
@@ -209,7 +246,9 @@ function commandErrorDetail(error) {
 module.exports = {
     assertInGitRepository,
     setTagAtCurrentCommit,
+    setMovableTagAtCurrentCommit,
     publishTag,
+    publishMovableTag,
     getRemotesFromGit,
     assertCanDryRunPublishTag,
 };

@@ -10,7 +10,8 @@
     "version": "node scripts/last-of-readme/update-readme-link.cjs && node scripts/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
     "tag:last-doc": "node scripts/last-of-readme/tag-doc.cjs last-doc",
-    "last-of-readme:contract": "node scripts/last-of-readme/last-of-readme-contract.cjs"
+    "last-of-readme:contract": "node scripts/last-of-readme/last-of-readme-contract.cjs",
+    "tag:correction-doc": "node scripts/last-of-readme/tag-doc.cjs correction-doc"
   },
   "repository": {
     "type": "git",

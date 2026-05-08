@@ -9,6 +9,7 @@ const {
 const SUPPORTED_CONTRACTS = {
   'successor-of': describeSuccessorOf,
   'last-of': describeLastOf,
+  'correction-of': describeCorrectionOf,
 };
 
 function fail(message) {
@@ -18,7 +19,7 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: node scripts/last-of-readme/last-of-readme-contract.cjs <contract>');
-  console.error('Supported contracts: successor-of, last-of');
+  console.error('Supported contracts: successor-of, last-of, correction-of');
   process.exit(1);
 }
 
@@ -48,6 +49,19 @@ function describeLastOf(documentationPath) {
     '2. HEAD of a unique branch containing vX.Y.Z',
     '3. A page listing multiple branches containing vX.Y.Z',
     '4. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+
+function describeCorrectionOf(documentationPath) {
+  return [
+    `The documentation link will redirect to ${documentationPath} at vX.Y.Z-correction-doc when that tag exists.`,
+    '',
+    'If vX.Y.Z-correction-doc does not exist, the resolver will redirect to vX.Y.Z.',
+    '',
+    'The correction-doc tag is a movable documentation pointer. Running the tag script for correction-doc again replaces the correction pointer for the current version.',
     '',
     'Use this behavior for future version bumps?',
   ].join('\n');

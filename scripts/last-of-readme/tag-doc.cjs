@@ -7,10 +7,13 @@ const {
 
 const { 
     setTagAtCurrentCommit,
-    publishTag
+    setMovableTagAtCurrentCommit,
+    publishTag,
+    publishMovableTag
 } = require('./adapters/git-adapter.cjs');
 
-const ALLOWED_KINDS = new Set(['last-doc', 'next-doc']);
+const ALLOWED_KINDS = new Set(['last-doc', 'next-doc', 'correction-doc']);
+const MOVABLE_KINDS = new Set(['correction-doc']);
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -23,7 +26,7 @@ function parseArgs(argv) {
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    fail('Usage: node tag-doc.cjs <last-doc|next-doc> [--no-push]');
+    fail('Usage: node tag-doc.cjs <last-doc|next-doc|correction-doc> [--no-push]');
   }
 
   const kind = positional[0];
@@ -38,6 +41,9 @@ function annotationFor(kind, version) {
   if (kind === 'last-doc') {
     return `Last README commit for version ${version}`;
   }
+  if (kind === 'correction-doc') {
+    return `Corrected README commit for version ${version}`;
+  }
   return `Next README anchor for version ${version}`;
 }
 
@@ -47,13 +53,26 @@ function main() {
     const version = currentPackageVersion();
     const tag = `v${version}-${kind}`;
 
-    setTagAtCurrentCommit(tag, annotationFor(kind, version));
-    console.log(`✅ Created tag ${tag}`);
+    const movable = MOVABLE_KINDS.has(kind);
+    const annotation = annotationFor(kind, version);
+
+    if (movable) {
+      setMovableTagAtCurrentCommit(tag, annotation);
+      console.log(`✅ Created or replaced tag ${tag}`);
+    } else {
+      setTagAtCurrentCommit(tag, annotation);
+      console.log(`✅ Created tag ${tag}`);
+    }
 
     if (push) {
       const remote = configuredRemoteName(); 
-      publishTag(tag, remote);
-      console.log(`✅ Pushed tag ${tag}`);
+      if (movable) {
+        publishMovableTag(tag, remote);
+        console.log(`✅ Pushed or replaced tag ${tag}`);
+      } else {
+        publishTag(tag, remote);
+        console.log(`✅ Pushed tag ${tag}`);
+      }
     } else {
       console.log('ℹ️ Tag not pushed');
     }

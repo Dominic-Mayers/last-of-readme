@@ -2,7 +2,7 @@
 
 const { configuredDocumentationContract } = require('./adapters/npm-adapter.cjs');
 
-const SUPPORTED_CONTRACTS = new Set(['successor-of', 'last-of']);
+const SUPPORTED_CONTRACTS = new Set(['successor-of', 'last-of', 'correction-of']);
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -17,7 +17,8 @@ function main() {
       fail(
         `Unsupported Last of Readme contract: ${contract}. ` +
         `Run "node scripts/last-of-readme/last-of-readme-contract.cjs successor-of" or ` +
-        `"node scripts/last-of-readme/last-of-readme-contract.cjs last-of".`
+        `"node scripts/last-of-readme/last-of-readme-contract.cjs last-of" or ` +
+        `"node scripts/last-of-readme/last-of-readme-contract.cjs correction-of".`
       );
     }
   } catch (err) {

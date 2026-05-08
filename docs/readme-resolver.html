@@ -160,9 +160,30 @@ async function resolveLastOfContract(remoteRepository, version) {
   });
 }
 
+
+async function resolveCorrectionOfContract(remoteRepository, version) {
+  const base = `v${version}`;
+  const correction = `${base}-correction-doc`;
+
+  if (await remoteRepository.resolveTag(correction)) {
+    return redirectOutcome(remoteRepository.browseDocumentation(correction));
+  }
+
+  if (await remoteRepository.resolveTag(base)) {
+    return redirectOutcome(remoteRepository.browseDocumentation(base));
+  }
+
+  return renderOutcome({
+    kind: 'not-found',
+    message: 'No correction-doc tag was found, and the version tag was not found.',
+    links: [],
+  });
+}
+
 const contractResolvers = {
   'successor-of': resolveUntilNextAfterContract,
   'last-of': resolveLastOfContract,
+  'correction-of': resolveCorrectionOfContract,
 };
 
 (async () => {
