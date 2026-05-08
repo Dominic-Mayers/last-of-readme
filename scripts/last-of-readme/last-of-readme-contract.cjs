@@ -7,7 +7,7 @@ const {
 } = require('./adapters/npm-adapter.cjs');
 
 const SUPPORTED_CONTRACTS = {
-  'successor-of': describeSuccessorOf,
+  'until-successor-of': describeUntilSuccessorOf,
   'last-of': describeLastOf,
   'correction-of': describeCorrectionOf,
 };
@@ -19,16 +19,16 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: node scripts/last-of-readme/last-of-readme-contract.cjs <contract>');
-  console.error('Supported contracts: successor-of, last-of, correction-of');
+  console.error('Supported contracts: until-successor-of, last-of, correction-of');
   process.exit(1);
 }
 
-function describeSuccessorOf(documentationPath) {
+function describeUntilSuccessorOf(documentationPath) {
   return [
     `The documentation link will resolve ${documentationPath} using this order:`,
     '',
     '1. vX.Y.Z-last-of',
-    '2. vX.Y.Z-successor-of',
+    '2. vX.Y.Z-until-successor-of',
     '3. HEAD of a unique branch containing vX.Y.Z',
     '4. A page listing multiple branches containing vX.Y.Z',
     '5. vX.Y.Z itself',
@@ -45,7 +45,7 @@ function describeLastOf(documentationPath) {
     '',
     'The intermediary page will propose fallback documentation using this order:',
     '',
-    '1. vX.Y.Z-successor-of',
+    '1. vX.Y.Z-until-successor-of',
     '2. HEAD of a unique branch containing vX.Y.Z',
     '3. A page listing multiple branches containing vX.Y.Z',
     '4. vX.Y.Z itself',

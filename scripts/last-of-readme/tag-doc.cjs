@@ -12,7 +12,7 @@ const {
     publishMovableTag
 } = require('./adapters/git-adapter.cjs');
 
-const ALLOWED_KINDS = new Set(['last-of', 'successor-of', 'correction-of']);
+const ALLOWED_KINDS = new Set(['last-of', 'until-successor-of', 'correction-of']);
 const MOVABLE_KINDS = new Set(['correction-of']);
 
 function fail(message) {
@@ -26,7 +26,7 @@ function parseArgs(argv) {
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    fail('Usage: node tag-doc.cjs <last-of|successor-of|correction-of> [--no-push]');
+    fail('Usage: node tag-doc.cjs <last-of|until-successor-of|correction-of> [--no-push]');
   }
 
   const kind = positional[0];
@@ -44,7 +44,7 @@ function annotationFor(kind, version) {
   if (kind === 'correction-of') {
     return `Corrected README commit for version ${version}`;
   }
-  return `Successor README anchor for version ${version}`;
+  return `Until-successor README anchor for version ${version}`;
 }
 
 function main() {

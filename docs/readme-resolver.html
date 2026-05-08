@@ -51,10 +51,10 @@ function renderResolutionPage(page) {
   document.body.appendChild(list);
 }
 
-async function resolveUntilNextAfterContract(remoteRepository, version) {
+async function resolveUntilSuccessorOfContract(remoteRepository, version) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
-  const next = `${base}-successor-of`;
+  const next = `${base}-until-successor-of`;
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
@@ -96,7 +96,7 @@ async function resolveUntilNextAfterContract(remoteRepository, version) {
 async function resolveLastOfContract(remoteRepository, version) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
-  const next = `${base}-successor-of`;
+  const next = `${base}-until-successor-of`;
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
@@ -181,7 +181,7 @@ async function resolveCorrectionOfContract(remoteRepository, version) {
 }
 
 const contractResolvers = {
-  'successor-of': resolveUntilNextAfterContract,
+  'until-successor-of': resolveUntilSuccessorOfContract,
   'last-of': resolveLastOfContract,
   'correction-of': resolveCorrectionOfContract,
 };
@@ -194,7 +194,7 @@ const contractResolvers = {
   const host = p.get('host') || 'github.com';
   const version = p.get('v');
   const urlPath = p.get('urlPath') || '';
-  const contract = p.get('contract') || 'successor-of';
+  const contract = p.get('contract') || 'until-successor-of';
 
   if ((!repositoryApiUrl || !repositoryBrowserUrl) && !repository) {
     document.body.innerText = 'missing params';
