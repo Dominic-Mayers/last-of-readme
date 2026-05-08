@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node scripts/last-of-readme/install/install.cjs",
-    "preversion": "node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs until-successor-of",
+    "preversion": "node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of",
     "version": "node scripts/last-of-readme/update-readme-link.cjs && node scripts/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
     "tag:last-of": "node scripts/last-of-readme/tag-doc.cjs last-of",
@@ -31,6 +31,6 @@
     },
     "packageFilePath": "README.md",
     "repositoryUrlPath": "",
-    "contract": "correction-of"
+    "contract": "until-successor-of"
   }
 }

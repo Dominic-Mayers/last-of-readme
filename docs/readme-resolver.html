@@ -54,7 +54,7 @@ function renderResolutionPage(page) {
 async function resolveUntilSuccessorOfContract(remoteRepository, version) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
-  const next = `${base}-until-successor-of`;
+  const next = `${base}-successor-of`;
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
@@ -96,7 +96,7 @@ async function resolveUntilSuccessorOfContract(remoteRepository, version) {
 async function resolveLastOfContract(remoteRepository, version) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
-  const next = `${base}-until-successor-of`;
+  const next = `${base}-successor-of`;
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));

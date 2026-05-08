@@ -28,7 +28,7 @@ function describeUntilSuccessorOf(documentationPath) {
     `The documentation link will resolve ${documentationPath} using this order:`,
     '',
     '1. vX.Y.Z-last-of',
-    '2. vX.Y.Z-until-successor-of',
+    '2. vX.Y.Z-successor-of',
     '3. HEAD of a unique branch containing vX.Y.Z',
     '4. A page listing multiple branches containing vX.Y.Z',
     '5. vX.Y.Z itself',
