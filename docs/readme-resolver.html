@@ -53,8 +53,8 @@ function renderResolutionPage(page) {
 
 async function resolveUntilNextAfterContract(remoteRepository, version) {
   const base = `v${version}`;
-  const last = `${base}-last-doc`;
-  const next = `${base}-next-doc`;
+  const last = `${base}-last-of`;
+  const next = `${base}-successor-of`;
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
@@ -95,15 +95,15 @@ async function resolveUntilNextAfterContract(remoteRepository, version) {
 
 async function resolveLastOfContract(remoteRepository, version) {
   const base = `v${version}`;
-  const last = `${base}-last-doc`;
-  const next = `${base}-next-doc`;
+  const last = `${base}-last-of`;
+  const next = `${base}-successor-of`;
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
   }
 
   const fallbackMessage =
-    'No last-doc tag was found. The following documentation is not marked as authoritative for this version.';
+    'No last-of tag was found. The following documentation is not marked as authoritative for this version.';
 
   if (await remoteRepository.resolveTag(next)) {
     return renderOutcome({
@@ -120,7 +120,7 @@ async function resolveLastOfContract(remoteRepository, version) {
   if (!baseRepoNode) {
     return renderOutcome({
       kind: 'not-found',
-      message: 'No last-doc tag was found, and the version tag was not found.',
+      message: 'No last-of tag was found, and the version tag was not found.',
       links: [],
     });
   }
@@ -142,7 +142,7 @@ async function resolveLastOfContract(remoteRepository, version) {
     return renderOutcome({
       kind: 'ambiguous',
       message:
-        'No last-doc tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.',
+        'No last-of tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.',
       links: containingBranches.map((branch) => ({
         label: branch,
         url: remoteRepository.browseDocumentation(branch),
@@ -163,7 +163,7 @@ async function resolveLastOfContract(remoteRepository, version) {
 
 async function resolveCorrectionOfContract(remoteRepository, version) {
   const base = `v${version}`;
-  const correction = `${base}-correction-doc`;
+  const correction = `${base}-correction-of`;
 
   if (await remoteRepository.resolveTag(correction)) {
     return redirectOutcome(remoteRepository.browseDocumentation(correction));
@@ -175,7 +175,7 @@ async function resolveCorrectionOfContract(remoteRepository, version) {
 
   return renderOutcome({
     kind: 'not-found',
-    message: 'No correction-doc tag was found, and the version tag was not found.',
+    message: 'No correction-of tag was found, and the version tag was not found.',
     links: [],
   });
 }

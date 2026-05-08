@@ -6,12 +6,12 @@
   "license": "MIT",
   "scripts": {
     "start": "node scripts/last-of-readme/install/install.cjs",
-    "preversion": "node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs next-doc",
+    "preversion": "node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of",
     "version": "node scripts/last-of-readme/update-readme-link.cjs && node scripts/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
-    "tag:last-doc": "node scripts/last-of-readme/tag-doc.cjs last-doc",
+    "tag:last-of": "node scripts/last-of-readme/tag-doc.cjs last-of",
     "last-of-readme:contract": "node scripts/last-of-readme/last-of-readme-contract.cjs",
-    "tag:correction-doc": "node scripts/last-of-readme/tag-doc.cjs correction-doc"
+    "tag:correction-of": "node scripts/last-of-readme/tag-doc.cjs correction-of"
   },
   "repository": {
     "type": "git",

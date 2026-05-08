@@ -27,8 +27,8 @@ function describeSuccessorOf(documentationPath) {
   return [
     `The documentation link will resolve ${documentationPath} using this order:`,
     '',
-    '1. vX.Y.Z-last-doc',
-    '2. vX.Y.Z-next-doc',
+    '1. vX.Y.Z-last-of',
+    '2. vX.Y.Z-successor-of',
     '3. HEAD of a unique branch containing vX.Y.Z',
     '4. A page listing multiple branches containing vX.Y.Z',
     '5. vX.Y.Z itself',
@@ -39,13 +39,13 @@ function describeSuccessorOf(documentationPath) {
 
 function describeLastOf(documentationPath) {
   return [
-    `The documentation link will redirect directly to ${documentationPath} only when vX.Y.Z-last-doc exists.`,
+    `The documentation link will redirect directly to ${documentationPath} only when vX.Y.Z-last-of exists.`,
     '',
-    'If vX.Y.Z-last-doc does not exist, the resolver will show an intermediary page saying that no authoritative documentation was found.',
+    'If vX.Y.Z-last-of does not exist, the resolver will show an intermediary page saying that no authoritative documentation was found.',
     '',
     'The intermediary page will propose fallback documentation using this order:',
     '',
-    '1. vX.Y.Z-next-doc',
+    '1. vX.Y.Z-successor-of',
     '2. HEAD of a unique branch containing vX.Y.Z',
     '3. A page listing multiple branches containing vX.Y.Z',
     '4. vX.Y.Z itself',
@@ -57,11 +57,11 @@ function describeLastOf(documentationPath) {
 
 function describeCorrectionOf(documentationPath) {
   return [
-    `The documentation link will redirect to ${documentationPath} at vX.Y.Z-correction-doc when that tag exists.`,
+    `The documentation link will redirect to ${documentationPath} at vX.Y.Z-correction-of when that tag exists.`,
     '',
-    'If vX.Y.Z-correction-doc does not exist, the resolver will redirect to vX.Y.Z.',
+    'If vX.Y.Z-correction-of does not exist, the resolver will redirect to vX.Y.Z.',
     '',
-    'The correction-doc tag is a movable documentation pointer. Running the tag script for correction-doc again replaces the correction pointer for the current version.',
+    'The correction-of tag is a movable documentation pointer. Running the tag script for correction-of again replaces the correction pointer for the current version.',
     '',
     'Use this behavior for future version bumps?',
   ].join('\n');
