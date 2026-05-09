@@ -279,6 +279,15 @@ function finalizeDocLinkPlaceholderState(pipelineState = {}) {
   };
 }
 
+
+function checkPackageFilePathConfigRequirements(pipelineState = {}) {
+  return pipelineState;
+}
+
+function finalizePackageFilePathConfigState(pipelineState = {}) {
+  return pipelineState;
+}
+
 module.exports = {
   START_MARKER,
   END_MARKER,
@@ -289,6 +298,8 @@ module.exports = {
   finalizeCwdPackageRootState,
   validatePackageFilePath,
   validateWritableBaseDirectoryForNewFile: assertPackageFileCanBeCreated,
+  checkPackageFilePathConfigRequirements,
+  finalizePackageFilePathConfigState,
   collectPackageFilePathEnvironmentInput,
   preparePackageFilePathEnvironmentInput,
   findManagedPlaceholder,
