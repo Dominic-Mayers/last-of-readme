@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 
 const { checkBasicRequirements } = require('./basic-requirements.cjs');
+const { checkCwdIsPackageRoot } = require('./check-cwd-is-package-root.cjs');
 const { checkGitRemote } = require('./check-git-remote.cjs');
-const {
-  checkCwdIsPackageRoot,
-} = require('./check-cwd-is-package-root.cjs');
 const { checkPackageFilePath } = require('./check-package-file-path.cjs');
-const {
-  checkLinkPlaceholder,
-} = require('./check-link-placeholder.cjs');
+const { checkLinkPlaceholder } = require('./check-link-placeholder.cjs');
 const { automatedInstall } = require('./apply-installation.cjs');
 
 async function main() {

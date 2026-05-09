@@ -109,7 +109,7 @@ function publishTag(tag, remote) {
  *
  * @param {string} tag - The movable documentation tag to publish.
  * @param {string} remote - The configured Git remote to publish to.
- * @remarks Used for correction-doc tags. The remote tag is force-updated
+ * @remarks Used for correction-of tags. The remote tag is force-updated
  * because the tag represents the current correction pointer for a version.
  * @returns {void}
  */
