@@ -15,6 +15,23 @@ function collectGitRemotesEnvironmentInput(pipelineState = {}) {
   };
 }
 
+function checkRemoteNameConfigRequirements(pipelineState = {}) {
+  return pipelineState;
+}
+
+function finalizeRemoteNameState(pipelineState = {}) {
+  const control = pipelineState.control || {};
+  const config = pipelineState.config || {};
+
+  return {
+    ...pipelineState,
+    config: {
+      ...config,
+      remoteName: control.localName,
+    },
+  };
+}
+
 function checkGitRemoteRequirements(pipelineState = {}) {
   const control = pipelineState.control || {};
   const localName = control.localName;
@@ -57,7 +74,6 @@ function finalizeRemoteState(pipelineState = {}) {
     ...pipelineState,
     config: {
       ...config,
-      remoteName: control.localName,
       remote: {
         ...(config.remote || {}),
         kind: 'github',
@@ -87,6 +103,8 @@ function assertHttpUrl(value, message) {
 
 module.exports = {
   collectGitRemotesEnvironmentInput,
+  checkRemoteNameConfigRequirements,
+  finalizeRemoteNameState,
   checkGitRemoteRequirements,
   finalizeRemoteState,
 };
