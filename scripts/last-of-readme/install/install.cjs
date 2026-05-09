@@ -3,6 +3,7 @@
 const { checkBasicRequirements } = require('./basic-requirements.cjs');
 const { checkCwdIsPackageRoot } = require('./check-cwd-is-package-root.cjs');
 const { checkRemoteNameConfig } = require('./check-remote-name-config.cjs');
+const { checkRemoteUrlsConfig } = require('./check-remote-urls-config.cjs');
 const { checkGitRemote } = require('./check-git-remote.cjs');
 const { checkPackageFilePath } = require('./check-package-file-path.cjs');
 const { checkLinkPlaceholder } = require('./check-link-placeholder.cjs');
@@ -17,6 +18,7 @@ async function main() {
   };
   pipelineState = checkCwdIsPackageRoot(pipelineState);
   pipelineState = await checkRemoteNameConfig(pipelineState);
+  pipelineState = await checkRemoteUrlsConfig(pipelineState);
   pipelineState = await checkGitRemote(pipelineState);
   pipelineState = await checkPackageFilePath(pipelineState);
   pipelineState = await checkLinkPlaceholder(pipelineState);
