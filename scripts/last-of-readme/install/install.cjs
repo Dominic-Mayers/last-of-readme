@@ -2,6 +2,7 @@
 
 const { checkBasicRequirements } = require('./basic-requirements.cjs');
 const { checkCwdIsPackageRoot } = require('./check-cwd-is-package-root.cjs');
+const { checkExistingInstallation } = require('./check-existing-installation.cjs');
 const { checkRemoteNameConfig } = require('./check-remote-name-config.cjs');
 const { checkRemoteUrlsConfig } = require('./check-remote-urls-config.cjs');
 const { checkGitRemote } = require('./check-git-remote.cjs');
@@ -18,6 +19,7 @@ async function main() {
     control: {},
   };
   pipelineState = checkCwdIsPackageRoot(pipelineState);
+  pipelineState = await checkExistingInstallation(pipelineState);
   pipelineState = await checkRemoteNameConfig(pipelineState);
   pipelineState = await checkRemoteUrlsConfig(pipelineState);
   pipelineState = await checkGitRemote(pipelineState);

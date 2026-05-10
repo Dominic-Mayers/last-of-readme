@@ -6,6 +6,7 @@ const {
   getCurrentInstalledPackageFilePath,
   getCurrentRemoteConfiguration,
   getCurrentRepositoryUrlPath,
+  getExistingInstallationFingerprint,
   npmPackageRoot,
 } = require('../adapters/npm-adapter.cjs');
 
@@ -61,9 +62,38 @@ function collectPackageFilePathDefaultsEnvironmentInput(pipelineState = {}) {
   };
 }
 
+
+function collectExistingInstallationEnvironmentInput(pipelineState = {}) {
+  const fingerprint = getExistingInstallationFingerprint();
+
+  return {
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
+      existingInstallationDetected: fingerprint !== null,
+      existingInstallationDetails: fingerprint,
+    },
+  };
+}
+
+function finalizeExistingInstallationState(pipelineState = {}) {
+  const {
+    existingInstallationDetected,
+    existingInstallationDetails,
+    ...controlWithoutInstallationInput
+  } = pipelineState.control || {};
+
+  return {
+    ...pipelineState,
+    control: controlWithoutInstallationInput,
+  };
+}
+
 module.exports = {
   collectNpmPackageRootEnvironmentInput,
   collectConfiguredRemoteNameEnvironmentInput,
   collectCurrentRemoteConfigurationEnvironmentInput,
   collectPackageFilePathDefaultsEnvironmentInput,
+  collectExistingInstallationEnvironmentInput,
+  finalizeExistingInstallationState,
 };

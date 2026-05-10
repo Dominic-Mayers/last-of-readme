@@ -320,6 +320,55 @@ function fail(message) {
   throw error;
 }
 
+
+/**
+ * Reads the preversion, version, and postversion scripts hooks used by
+ * collectExistingInstallationEnvironmentInput() to detect an existing
+ * Last of Readme installation.
+ *
+ * @returns {{ preversion: string, version: string, postversion: string }}
+ * Current scripts hooks, each as an empty string when absent.
+ */
+function getCurrentScriptsHooks() {
+  const hooks = {};
+  for (const hook of ['preversion', 'version', 'postversion']) {
+    const value = getPackageJsonField(`scripts.${hook}`, { allowEmpty: true });
+    hooks[hook] = typeof value === 'string' ? value : '';
+  }
+  return hooks;
+}
+
+/**
+ * Detects an existing Last of Readme installation fingerprint in package.json.
+ * Returns the detected fingerprint details, or null when no installation is found.
+ *
+ * An installation is detected when:
+ * - The lastOfReadme field is present, or
+ * - Any of preversion, version, or postversion contains a reference to
+ *   scripts/last-of-readme/.
+ *
+ * @returns {{ hasLastOfReadmeField: boolean, hooksWithInstallation: string[] } | null}
+ */
+function getExistingInstallationFingerprint() {
+  const lastOfReadme = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  const hasLastOfReadmeField =
+    lastOfReadme !== null &&
+    lastOfReadme !== undefined &&
+    lastOfReadme !== '' &&
+    typeof lastOfReadme === 'object';
+
+  const hooks = getCurrentScriptsHooks();
+  const hooksWithInstallation = Object.entries(hooks)
+    .filter(([, value]) => value.includes('scripts/last-of-readme/'))
+    .map(([key]) => key);
+
+  if (!hasLastOfReadmeField && hooksWithInstallation.length === 0) {
+    return null;
+  }
+
+  return { hasLastOfReadmeField, hooksWithInstallation };
+}
+
 module.exports = {
     assertPackageManifestReadableByNpm,
     npmPackageRoot,
@@ -336,7 +385,9 @@ module.exports = {
     repositoryUrlPath,
     getCurrentRepositoryUrlPath,
     getCurrentFilesField,
-    updatePackageJsonFields
+    updatePackageJsonFields,
+    getCurrentScriptsHooks,
+    getExistingInstallationFingerprint
 };
 
 

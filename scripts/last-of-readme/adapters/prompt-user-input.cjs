@@ -99,6 +99,25 @@ async function askCreateMinimalPackageFile({ askQuestion }) {
   return askQuestion('Create a minimal package file? [no]: ');
 }
 
+
+function formatExistingInstallationDetails(details) {
+  const lines = [];
+  if (details.hasLastOfReadmeField) {
+    lines.push('  - lastOfReadme field in package.json');
+  }
+  for (const hook of details.hooksWithInstallation) {
+    lines.push(`  - ${hook} scripts hook references scripts/last-of-readme/`);
+  }
+  return lines.join('\n');
+}
+
+async function askExistingInstallationConsent({ askQuestion, details }) {
+  console.log('\n⚠️  An existing Last of Readme installation was detected:');
+  console.log(formatExistingInstallationDetails(details));
+  console.log('Proceeding will overwrite the existing installation.');
+  return askQuestion('Continue with installation? [no]: ');
+}
+
 module.exports = {
   askRemoteChoice,
   askRepositoryApiUrl,
@@ -108,4 +127,5 @@ module.exports = {
   askRemovePreviousPackageFile,
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
+  askExistingInstallationConsent,
 };

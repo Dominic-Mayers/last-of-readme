@@ -13,6 +13,7 @@ const {
   askRemovePreviousPackageFile,
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
+  askExistingInstallationConsent,
 } = require('./prompt-user-input.cjs');
 
 async function collectDocLinkPlaceholderInput(pipelineState = {}) {
@@ -317,10 +318,24 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
   throw new Error('Git remote URL must point to a GitHub repository');
 }
 
+
+async function collectExistingInstallationConsentInput({ details }) {
+  const rl = createInterface();
+  try {
+    return await askExistingInstallationConsent({
+      askQuestion: (question) => ask(rl, question),
+      details,
+    });
+  } finally {
+    rl.close();
+  }
+}
+
 module.exports = {
   collectDocLinkPlaceholderInput,
   collectPackageFilePathInput,
   collectRemoteInput,
   collectRemoteUrlsInput,
   tryDeriveGitHubUrlsFromRemoteUrl,
+  collectExistingInstallationConsentInput,
 };

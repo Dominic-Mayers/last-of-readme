@@ -10,6 +10,7 @@ const {
   tryDeriveGitHubUrlsFromRemoteUrl,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
+  collectExistingInstallationConsentInput,
 } = require('../adapters/user-input-adapter.cjs');
 
 function prepareRemoteInput(pipelineState = {}) {
@@ -167,6 +168,28 @@ function normalizeUrl(value) {
   return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
 }
 
+
+async function checkExistingInstallationRequirements(pipelineState = {}) {
+  const control = pipelineState.control || {};
+
+  if (!control.existingInstallationDetected) {
+    return pipelineState;
+  }
+
+  const answer = await collectExistingInstallationConsentInput({
+    details: control.existingInstallationDetails,
+  });
+
+  const normalized = (answer || '').trim().toLowerCase();
+  const consented = ['y', 'yes'].includes(normalized);
+
+  if (!consented) {
+    throw new Error('Installation aborted: existing Last of Readme installation was not overwritten.');
+  }
+
+  return pipelineState;
+}
+
 module.exports = {
   collectRemoteInput,
   collectRemoteUrlsInput,
@@ -177,4 +200,5 @@ module.exports = {
   preparePackageFilePathInput,
   collectDocLinkPlaceholderInput,
   prepareDocLinkPlaceholderInput,
+  checkExistingInstallationRequirements,
 };
