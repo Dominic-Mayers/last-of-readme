@@ -13,7 +13,7 @@ const {
   askRemovePreviousPackageFile,
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
-  askExistingInstallationConsent,
+  askInstallationPreconditions,
   askScriptsHookSituation,
 } = require('./prompt-user-input.cjs');
 
@@ -320,12 +320,16 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
 }
 
 
-async function collectExistingInstallationConsentInput({ details }) {
+async function checkInstallationPreconditionsConsentInput({
+  existingInstallation,
+  convenienceNeeds,
+}) {
   const rl = createInterface();
   try {
-    return await askExistingInstallationConsent({
+    return await askInstallationPreconditions({
       askQuestion: (question) => ask(rl, question),
-      details,
+      existingInstallation,
+      convenienceNeeds,
     });
   } finally {
     rl.close();
@@ -377,7 +381,7 @@ module.exports = {
   collectRemoteInput,
   collectRemoteUrlsInput,
   tryDeriveGitHubUrlsFromRemoteUrl,
-  collectExistingInstallationConsentInput,
+  checkInstallationPreconditionsConsentInput,
   interactivelyInstallFingerprintedHook,
   interactivelyInstallConvenienceHook,
 };

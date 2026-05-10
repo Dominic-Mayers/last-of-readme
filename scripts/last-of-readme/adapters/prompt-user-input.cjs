@@ -111,11 +111,46 @@ function formatExistingInstallationDetails(details) {
   return lines.join('\n');
 }
 
-async function askExistingInstallationConsent({ askQuestion, details }) {
-  console.log('\n⚠️  An existing Last of Readme installation was detected:');
-  console.log(formatExistingInstallationDetails(details));
-  console.log('Proceeding will overwrite the existing installation.');
-  return askQuestion('Continue with installation? [no]: ');
+/**
+ * Presents a unified summary of installation preconditions and asks the user
+ * to proceed or abort. Shows:
+ * - Existing installation details (if any).
+ * - Convenience commands that Last of Readme needs in version/postversion hooks.
+ * Then asks once whether to proceed.
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion
+ * @param {{ hasLastOfReadmeField: boolean, hooksWithInstallation: string[] } | null} params.existingInstallation
+ * @param {{ hook: string, command: string, needs: string }[]} params.convenienceNeeds
+ * @returns {Promise<string>} The user's answer.
+ */
+async function askInstallationPreconditions({
+  askQuestion,
+  existingInstallation,
+  convenienceNeeds,
+}) {
+  console.log('');
+
+  if (existingInstallation) {
+    console.log('⚠️  An existing Last of Readme installation was detected:');
+    console.log(formatExistingInstallationDetails(existingInstallation));
+    console.log('Proceeding will overwrite the existing installation.');
+    console.log('');
+  }
+
+  if (convenienceNeeds.length > 0) {
+    console.log('ℹ️  Last of Readme also has the following needs in your scripts hooks:');
+    for (const { hook, command, needs } of convenienceNeeds) {
+      console.log(`\n  ${hook}:`);
+      console.log(`    ${needs}`);
+      console.log(`    Command: ${command}`);
+    }
+    console.log('\nIf you proceed, Last of Readme will remind you to ensure these');
+    console.log('commands are executed, either automatically or manually.');
+    console.log('');
+  }
+
+  return askQuestion('Proceed with installation? [no]: ');
 }
 
 
@@ -173,6 +208,6 @@ module.exports = {
   askRemovePreviousPackageFile,
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
-  askExistingInstallationConsent,
+  askInstallationPreconditions,
   askScriptsHookSituation,
 };

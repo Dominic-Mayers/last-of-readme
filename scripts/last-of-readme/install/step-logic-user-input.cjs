@@ -10,7 +10,7 @@ const {
   tryDeriveGitHubUrlsFromRemoteUrl,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
-  collectExistingInstallationConsentInput,
+  checkInstallationPreconditionsConsentInput,
 } = require('../adapters/user-input-adapter.cjs');
 
 function prepareRemoteInput(pipelineState = {}) {
@@ -169,25 +169,69 @@ function normalizeUrl(value) {
 }
 
 
-async function checkExistingInstallationRequirements(pipelineState = {}) {
+
+// Convenience commands that Last of Readme needs in the user's scripts hooks.
+// These are non-fingerprinted and may interfere with existing workflows.
+const CONVENIENCE_NEEDS = [
+  {
+    hook: 'version',
+    command: 'node scripts/git-add-readme.cjs',
+    needs:
+      'The updated package file must be staged before the version commit is created. Otherwise the commit will not include the updated file.',
+    insure:
+      'Please ensure that node scripts/git-add-readme.cjs is executed in your version hook, either automatically or manually.',
+  },
+  {
+    hook: 'postversion',
+    command: 'git push --follow-tags',
+    needs:
+      'Last of Readme tags are not pushed to the remote automatically. Without them, the Last of Readme resolver will not work.',
+    insure:
+      'Please ensure that git push --follow-tags is executed in your postversion hook, either automatically or manually.',
+  },
+];
+
+async function checkInstallationPreconditionsRequirements(pipelineState = {}) {
   const control = pipelineState.control || {};
 
-  if (!control.existingInstallationDetected) {
-    return pipelineState;
+  const existingInstallation = control.existingInstallationDetected
+    ? control.existingInstallationDetails
+    : null;
+
+  // Only present convenience needs that are relevant — i.e. the hook doesn't
+  // already contain the command or a similar one.
+  const convenienceNeeds = CONVENIENCE_NEEDS;
+
+  // Skip prompt entirely if there is nothing to warn about.
+  if (!existingInstallation && convenienceNeeds.length === 0) {
+    return {
+      ...pipelineState,
+      control: {
+        ...control,
+        convenienceNeeds,
+      },
+    };
   }
 
-  const answer = await collectExistingInstallationConsentInput({
-    details: control.existingInstallationDetails,
+  const answer = await checkInstallationPreconditionsConsentInput({
+    existingInstallation,
+    convenienceNeeds,
   });
 
   const normalized = (answer || '').trim().toLowerCase();
   const consented = ['y', 'yes'].includes(normalized);
 
   if (!consented) {
-    throw new Error('Installation aborted: existing Last of Readme installation was not overwritten.');
+    throw new Error('Installation aborted. You can run the installer again when you are ready.');
   }
 
-  return pipelineState;
+  return {
+    ...pipelineState,
+    control: {
+      ...control,
+      convenienceNeeds,
+    },
+  };
 }
 
 module.exports = {
@@ -200,5 +244,5 @@ module.exports = {
   preparePackageFilePathInput,
   collectDocLinkPlaceholderInput,
   prepareDocLinkPlaceholderInput,
-  checkExistingInstallationRequirements,
+  checkInstallationPreconditionsRequirements,
 };

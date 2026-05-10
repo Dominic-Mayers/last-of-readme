@@ -11,7 +11,6 @@ const {
 const { START_MARKER, END_MARKER } = require('./step-logic-filesystem.cjs');
 const {
   interactivelyInstallFingerprintedHook,
-  interactivelyInstallConvenienceHook,
 } = require('../adapters/user-input-adapter.cjs');
 
 // Fingerprinted Last of Readme commands per hook.
@@ -35,29 +34,11 @@ const LOR_HOOK_COMMANDS = {
   },
 };
 
-// Non-fingerprinted convenience commands per hook.
-const LOR_HOOK_CONVENIENCE_COMMANDS = {
-  version: {
-    command: 'node scripts/git-add-readme.cjs',
-    needs:
-      'The updated package file must be staged before the version commit is created. Otherwise the commit will not include the updated file.',
-    insure:
-      'You can add the following command to your version hook:\n  node scripts/git-add-readme.cjs',
-  },
-  postversion: {
-    command: 'git push --follow-tags',
-    needs:
-      'Last of Readme tags are not pushed to the remote automatically. Without them, the Last of Readme resolver will not work.',
-    insure:
-      'You can add the following command to your postversion hook:\n  git push --follow-tags',
-  },
-};
-
 async function automatedInstall(pipelineState) {
   installDocLink(pipelineState);
   installRemotePackageJson(pipelineState);
   installDocLinkPackageJson(pipelineState);
-  await installScriptsHooks();
+  await installScriptsHooks(pipelineState);
 }
 
 function setPackageJsonFields(updates) {
@@ -202,12 +183,12 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function installScriptsHooks() {
+async function installScriptsHooks(pipelineState) {
   const currentHooks = getCurrentScriptsHooks();
+  const convenienceNeeds = (pipelineState.control || {}).convenienceNeeds || [];
 
   for (const hook of ['preversion', 'version', 'postversion']) {
     const lorEntry = LOR_HOOK_COMMANDS[hook] || null;
-    const convEntry = LOR_HOOK_CONVENIENCE_COMMANDS[hook] || null;
     const rawContent = currentHooks[hook] || '';
 
     const remainingContent = lorEntry
@@ -217,10 +198,11 @@ async function installScriptsHooks() {
     if (lorEntry) {
       await installFingerprintedHookCommand({ hook, lorEntry, remainingContent });
     }
+  }
 
-    if (convEntry) {
-      await installConvenienceHookCommand({ hook, convEntry, remainingContent });
-    }
+  // Print reminders for convenience commands the user acknowledged in the pipeline.
+  for (const { hook, insure } of convenienceNeeds) {
+    console.log(`\nℹ️  ${hook}: ${insure}`);
   }
 }
 
@@ -251,29 +233,6 @@ async function installFingerprintedHookCommand({ hook, lorEntry, remainingConten
   // 'manual': insure already printed by askScriptsHookSituation.
 }
 
-async function installConvenienceHookCommand({ hook, convEntry, remainingContent }) {
-  if (!remainingContent) {
-    const choice = await interactivelyInstallConvenienceHook({
-      needs: convEntry.needs,
-      insure: convEntry.insure,
-    });
-
-    if (choice === 'yes') {
-      const currentHooks = getCurrentScriptsHooks();
-      const current = currentHooks[hook] || '';
-      const updated = current
-        ? `${current} && ${convEntry.command}`
-        : convEntry.command;
-      setPackageJsonFields({ [`scripts.${hook}`]: updated });
-      console.log(`✔ ${hook}: convenience command added.`);
-    }
-    // 'manual': insure already printed by askScriptsHookSituation.
-  } else {
-    // Third-party content exists — explain and suggest, no prompt.
-    console.log(`\n${convEntry.needs}`);
-    console.log(convEntry.insure);
-  }
-}
 
 module.exports = {
   automatedInstall,
