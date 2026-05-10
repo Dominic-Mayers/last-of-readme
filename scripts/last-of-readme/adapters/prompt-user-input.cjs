@@ -118,6 +118,52 @@ async function askExistingInstallationConsent({ askQuestion, details }) {
   return askQuestion('Continue with installation? [no]: ');
 }
 
+
+/**
+ * Generic scripts hook interaction.
+ *
+ * Always prints `needs` to describe the situation.
+ * When `options` are provided, presents them with "I'll do it myself" appended
+ * automatically. On "I'll do it myself", prints "No problem!" then `insure`.
+ * When no `options`, prints `insure` directly.
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion
+ * @param {string} params.needs - situation description
+ * @param {string} params.insure - concrete action the user can take
+ * @param {Array<{label: string, value: string}>} [params.options]
+ * @returns {Promise<string|null>} chosen option value, or null when no options
+ */
+async function askScriptsHookSituation({ askQuestion, needs, insure, options }) {
+  console.log(`\n${needs}`);
+
+  if (!options || options.length === 0) {
+    console.log(insure);
+    return null;
+  }
+
+  const allOptions = [...options, { label: "I'll do it myself", value: 'manual' }];
+  allOptions.forEach((opt, index) => {
+    console.log(`  ${index + 1}. ${opt.label}`);
+  });
+
+  const answer = await askQuestion('Choose an option [1]: ');
+  const normalized = (answer || '').trim();
+  const index = normalized === '' ? 0 : parseInt(normalized, 10) - 1;
+
+  const chosen =
+    index >= 0 && index < allOptions.length
+      ? allOptions[index]
+      : allOptions[allOptions.length - 1];
+
+  if (chosen.value === 'manual') {
+    console.log("No problem!");
+    console.log(insure);
+  }
+
+  return chosen.value;
+}
+
 module.exports = {
   askRemoteChoice,
   askRepositoryApiUrl,
@@ -128,4 +174,5 @@ module.exports = {
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
   askExistingInstallationConsent,
+  askScriptsHookSituation,
 };

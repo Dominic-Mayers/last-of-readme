@@ -2,17 +2,62 @@
 
 const {
   getCurrentFilesField,
+  getCurrentScriptsHooks,
   updatePackageJsonFields,
 } = require('../adapters/npm-adapter.cjs');
 const {
   createPackageFileIfAbsent,
 } = require('../adapters/filesystem-adapter.cjs');
 const { START_MARKER, END_MARKER } = require('./step-logic-filesystem.cjs');
+const {
+  interactivelyInstallFingerprintedHook,
+  interactivelyInstallConvenienceHook,
+} = require('../adapters/user-input-adapter.cjs');
 
-function automatedInstall(pipelineState) {
+// Fingerprinted Last of Readme commands per hook.
+const LOR_HOOK_COMMANDS = {
+  preversion: {
+    command:
+      'node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of',
+    allowPrepend: true,
+    needs:
+      'The documentation contract must be checked and the successor tag must be set before the version is bumped. Without this, the Last of Readme resolver will not have the information it needs.',
+    insure:
+      'You can add the following command to your preversion hook:\n  node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of',
+  },
+  version: {
+    command: 'node scripts/last-of-readme/update-readme-link.cjs',
+    allowPrepend: false,
+    needs:
+      'The README link must be updated before the version commit is created. Otherwise the published README will point to the wrong commit.',
+    insure:
+      'You can add the following command to your version hook:\n  node scripts/last-of-readme/update-readme-link.cjs',
+  },
+};
+
+// Non-fingerprinted convenience commands per hook.
+const LOR_HOOK_CONVENIENCE_COMMANDS = {
+  version: {
+    command: 'node scripts/git-add-readme.cjs',
+    needs:
+      'The updated package file must be staged before the version commit is created. Otherwise the commit will not include the updated file.',
+    insure:
+      'You can add the following command to your version hook:\n  node scripts/git-add-readme.cjs',
+  },
+  postversion: {
+    command: 'git push --follow-tags',
+    needs:
+      'Last of Readme tags are not pushed to the remote automatically. Without them, the Last of Readme resolver will not work.',
+    insure:
+      'You can add the following command to your postversion hook:\n  git push --follow-tags',
+  },
+};
+
+async function automatedInstall(pipelineState) {
   installDocLink(pipelineState);
   installRemotePackageJson(pipelineState);
   installDocLinkPackageJson(pipelineState);
+  await installScriptsHooks();
 }
 
 function setPackageJsonFields(updates) {
@@ -141,6 +186,93 @@ function updateFilesField(
   }
 
   return updatedFiles;
+}
+
+
+function stripLorCommand(hookContent, lorCommand) {
+  if (!hookContent) return '';
+  return hookContent
+    .replace(new RegExp(`\\s*&&\\s*${escapeRegExp(lorCommand)}`, 'g'), '')
+    .replace(new RegExp(`${escapeRegExp(lorCommand)}\\s*&&\\s*`, 'g'), '')
+    .replace(new RegExp(`^${escapeRegExp(lorCommand)}$`), '')
+    .trim();
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function installScriptsHooks() {
+  const currentHooks = getCurrentScriptsHooks();
+
+  for (const hook of ['preversion', 'version', 'postversion']) {
+    const lorEntry = LOR_HOOK_COMMANDS[hook] || null;
+    const convEntry = LOR_HOOK_CONVENIENCE_COMMANDS[hook] || null;
+    const rawContent = currentHooks[hook] || '';
+
+    const remainingContent = lorEntry
+      ? stripLorCommand(rawContent, lorEntry.command)
+      : rawContent;
+
+    if (lorEntry) {
+      await installFingerprintedHookCommand({ hook, lorEntry, remainingContent });
+    }
+
+    if (convEntry) {
+      await installConvenienceHookCommand({ hook, convEntry, remainingContent });
+    }
+  }
+}
+
+async function installFingerprintedHookCommand({ hook, lorEntry, remainingContent }) {
+  if (!remainingContent) {
+    setPackageJsonFields({ [`scripts.${hook}`]: lorEntry.command });
+    console.log(`✔ ${hook}: Last of Readme command installed.`);
+    return;
+  }
+
+  const choice = await interactivelyInstallFingerprintedHook({
+    allowPrepend: lorEntry.allowPrepend,
+    needs: `${lorEntry.needs}\n\nYour current ${hook} hook contains:\n  ${remainingContent}`,
+    insure: lorEntry.insure,
+  });
+
+  if (choice === 'prepend') {
+    setPackageJsonFields({
+      [`scripts.${hook}`]: `${lorEntry.command} && ${remainingContent}`,
+    });
+    console.log(`✔ ${hook}: Last of Readme command prepended.`);
+  } else if (choice === 'append') {
+    setPackageJsonFields({
+      [`scripts.${hook}`]: `${remainingContent} && ${lorEntry.command}`,
+    });
+    console.log(`✔ ${hook}: Last of Readme command appended.`);
+  }
+  // 'manual': insure already printed by askScriptsHookSituation.
+}
+
+async function installConvenienceHookCommand({ hook, convEntry, remainingContent }) {
+  if (!remainingContent) {
+    const choice = await interactivelyInstallConvenienceHook({
+      needs: convEntry.needs,
+      insure: convEntry.insure,
+    });
+
+    if (choice === 'yes') {
+      const currentHooks = getCurrentScriptsHooks();
+      const current = currentHooks[hook] || '';
+      const updated = current
+        ? `${current} && ${convEntry.command}`
+        : convEntry.command;
+      setPackageJsonFields({ [`scripts.${hook}`]: updated });
+      console.log(`✔ ${hook}: convenience command added.`);
+    }
+    // 'manual': insure already printed by askScriptsHookSituation.
+  } else {
+    // Third-party content exists — explain and suggest, no prompt.
+    console.log(`\n${convEntry.needs}`);
+    console.log(convEntry.insure);
+  }
 }
 
 module.exports = {

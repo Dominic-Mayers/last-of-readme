@@ -14,6 +14,7 @@ const {
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
   askExistingInstallationConsent,
+  askScriptsHookSituation,
 } = require('./prompt-user-input.cjs');
 
 async function collectDocLinkPlaceholderInput(pipelineState = {}) {
@@ -331,6 +332,45 @@ async function collectExistingInstallationConsentInput({ details }) {
   }
 }
 
+
+async function interactivelyInstallFingerprintedHook({
+  allowPrepend,
+  needs,
+  insure,
+}) {
+  const rl = createInterface();
+  try {
+    const options = [];
+    if (allowPrepend) {
+      options.push({ label: 'Prepend Last of Readme command', value: 'prepend' });
+    }
+    options.push({ label: 'Append Last of Readme command', value: 'append' });
+
+    return await askScriptsHookSituation({
+      askQuestion: (question) => ask(rl, question),
+      needs,
+      insure,
+      options,
+    });
+  } finally {
+    rl.close();
+  }
+}
+
+async function interactivelyInstallConvenienceHook({ needs, insure }) {
+  const rl = createInterface();
+  try {
+    return await askScriptsHookSituation({
+      askQuestion: (question) => ask(rl, question),
+      needs,
+      insure,
+      options: [{ label: 'Add it for me', value: 'yes' }],
+    });
+  } finally {
+    rl.close();
+  }
+}
+
 module.exports = {
   collectDocLinkPlaceholderInput,
   collectPackageFilePathInput,
@@ -338,4 +378,6 @@ module.exports = {
   collectRemoteUrlsInput,
   tryDeriveGitHubUrlsFromRemoteUrl,
   collectExistingInstallationConsentInput,
+  interactivelyInstallFingerprintedHook,
+  interactivelyInstallConvenienceHook,
 };
