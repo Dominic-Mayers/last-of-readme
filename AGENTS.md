@@ -157,9 +157,10 @@ As for any other part of Last of Readme, the installer does not directly connect
     `install.cjs` => `apply-installation.cjs` => `*-adapter.cjs`
 
 
-Every adapter function crosses the boundary by calling directly or indirectly a function of the environment.  An adapter function can call helper functions not exported by the adapter script. These helper functions are said to belong in the adapter-zone.
+The adapter functions define the boundary between Last of Readme and its environment.  An adapter function can call helper functions in the adapter script. The adapter functions and these helper functions are said to belong in the adapter-zone. A function in the adapter-zone does not have to cross the boundary toward system functions such as filesystem functions, git functions or npm functions.
 
-> [!Note]
+> [!Tip]
+> We should think of the adapter-zone as a layer around the core logic of Last of Readme, which is as large as needed so that  Last of Readme is as focused as possible on its core logic.
 > What an adapter function does is a design choice. It defines the boundary of Last of Readme. If an adapter function does many tasks, it means that these tasks are excluded from Last of Readme internal logic.
 
 #### The `prompt-user-input.cjs` script
