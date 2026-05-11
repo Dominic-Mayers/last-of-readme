@@ -338,17 +338,17 @@ async function checkInstallationPreconditionsConsentInput({
 
 
 async function interactivelyInstallFingerprintedHook({
-  allowPrepend,
+  allowAppend,
   needs,
   insure,
 }) {
   const rl = createInterface();
   try {
     const options = [];
-    if (allowPrepend) {
-      options.push({ label: 'Prepend Last of Readme command', value: 'prepend' });
+    if (allowAppend) {
+      options.push({ label: 'Append Last of Readme command', value: 'append' });
     }
-    options.push({ label: 'Append Last of Readme command', value: 'append' });
+    options.push({ label: 'Prepend Last of Readme command', value: 'prepend' });
 
     return await askScriptsHookSituation({
       askQuestion: (question) => ask(rl, question),
