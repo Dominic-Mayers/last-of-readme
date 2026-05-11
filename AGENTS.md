@@ -161,7 +161,7 @@ The adapter functions define the boundary between Last of Readme and its environ
 
 > [!Tip]
 > We should think of the adapter-zone as a layer around the core logic of Last of Readme, which is as large as needed so that  Last of Readme is as focused as possible on its core logic.
-> What an adapter function does is a design choice. It defines the boundary of Last of Readme. If an adapter function does many tasks, it means that these tasks are excluded from Last of Readme internal logic.
+> What an adapter function does is a design choice. It defines the boundary of Last of Readme. If an adapter function does many tasks, these tasks are excluded from Last of Readme internal logic.
 
 #### The `prompt-user-input.cjs` script
 
