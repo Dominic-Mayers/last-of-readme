@@ -79,7 +79,7 @@ The files are available in [Last of Readme GitHub repo](https://github.com/Domin
 
 ## The core of Last of Readme
 
-The core of Last of Readme (besides its currently obsolete README.md) consists of
+The core of Last of Readme consists of
 
 * `update-readme-link.cjs`: Create and insert a link to be resolved by `readme-resolver.html`.
 * `tag-doc.cjs`: Create correction-of, last-of or successor-of tags, which are used by the resolver.
