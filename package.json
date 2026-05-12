@@ -12,7 +12,7 @@
     "tag:last-of": "last-of-readme tag-doc last-of",
     "last-of-readme:contract": "last-of-readme contract",
     "tag:correction-of": "last-of-readme tag-doc correction-of",
-    "postinstall": "last-of-readme.cjs install"
+    "postinstall": "last-of-readme install"
   },
   "bin": {
     "last-of-readme": "scripts/last-of-readme/bin/last-of-readme.cjs"
