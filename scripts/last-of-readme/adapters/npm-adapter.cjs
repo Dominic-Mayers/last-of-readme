@@ -381,58 +381,6 @@ function getLastOfReadmeConfig() {
   return value && typeof value === 'object' ? value : {};
 }
 
-
-/**
- * Reads the npm script hook as needed for installing a Last of Readme-owned
- * hook command.
- *
- * @param {{ hook: string, command: string }} params
- * @returns {{ hook: string, command: string, rawContent: string, remainingContent: string }}
- */
-function getLastOfReadmeOwnedHookInstallationState({ hook, command }) {
-  const rawContent = getPackageJsonField(`scripts.${hook}`, {
-    allowEmpty: true,
-  });
-  const normalizedRawContent =
-    typeof rawContent === 'string' ? rawContent : '';
-
-  return {
-    hook,
-    command,
-    rawContent: normalizedRawContent,
-    remainingContent: stripLastOfReadmeOwnedHookCommand(
-      normalizedRawContent,
-      command
-    ),
-  };
-}
-
-/**
- * Installs a Last of Readme-owned command in an npm script hook.
- *
- * @param {{ hook: string, command: string, remainingContent?: string }} params
- * @returns {void}
- */
-function installLastOfReadmeOwnedHookCommand({ hook, command, remainingContent = '' }) {
-  const nextContent = remainingContent
-    ? `${command} && ${remainingContent}`
-    : command;
-  updatePackageJsonFields({ [`scripts.${hook}`]: nextContent });
-}
-
-function stripLastOfReadmeOwnedHookCommand(hookContent, ownedCommand) {
-  if (!hookContent) return '';
-  return hookContent
-    .replace(new RegExp(`\\s*&&\\s*${escapeRegExp(ownedCommand)}`, 'g'), '')
-    .replace(new RegExp(`${escapeRegExp(ownedCommand)}\\s*&&\\s*`, 'g'), '')
-    .replace(new RegExp(`^${escapeRegExp(ownedCommand)}$`), '')
-    .trim();
-}
-
-function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 module.exports = {
     assertPackageManifestReadableByNpm,
     npmPackageRoot,
@@ -453,8 +401,6 @@ module.exports = {
     getCurrentScriptsHooks,
     getExistingInstallationFingerprint,
     getLastOfReadmeConfig,
-    getLastOfReadmeOwnedHookInstallationState,
-    installLastOfReadmeOwnedHookCommand,
 };
 
 

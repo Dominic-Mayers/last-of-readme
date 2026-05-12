@@ -11,9 +11,6 @@ const {
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
   checkInstallationPreconditionsConsentInput,
-  interactivelyInstallFingerprintedHook,
-  printFingerprintedHookInstalled,
-  printFingerprintedHookPrepended,
 } = require('../adapters/user-input-adapter.cjs');
 
 function prepareRemoteInput(pipelineState = {}) {
@@ -232,41 +229,6 @@ async function checkInstallationPreconditionsRequirements(pipelineState = {}) {
   };
 }
 
-async function collectLastOfReadmeOwnedHookInstallationInput(pipelineState = {}) {
-  const hookStates =
-    (pipelineState.control || {}).lastOfReadmeOwnedVersionHookStates || [];
-
-  const updatedHookStates = [];
-
-  for (const hookState of hookStates) {
-    if (!hookState.remainingContent) {
-      printFingerprintedHookInstalled(hookState.hook);
-      updatedHookStates.push({ ...hookState, chosenAction: 'install' });
-      continue;
-    }
-
-    const choice = await interactivelyInstallFingerprintedHook({
-      hook: hookState.hook,
-      command: hookState.command,
-      remainingContent: hookState.remainingContent,
-    });
-
-    if (choice === 'prepend') {
-      printFingerprintedHookPrepended(hookState.hook);
-    }
-    // 'manual': reminder already printed by prompt-user-input.cjs.
-    updatedHookStates.push({ ...hookState, chosenAction: choice });
-  }
-
-  return {
-    ...pipelineState,
-    control: {
-      ...(pipelineState.control || {}),
-      lastOfReadmeOwnedVersionHookStates: updatedHookStates,
-    },
-  };
-}
-
 module.exports = {
   collectRemoteInput,
   collectRemoteUrlsInput,
@@ -278,5 +240,4 @@ module.exports = {
   collectDocLinkPlaceholderInput,
   prepareDocLinkPlaceholderInput,
   checkInstallationPreconditionsRequirements,
-  collectLastOfReadmeOwnedHookInstallationInput,
 };
