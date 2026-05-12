@@ -369,6 +369,18 @@ function getExistingInstallationFingerprint() {
   return { hasLastOfReadmeField, hooksWithInstallation };
 }
 
+
+/**
+ * Returns the full lastOfReadme configuration object used by attempt-utils.cjs
+ * to read the nonInteractiveFailurePolicy.
+ *
+ * @returns {object} The lastOfReadme config object, or an empty object when absent.
+ */
+function getLastOfReadmeConfig() {
+  const value = getPackageJsonField('lastOfReadme', { allowEmpty: true });
+  return value && typeof value === 'object' ? value : {};
+}
+
 module.exports = {
     assertPackageManifestReadableByNpm,
     npmPackageRoot,
@@ -387,7 +399,8 @@ module.exports = {
     getCurrentFilesField,
     updatePackageJsonFields,
     getCurrentScriptsHooks,
-    getExistingInstallationFingerprint
+    getExistingInstallationFingerprint,
+    getLastOfReadmeConfig,
 };
 
 

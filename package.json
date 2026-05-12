@@ -6,8 +6,8 @@
   "license": "MIT",
   "scripts": {
     "start": "last-of-readme install",
-    "preversion": "last-of-readme check-contract && last-of-readme tag-doc successor-of",
-    "version": "last-of-readme update-readme-link && node scripts/git-add-readme.cjs",
+    "preversion": "last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag",
+    "version": "last-of-readme attempt-readme-link && node scripts/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
     "tag:last-of": "last-of-readme tag-doc last-of",
     "last-of-readme:contract": "last-of-readme contract",
@@ -35,7 +35,8 @@
     },
     "packageFilePath": "README.md",
     "repositoryUrlPath": "",
-    "nextContract": "until-successor-of"
+    "nextContract": "until-successor-of",
+    "nonInteractiveFailurePolicy": "continue"
   },
   "dependencies": {
     "@dominic.mayers/last-of-readme": "^0.1.62"

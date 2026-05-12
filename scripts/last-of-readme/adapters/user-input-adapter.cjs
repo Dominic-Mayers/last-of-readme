@@ -18,6 +18,8 @@ const {
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,
   printConvenienceHookReminder,
+  askWhetherToContinueAfterFailure,
+  displayNonInteractiveFailureWarning,
 } = require('./prompt-user-input.cjs');
 
 async function collectDocLinkPlaceholderInput(pipelineState = {}) {
@@ -358,6 +360,30 @@ async function interactivelyInstallFingerprintedHook({
   }
 }
 
+
+function isInteractiveSession() {
+  return Boolean(
+    process.stdin.isTTY &&
+    process.stdout.isTTY &&
+    !process.env.CI
+  );
+}
+
+async function askWhetherToContinueAfterFailureInput({ operationName, error }) {
+  const rl = createInterface();
+  try {
+    const answer = await askWhetherToContinueAfterFailure({
+      askQuestion: (question) => ask(rl, question),
+      operationName,
+      error,
+    });
+    const normalized = (answer || '').trim().toLowerCase();
+    return ['y', 'yes'].includes(normalized);
+  } finally {
+    rl.close();
+  }
+}
+
 module.exports = {
   collectDocLinkPlaceholderInput,
   collectPackageFilePathInput,
@@ -369,4 +395,7 @@ module.exports = {
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,
   printConvenienceHookReminder,
+  isInteractiveSession,
+  askWhetherToContinueAfterFailure: askWhetherToContinueAfterFailureInput,
+  displayNonInteractiveFailureWarning,
 };

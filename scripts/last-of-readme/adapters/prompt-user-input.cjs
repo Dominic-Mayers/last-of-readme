@@ -267,6 +267,41 @@ async function askFingerprintedHookInstallation({
   return 'manual';
 }
 
+
+/**
+ * Asks the user whether to continue after a Last of Readme operation failed
+ * during an interactive session (e.g. npm version run in a terminal).
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion
+ * @param {string} params.operationName
+ * @param {Error} params.error
+ * @returns {Promise<string>} The user's answer.
+ */
+async function askWhetherToContinueAfterFailure({
+  askQuestion,
+  operationName,
+  error,
+}) {
+  console.log(`
+⚠️  Last of Readme failed to ${operationName}.`);
+  console.log(`   ${error.message}`);
+  console.log('Last of Readme may not work correctly if you continue.');
+  return askQuestion('Continue anyway? [no]: ');
+}
+
+/**
+ * Displays a warning when a Last of Readme operation failed in a
+ * non-interactive session and the failure policy is not abort.
+ *
+ * @param {object} params
+ * @param {string} params.operationName
+ * @param {string} params.policy
+ */
+function displayNonInteractiveFailureWarning({ operationName, policy }) {
+  console.warn(`⚠️  Last of Readme failed to ${operationName} (policy: ${policy}). Continuing.`);
+}
+
 module.exports = {
   askRemoteChoice,
   askRepositoryApiUrl,
@@ -281,4 +316,6 @@ module.exports = {
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,
   printConvenienceHookReminder,
+  askWhetherToContinueAfterFailure,
+  displayNonInteractiveFailureWarning,
 };

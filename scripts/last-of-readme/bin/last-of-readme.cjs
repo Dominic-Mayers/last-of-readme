@@ -9,6 +9,9 @@ const COMMANDS = {
   'tag-doc': 'tag-doc.cjs',
   'update-readme-link': 'update-readme-link.cjs',
   contract: 'last-of-readme-contract.cjs',
+  'attempt-check-contract': 'attempt-check-contract.cjs',
+  'attempt-successor-tag': 'attempt-successor-tag.cjs',
+  'attempt-readme-link': 'attempt-readme-link.cjs',
 };
 
 function usage() {
@@ -21,6 +24,9 @@ function usage() {
     '  tag-doc <last-of|successor-of|correction-of> [--no-push]',
     '  update-readme-link [documentation-path] [url-path]',
     '  contract <until-successor-of|last-of|correction-of>',
+    '  attempt-check-contract',
+    '  attempt-successor-tag',
+    '  attempt-readme-link',
   ].join('\n'));
 }
 
