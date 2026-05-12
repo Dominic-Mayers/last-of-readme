@@ -21,10 +21,10 @@ const {
 const LOR_HOOK_COMMANDS = {
   preversion: {
     command:
-      'last-of-readme check-contract && last-of-readme tag-doc successor-of',
+      'last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag',
   },
   version: {
-    command: 'last-of-readme update-readme-link',
+    command: 'last-of-readme attempt-readme-link',
   },
 };
 
