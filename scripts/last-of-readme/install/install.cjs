@@ -2,13 +2,13 @@
 
 const { checkBasicRequirements } = require('./basic-requirements.cjs');
 const { runPreInstallationPipeline } = require('./run-pre-installation-pipeline.cjs');
-const { automatedInstall } = require('./apply-installation.cjs');
+const { runInstallationPerSe } = require('./run-installation-per-se.cjs');
 
 async function main() {
   checkBasicRequirements();
   console.log('✔ Basic requirements satisfied');
   const pipelineState = await runPreInstallationPipeline();
-  await automatedInstall(pipelineState);
+  await runInstallationPerSe(pipelineState);
 }
 
 main().catch((error) => {

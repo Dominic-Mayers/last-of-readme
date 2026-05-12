@@ -7,8 +7,14 @@ const {
   getCurrentRemoteConfiguration,
   getCurrentRepositoryUrlPath,
   getExistingInstallationFingerprint,
+  getLastOfReadmeOwnedHookInstallationState,
+  installLastOfReadmeOwnedHookCommand,
   npmPackageRoot,
 } = require('../adapters/npm-adapter.cjs');
+const {
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
+} = require('../adapters/user-input-adapter.cjs');
 
 function collectNpmPackageRootEnvironmentInput(pipelineState = {}) {
   return {
@@ -89,6 +95,76 @@ function finalizeExistingInstallationState(pipelineState = {}) {
   };
 }
 
+// Last of Readme-owned commands installed in npm version lifecycle hooks.
+// User-visible explanations live in prompt-user-input.cjs.
+const LAST_OF_README_OWNED_VERSION_HOOKS = [
+  {
+    hook: 'preversion',
+    command:
+      'last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag',
+  },
+  {
+    hook: 'version',
+    command: 'last-of-readme attempt-readme-link',
+  },
+];
+
+function collectLastOfReadmeOwnedVersionHooksEnvironmentInput(
+  pipelineState = {}
+) {
+  const lastOfReadmeOwnedVersionHookStates =
+    LAST_OF_README_OWNED_VERSION_HOOKS.map(({ hook, command }) =>
+      getLastOfReadmeOwnedHookInstallationState({ hook, command })
+    );
+
+  return {
+    ...pipelineState,
+    control: {
+      ...(pipelineState.control || {}),
+      lastOfReadmeOwnedVersionHookStates,
+    },
+  };
+}
+
+function installLastOfReadmeOwnedVersionHookCommands(pipelineState = {}) {
+  const hookStates =
+    (pipelineState.control || {}).lastOfReadmeOwnedVersionHookStates || [];
+
+  for (const hookState of hookStates) {
+    if (hookState.chosenAction === 'install') {
+      installLastOfReadmeOwnedHookCommand({
+        hook: hookState.hook,
+        command: hookState.command,
+        remainingContent: hookState.remainingContent,
+      });
+      printFingerprintedHookInstalled(hookState.hook);
+    } else if (hookState.chosenAction === 'prepend') {
+      installLastOfReadmeOwnedHookCommand({
+        hook: hookState.hook,
+        command: hookState.command,
+        remainingContent: hookState.remainingContent,
+      });
+      printFingerprintedHookPrepended(hookState.hook);
+    }
+  }
+
+  return pipelineState;
+}
+
+function finalizeLastOfReadmeOwnedVersionHooksInstallationState(
+  pipelineState = {}
+) {
+  const {
+    lastOfReadmeOwnedVersionHookStates,
+    ...controlWithoutOwnedHookInput
+  } = pipelineState.control || {};
+
+  return {
+    ...pipelineState,
+    control: controlWithoutOwnedHookInput,
+  };
+}
+
 module.exports = {
   collectNpmPackageRootEnvironmentInput,
   collectConfiguredRemoteNameEnvironmentInput,
@@ -96,4 +172,7 @@ module.exports = {
   collectPackageFilePathDefaultsEnvironmentInput,
   collectExistingInstallationEnvironmentInput,
   finalizeExistingInstallationState,
+  collectLastOfReadmeOwnedVersionHooksEnvironmentInput,
+  installLastOfReadmeOwnedVersionHookCommands,
+  finalizeLastOfReadmeOwnedVersionHooksInstallationState,
 };

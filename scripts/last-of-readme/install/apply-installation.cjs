@@ -3,7 +3,6 @@
 const {
   getLastOfReadmeConfig, 
   getCurrentFilesField,
-  getCurrentScriptsHooks,
   updatePackageJsonFields,
 } = require('../adapters/npm-adapter.cjs');
 const {
@@ -11,30 +10,23 @@ const {
 } = require('../adapters/filesystem-adapter.cjs');
 const { START_MARKER, END_MARKER } = require('./step-logic-filesystem.cjs');
 const {
-  interactivelyInstallFingerprintedHook,
-  printFingerprintedHookInstalled,
-  printFingerprintedHookPrepended,
   printConvenienceHookReminder,
 } = require('../adapters/user-input-adapter.cjs');
 
-// Fingerprinted Last of Readme commands per hook.
-// User-visible explanations for these commands live in prompt-user-input.cjs.
-const LOR_HOOK_COMMANDS = {
-  preversion: {
-    command:
-      'last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag',
-  },
-  version: {
-    command: 'last-of-readme attempt-readme-link',
-  },
-};
-
-async function automatedInstall(pipelineState) {
+async function applyInstallationRemainder(pipelineState) {
   installDocLink(pipelineState);
   installRemotePackageJson(pipelineState);
   installDocLinkPackageJson(pipelineState);
   installDefaultNonInteractivePolicy(pipelineState);
-  await installScriptsHooks(pipelineState);
+  return pipelineState;
+}
+
+function remindAboutConvenienceHooks(pipelineState) {
+  const convenienceNeeds = (pipelineState.control || {}).convenienceNeeds || [];
+
+  for (const need of convenienceNeeds) {
+    printConvenienceHookReminder(need);
+  }
 }
 
 function setPackageJsonFields(updates) {
@@ -180,66 +172,7 @@ function updateFilesField(
   return updatedFiles;
 }
 
-
-function stripLorCommand(hookContent, lorCommand) {
-  if (!hookContent) return '';
-  return hookContent
-    .replace(new RegExp(`\\s*&&\\s*${escapeRegExp(lorCommand)}`, 'g'), '')
-    .replace(new RegExp(`${escapeRegExp(lorCommand)}\\s*&&\\s*`, 'g'), '')
-    .replace(new RegExp(`^${escapeRegExp(lorCommand)}$`), '')
-    .trim();
-}
-
-function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-async function installScriptsHooks(pipelineState) {
-  const currentHooks = getCurrentScriptsHooks();
-  const convenienceNeeds = (pipelineState.control || {}).convenienceNeeds || [];
-
-  for (const hook of ['preversion', 'version', 'postversion']) {
-    const lorEntry = LOR_HOOK_COMMANDS[hook] || null;
-    const rawContent = currentHooks[hook] || '';
-
-    const remainingContent = lorEntry
-      ? stripLorCommand(rawContent, lorEntry.command)
-      : rawContent;
-
-    if (lorEntry) {
-      await installFingerprintedHookCommand({ hook, lorEntry, remainingContent });
-    }
-  }
-
-  // Print reminders for convenience commands the user acknowledged in the pipeline.
-  for (const need of convenienceNeeds) {
-    printConvenienceHookReminder(need);
-  }
-}
-
-async function installFingerprintedHookCommand({ hook, lorEntry, remainingContent }) {
-  if (!remainingContent) {
-    setPackageJsonFields({ [`scripts.${hook}`]: lorEntry.command });
-    printFingerprintedHookInstalled(hook);
-    return;
-  }
-
-  const choice = await interactivelyInstallFingerprintedHook({
-    hook,
-    command: lorEntry.command,
-    remainingContent,
-  });
-
-  if (choice === 'prepend') {
-    setPackageJsonFields({
-      [`scripts.${hook}`]: `${lorEntry.command} && ${remainingContent}`,
-    });
-    printFingerprintedHookPrepended(hook);
-  }
-  // 'manual': reminder already printed by prompt-user-input.cjs.
-}
-
-
 module.exports = {
-  automatedInstall,
+  applyInstallationRemainder,
+  remindAboutConvenienceHooks,
 };
