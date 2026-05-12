@@ -1,5 +1,8 @@
 {
   "name": "@dominic.mayers/last-of-readme",
+  "devDependencies": {
+    "@dominic.mayers/last-of-readme": "file:."
+  },
   "version": "0.1.67",
   "description": "Resolve README to last relevant commit based on npm version",
   "author": "Dominic Mayers",
