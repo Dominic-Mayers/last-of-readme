@@ -6,8 +6,8 @@
   "license": "MIT",
   "scripts": {
     "start": "last-of-readme install",
-    "preversion": "last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag",
-    "version": "last-of-readme attempt-readme-link && node scripts/git-add-readme.cjs",
+    "preversion": "node scripts/last-of-readme/bin/last-of-readme.cjs attempt-check-contract && node scripts/last-of-readme/bin/last-of-readme.cjs attempt-successor-tag",
+    "version": "node scripts/last-of-readme/bin/last-of-readme.cjs attempt-readme-link && node scripts/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
     "tag:last-of": "last-of-readme tag-doc last-of",
     "last-of-readme:contract": "last-of-readme contract",
