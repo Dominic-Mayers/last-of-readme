@@ -18,7 +18,7 @@ function fail(message) {
 }
 
 function usage() {
-  console.error('Usage: node scripts/last-of-readme/last-of-readme-contract.cjs <contract>');
+  console.error('Usage: last-of-readme contract <contract>');
   console.error('Supported contracts: until-successor-of, last-of, correction-of');
   process.exit(1);
 }

@@ -16,15 +16,15 @@ function main() {
     if (!SUPPORTED_CONTRACTS.has(contract)) {
       fail(
         `Unsupported Last of Readme contract: ${contract}. ` +
-        `Run "node scripts/last-of-readme/last-of-readme-contract.cjs until-successor-of" or ` +
-        `"node scripts/last-of-readme/last-of-readme-contract.cjs last-of" or ` +
-        `"node scripts/last-of-readme/last-of-readme-contract.cjs correction-of".`
+        `Run "last-of-readme contract until-successor-of" or ` +
+        `"last-of-readme contract last-of" or ` +
+        `"last-of-readme contract correction-of".`
       );
     }
   } catch (err) {
     fail(
       (err && err.message ? err.message : String(err)) +
-      '\n👉 Run "node scripts/last-of-readme/last-of-readme-contract.cjs until-successor-of" before bumping the version.\n'
+      '\n👉 Run "last-of-readme contract until-successor-of" before bumping the version.\n'
     );
   }
 }

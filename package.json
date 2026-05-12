@@ -5,13 +5,17 @@
   "author": "Dominic Mayers",
   "license": "MIT",
   "scripts": {
-    "start": "node scripts/last-of-readme/install/install.cjs",
-    "preversion": "node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of",
-    "version": "node scripts/last-of-readme/update-readme-link.cjs && node scripts/git-add-readme.cjs",
+    "start": "last-of-readme install",
+    "preversion": "last-of-readme check-contract && last-of-readme tag-doc successor-of",
+    "version": "last-of-readme update-readme-link && node scripts/git-add-readme.cjs",
     "postversion": "git push --follow-tags",
-    "tag:last-of": "node scripts/last-of-readme/tag-doc.cjs last-of",
-    "last-of-readme:contract": "node scripts/last-of-readme/last-of-readme-contract.cjs",
-    "tag:correction-of": "node scripts/last-of-readme/tag-doc.cjs correction-of"
+    "tag:last-of": "last-of-readme tag-doc last-of",
+    "last-of-readme:contract": "last-of-readme contract",
+    "tag:correction-of": "last-of-readme tag-doc correction-of",
+    "postinstall": "node scripts/last-of-readme/bin/last-of-readme.cjs install"
+  },
+  "bin": {
+    "last-of-readme": "scripts/last-of-readme/bin/last-of-readme.cjs"
   },
   "repository": {
     "type": "git",

@@ -26,7 +26,7 @@ function parseArgs(argv) {
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    fail('Usage: node tag-doc.cjs <last-of|successor-of|correction-of> [--no-push]');
+    fail('Usage: last-of-readme tag-doc <last-of|successor-of|correction-of> [--no-push]');
   }
 
   const kind = positional[0];
