@@ -11,26 +11,20 @@ const {
 const { START_MARKER, END_MARKER } = require('./step-logic-filesystem.cjs');
 const {
   interactivelyInstallFingerprintedHook,
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
+  printConvenienceHookReminder,
 } = require('../adapters/user-input-adapter.cjs');
 
 // Fingerprinted Last of Readme commands per hook.
+// User-visible explanations for these commands live in prompt-user-input.cjs.
 const LOR_HOOK_COMMANDS = {
   preversion: {
     command:
       'node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of',
-    allowPrepend: true,
-    needs:
-      'The documentation contract must be checked and the successor tag must be set before the version is bumped. Without this, the Last of Readme resolver will not have the information it needs.',
-    insure:
-      'You can add the following command to your preversion hook:\n  node scripts/last-of-readme/check-contract.cjs && node scripts/last-of-readme/tag-doc.cjs successor-of',
   },
   version: {
     command: 'node scripts/last-of-readme/update-readme-link.cjs',
-    allowPrepend: false,
-    needs:
-      'The README link must be updated before the version commit is created. Otherwise the published README will point to the wrong commit.',
-    insure:
-      'You can add the following command to your version hook:\n  node scripts/last-of-readme/update-readme-link.cjs',
   },
 };
 
@@ -201,36 +195,31 @@ async function installScriptsHooks(pipelineState) {
   }
 
   // Print reminders for convenience commands the user acknowledged in the pipeline.
-  for (const { hook, insure } of convenienceNeeds) {
-    console.log(`\nℹ️  ${hook}: ${insure}`);
+  for (const need of convenienceNeeds) {
+    printConvenienceHookReminder(need);
   }
 }
 
 async function installFingerprintedHookCommand({ hook, lorEntry, remainingContent }) {
   if (!remainingContent) {
     setPackageJsonFields({ [`scripts.${hook}`]: lorEntry.command });
-    console.log(`✔ ${hook}: Last of Readme command installed.`);
+    printFingerprintedHookInstalled(hook);
     return;
   }
 
   const choice = await interactivelyInstallFingerprintedHook({
-    allowPrepend: lorEntry.allowPrepend,
-    needs: `${lorEntry.needs}\n\nYour current ${hook} hook contains:\n  ${remainingContent}`,
-    insure: lorEntry.insure,
+    hook,
+    command: lorEntry.command,
+    remainingContent,
   });
 
   if (choice === 'prepend') {
     setPackageJsonFields({
       [`scripts.${hook}`]: `${lorEntry.command} && ${remainingContent}`,
     });
-    console.log(`✔ ${hook}: Last of Readme command prepended.`);
-  } else if (choice === 'append') {
-    setPackageJsonFields({
-      [`scripts.${hook}`]: `${remainingContent} && ${lorEntry.command}`,
-    });
-    console.log(`✔ ${hook}: Last of Readme command appended.`);
+    printFingerprintedHookPrepended(hook);
   }
-  // 'manual': insure already printed by askScriptsHookSituation.
+  // 'manual': reminder already printed by prompt-user-input.cjs.
 }
 
 

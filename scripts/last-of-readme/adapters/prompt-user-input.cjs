@@ -2,11 +2,11 @@
 
 async function askRemoteChoice({
   askQuestion,
-  remotesDisplay,
+  remotes,
   defaultRemoteName,
 }) {
   console.log('Git remotes:');
-  console.log(remotesDisplay);
+  console.log(formatRemoteChoices(remotes));
   console.log('Select a remote by number or by name. Enter none to stop.');
 
   const question = defaultRemoteName
@@ -140,10 +140,11 @@ async function askInstallationPreconditions({
 
   if (convenienceNeeds.length > 0) {
     console.log('ℹ️  Last of Readme also has the following needs in your scripts hooks:');
-    for (const { hook, command, needs } of convenienceNeeds) {
-      console.log(`\n  ${hook}:`);
+    for (const need of convenienceNeeds) {
+      const { needs } = getConvenienceNeedText(need);
+      console.log(`\n  ${need.hook}:`);
       console.log(`    ${needs}`);
-      console.log(`    Command: ${command}`);
+      console.log(`    Command: ${need.command}`);
     }
     console.log('\nIf you proceed, Last of Readme will remind you to ensure these');
     console.log('commands are executed, either automatically or manually.');
@@ -154,49 +155,116 @@ async function askInstallationPreconditions({
 }
 
 
+function formatRemoteChoices(remotes) {
+  if (remotes.length === 0) {
+    return '  (no Git remotes found)';
+  }
+
+  return remotes
+    .map(({ name, url }, index) => `  ${index + 1}. ${name} (${url})`)
+    .join('\n');
+}
+
+const CONVENIENCE_NEED_TEXT = {
+  stagePackageFileBeforeVersionCommit: {
+    needs:
+      'The updated package file must be staged before the version commit is created. Otherwise the commit will not include the updated file.',
+    insure: ({ command }) =>
+      `Please ensure that ${command} is executed in your version hook, either automatically or manually.`,
+  },
+  pushTagsAfterVersion: {
+    needs:
+      'Last of Readme tags are not pushed to the remote automatically. Without them, the Last of Readme resolver will not work.',
+    insure: ({ command }) =>
+      `Please ensure that ${command} is executed in your postversion hook, either automatically or manually.`,
+  },
+};
+
+function getConvenienceNeedText(need) {
+  const text = CONVENIENCE_NEED_TEXT[need.kind];
+
+  if (!text) {
+    throw new Error(`Unknown convenience need kind: ${need.kind}`);
+  }
+
+  return {
+    needs: text.needs,
+    insure: text.insure(need),
+  };
+}
+
+function getFingerprintedHookNeedText(hook) {
+  if (hook === 'preversion') {
+    return {
+      needs:
+        'The documentation contract must be checked and the successor tag must be set before the version is bumped. Without this, the Last of Readme resolver will not have the information it needs.',
+      insure: ({ command }) =>
+        `You can add the following command to your preversion hook:\n  ${command}`,
+    };
+  }
+
+  if (hook === 'version') {
+    return {
+      needs:
+        'The README link must be updated before the version commit is created. Otherwise the published README will point to the wrong commit.',
+      insure: ({ command }) =>
+        `You can add the following command to your version hook:\n  ${command}`,
+    };
+  }
+
+  throw new Error(`Unknown fingerprinted hook: ${hook}`);
+}
+
+function printFingerprintedHookInstalled(hook) {
+  console.log(`✔ ${hook}: Last of Readme command installed.`);
+}
+
+function printFingerprintedHookPrepended(hook) {
+  console.log(`✔ ${hook}: Last of Readme command prepended.`);
+}
+
+function printConvenienceHookReminder(need) {
+  const { insure } = getConvenienceNeedText(need);
+  console.log(`\nℹ️  ${need.hook}: ${insure}`);
+}
+
 /**
- * Generic scripts hook interaction.
- *
- * Always prints `needs` to describe the situation.
- * When `options` are provided, presents them with "I'll do it myself" appended
- * automatically. On "I'll do it myself", prints "No problem!" then `insure`.
- * When no `options`, prints `insure` directly.
+ * Presents a fingerprinted hook installation decision.
  *
  * @param {object} params
  * @param {Function} params.askQuestion
- * @param {string} params.needs - situation description
- * @param {string} params.insure - concrete action the user can take
- * @param {Array<{label: string, value: string}>} [params.options]
- * @returns {Promise<string|null>} chosen option value, or null when no options
+ * @param {string} params.hook
+ * @param {string} params.command
+ * @param {string} params.remainingContent
+ * @returns {Promise<'prepend'|'manual'>}
  */
-async function askScriptsHookSituation({ askQuestion, needs, insure, options }) {
+async function askFingerprintedHookInstallation({
+  askQuestion,
+  hook,
+  command,
+  remainingContent,
+}) {
+  const { needs, insure } = getFingerprintedHookNeedText(hook);
+
   console.log(`\n${needs}`);
-
-  if (!options || options.length === 0) {
-    console.log(insure);
-    return null;
-  }
-
-  const allOptions = [...options, { label: "I'll do it myself", value: 'manual' }];
-  allOptions.forEach((opt, index) => {
-    console.log(`  ${index + 1}. ${opt.label}`);
-  });
+  console.log(`\nThe current ${hook} hook contains:`);
+  console.log(`\n  ${remainingContent}`);
+  console.log('\nWe need to prepend the command:');
+  console.log(`\n  ${command}`);
+  console.log('\nChoose:');
+  console.log('  1. Prepend the command');
+  console.log("  2. I'll do it myself");
 
   const answer = await askQuestion('Choose an option [1]: ');
   const normalized = (answer || '').trim();
-  const index = normalized === '' ? 0 : parseInt(normalized, 10) - 1;
 
-  const chosen =
-    index >= 0 && index < allOptions.length
-      ? allOptions[index]
-      : allOptions[allOptions.length - 1];
-
-  if (chosen.value === 'manual') {
-    console.log("No problem!");
-    console.log(insure);
+  if (normalized === '' || normalized === '1') {
+    return 'prepend';
   }
 
-  return chosen.value;
+  console.log('No problem!');
+  console.log(insure({ command }));
+  return 'manual';
 }
 
 module.exports = {
@@ -209,5 +277,8 @@ module.exports = {
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
   askInstallationPreconditions,
-  askScriptsHookSituation,
+  askFingerprintedHookInstallation,
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
+  printConvenienceHookReminder,
 };

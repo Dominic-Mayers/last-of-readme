@@ -14,7 +14,10 @@ const {
   printMissingPackageFileInformation,
   askCreateMinimalPackageFile,
   askInstallationPreconditions,
-  askScriptsHookSituation,
+  askFingerprintedHookInstallation,
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
+  printConvenienceHookReminder,
 } = require('./prompt-user-input.cjs');
 
 async function collectDocLinkPlaceholderInput(pipelineState = {}) {
@@ -126,7 +129,7 @@ async function collectRemoteInput(pipelineState = {}) {
   try {
     const remoteAnswer = await askRemoteChoice({
       askQuestion: (question) => ask(rl, question),
-      remotesDisplay: formatRemoteChoices(remotes),
+      remotes,
       defaultRemoteName,
     });
 
@@ -338,37 +341,17 @@ async function checkInstallationPreconditionsConsentInput({
 
 
 async function interactivelyInstallFingerprintedHook({
-  allowAppend,
-  needs,
-  insure,
+  hook,
+  command,
+  remainingContent,
 }) {
   const rl = createInterface();
   try {
-    const options = [];
-    if (allowAppend) {
-      options.push({ label: 'Append Last of Readme command', value: 'append' });
-    }
-    options.push({ label: 'Prepend Last of Readme command', value: 'prepend' });
-
-    return await askScriptsHookSituation({
+    return await askFingerprintedHookInstallation({
       askQuestion: (question) => ask(rl, question),
-      needs,
-      insure,
-      options,
-    });
-  } finally {
-    rl.close();
-  }
-}
-
-async function interactivelyInstallConvenienceHook({ needs, insure }) {
-  const rl = createInterface();
-  try {
-    return await askScriptsHookSituation({
-      askQuestion: (question) => ask(rl, question),
-      needs,
-      insure,
-      options: [{ label: 'Add it for me', value: 'yes' }],
+      hook,
+      command,
+      remainingContent,
     });
   } finally {
     rl.close();
@@ -383,5 +366,7 @@ module.exports = {
   tryDeriveGitHubUrlsFromRemoteUrl,
   checkInstallationPreconditionsConsentInput,
   interactivelyInstallFingerprintedHook,
-  interactivelyInstallConvenienceHook,
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
+  printConvenienceHookReminder,
 };
