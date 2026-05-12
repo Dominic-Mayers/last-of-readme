@@ -39,6 +39,6 @@
     "nonInteractiveFailurePolicy": "continue"
   },
   "dependencies": {
-    "@dominic.mayers/last-of-readme": "^0.1.63"
+    "@dominic.mayers/last-of-readme": "^0.1.64"
   }
 }
