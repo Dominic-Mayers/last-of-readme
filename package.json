@@ -37,8 +37,5 @@
     "repositoryUrlPath": "",
     "nextContract": "until-successor-of",
     "nonInteractiveFailurePolicy": "continue"
-  },
-  "dependencies": {
-    "@dominic.mayers/last-of-readme": "^0.1.64"
   }
 }
