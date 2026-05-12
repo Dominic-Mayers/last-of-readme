@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const {
+  getLastOfReadmeConfig, 
   getCurrentFilesField,
   getCurrentScriptsHooks,
   updatePackageJsonFields,
@@ -32,11 +33,27 @@ async function automatedInstall(pipelineState) {
   installDocLink(pipelineState);
   installRemotePackageJson(pipelineState);
   installDocLinkPackageJson(pipelineState);
+  installDefaultNonInteractivePolicy(pipelineState);
   await installScriptsHooks(pipelineState);
 }
 
 function setPackageJsonFields(updates) {
   updatePackageJsonFields(updates);
+}
+
+function installDefaultNonInteractivePolicy(pipelineState = {}) {
+
+  const currentConfig = getLastOfReadmeConfig(); 
+  
+  if (
+    currentConfig.nonInteractiveFailurePolicy !== undefined
+  ) {
+    return;
+  }
+  
+  setPackageJsonFields({
+    'lastOfReadme.nonInteractiveFailurePolicy': 'continue',
+  });
 }
 
 function installRemotePackageJson(pipelineState = {}) {
