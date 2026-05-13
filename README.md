@@ -224,6 +224,49 @@ last-of-readme contract
 
 The purpose of the dispatcher is to keep hooks wired in `package.json` independent from the internal structure of the package.
 
+### Runtime management wrappers and the driving/driven distinction
+
+The adapter-zone primarily models Last of Readme as a consumer of environmental services such as npm configuration, Git operations, filesystem access, user interaction, and remote repository APIs.
+
+This corresponds to the driven side of Hexagonal Architecture (also called secondary/output adapters): Last of Readme drives these external systems through adapter functions.
+
+At runtime, however, Last of Readme is also itself driven by external processes such as:
+
+* npm lifecycle hooks,
+* CLI invocation,
+* package-manager workflows,
+* CI execution.
+
+The `attempt-*.cjs` layer acts as a lightweight runtime-management wrapper between these external drivers and the core runtime commands.
+
+For example:
+
+    npm lifecycle hook
+        ↓
+    attempt-*.cjs
+        ↓
+    core runtime command
+        ↓
+    *-adapter.cjs
+        ↓
+    environmental service
+
+The attempt-*.cjs scripts adapt Last of Readme behavior to runtime-management concerns such as:
+
+* interactive vs non-interactive execution,
+* continuation vs abort policies,
+* lifecycle-hook ergonomics,
+* user confirmation after failure.
+
+This corresponds loosely to the driving side of Hexagonal Architecture (also called primary/input adapters), although Last of Readme does not currently formalize these wrappers as a separate adapter subsystem.
+
+An important asymmetry exists between the two directions:
+
+* when Last of Readme is being driven, the core runtime logic is comparatively detached from the details of how the request originated;
+* when Last of Readme drives environmental services, the core runtime logic remains more coupled to the semantics and constraints of those services.
+
+This asymmetry explains why the driven side (`*-adapter.cjs`) is structurally richer and more explicit than the driving side (`attempt-*.cjs`).
+
 ## The adapter APIs on which Last of Readme is built
 
 Last of Readme is built on APIs provided by `*-adapter.cjs` scripts, including  `remote-repository-adapter.cjs` in the separate `docs/` directory.
