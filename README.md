@@ -2,27 +2,165 @@
 
 [![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) <!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver.html?mode=last&pkg=%40dominic.mayers%2Flast-of-readme&contract=until-successor-of&repositoryApiUrl=https%3A%2F%2Fapi.github.com%2Frepos%2FDominic-Mayers%2Flast-of-readme&repositoryBrowserUrl=https%3A%2F%2Fgithub.com%2FDominic-Mayers%2Flast-of-readme&v=0.1.69&urlPath="><img alt="README until-successor-of 0.1.69" src="https://img.shields.io/badge/README-until--successor--of%200.1.69-blue?logo=github"></a><!-- DOC-LINK-END -->
 
-Last of Readme is used in the context of package management. It is used to insert  a link in a file of the package that will be resolved to a commit of the package repository that documents the package. The Last of Readme updater is called at each version bump to update the link. This is done using hooks in package.json.
+Last of Readme helps package maintainers publish README links that continue to resolve correctly across package versions and documentation updates.
 
-The Last of Readme resolver redirects the link to the adequate commit following a set of rules or contract that is chosen by the maintainer. Currently, Last of Readme offers three contracts: the `correction-of`, `last-of` and `until-successor-of` contracts.
+Instead of linking directly to a mutable README location, Last of Readme maintains resolver links backed by Git tags and explicit documentation contracts.
 
-> [!Note]
-> The correctness of the content of this commit, for example, executing a `git add` operation on the GitHub readme file, is a responsibility of the user or of an extra script such as `git-add-readme.cjs`, not a direct concern of Last of Readme. Doing otherwise would be too intrusive. Users normally have their own way to update their remote.
+## Documentation contracts
 
-### The different contracts
+Last of Readme manages README resolver links through documentation contracts.
 
-Currently, Last of Readme proposes three contracts that can be taken by users: the `correction-of` contract, the `last-of` contract and the `until-successor-of` contract. In the `correction-of` contract, the maintainer of the package says that the package version  contains normally the up-to-date documentation, but might have a corrected version that will be identified by a `correction-of` tag. That suggests a  resolution order in which the package version is always presented, except if there is a `correction-of` tag for that version. This is the contract that departs the least from the default package contract, which is that the package version is the most up-to-date version.
+A contract determines how the resolver selects documentation associated with a package version.
 
-In the `last-of` contract, the maintainers acknowledge that the documentation of the current package version is not finalized and will be updated. This suggests a different resolution order in which the package version has low priority and, if the maintainers have not tagged the `last-of` version, then the users should be informed that the version is not up-to-date and not authoritative. Only an explicit `last-of` tag says the version is up-to-date. Moreover, as long as the maintainers have not tagged a correct version, we keep looking for a more up-to-date version. In that contract, if only a single branch contains the package version then the `successor-of` version in that branch, if it exists, is presented and, otherwise, the HEAD of that branch is presented. The successor-of tag is automatically added when a new version is created. This `successor-of` tag is then considered as an explicit mention that thereafter modifications do not apply to the previous (original) version. The version in the commit identified by the successor-of tag or HEAD is presented, but not as the up-to-date authoritative version, because only the `last-of` tag has this meaning. If there is no `last-of` tag and many branches exist, then the users are presented with options.
+### `until-successor-of`
 
-The resolution order in the `until-successor-of` contract is as follows:
+The resolver first looks for a `last-of` tag associated with the package version.
 
-1. `last-of` tag
-2. `successor-of` tag
-3.  a unique branch contains the package version -> HEAD of branch
-4.  many branches contain the package version -> HEAD options
-5.  no branch contains the package version -> the package version
-6.  a clean not found page.
+If none exists, it looks for a `successor-of` tag.
 
-> [!Note] 
-> The package.json field `last-of-readme.nextContract` sets only the contract in the next generated resolver link. The contract for each link is determined by its URL contract parameter.
+If none exists and the package version belongs to a single containing branch, the resolver uses the HEAD of that branch.
+
+If several containing branches exist, the resolver presents options.
+
+### `last-of`
+
+The resolver looks for a `last-of` tag associated with the package version.
+
+If none exists and the package version belongs to a single containing branch, the resolver may use the HEAD of that branch while indicating that no `last-of` tag is present.
+
+If several containing branches exist, the resolver presents options.
+
+### `correction-of`
+
+The resolver first looks for a `correction-of` tag associated with the package version.
+
+If none exists, the resolver uses the package version itself.
+
+## Choosing a contract
+
+The contracts correspond to different ways documentation may evolve after a package version is published.
+
+* `until-successor-of` supports documentation that evolves through successor versions and branch continuation.
+
+* `last-of` supports workflows where a later commit is explicitly designated as the final documentation state associated with a package version.
+
+* `correction-of` supports workflows where documentation associated with a package version may later receive explicit corrections while remaining attached to that version.
+
+Last of Readme currently supports three contracts:
+
+* `until-successor-of`
+* `last-of`
+* `correction-of`
+
+These contracts determine how README links evolve as newer versions and documentation corrections are published.
+
+---
+
+## Installation
+
+Install Last of Readme in a package repository:
+
+```bash
+npm install --save-dev last-of-readme
+```
+
+Then run:
+
+```bash
+npx last-of-readme install
+```
+
+The installer configures:
+
+* README placeholder management,
+* package.json integration,
+* runtime lifecycle hooks,
+* remote repository configuration.
+
+---
+
+## Typical workflow
+
+Choose the contract for the next version:
+
+```bash
+npx last-of-readme contract until-successor-of
+```
+
+Then bump the version normally:
+
+```bash
+npm version patch
+```
+
+During the version lifecycle, Last of Readme:
+
+* validates the documentation contract,
+* updates the managed README resolver link,
+* creates the appropriate documentation tags.
+
+---
+
+## Managed README block
+
+Last of Readme manages a placeholder block inside the selected package documentation file:
+
+```html
+<!-- DOC-LINK-START -->
+<!-- DOC-LINK-END -->
+```
+
+During release operations, this block is replaced with a resolver link.
+
+---
+
+## Runtime model
+
+At runtime, external package-management processes drive Last of Readme through npm lifecycle hooks and CLI commands.
+
+Last of Readme in turn interacts with:
+
+* Git,
+* npm configuration,
+* the filesystem,
+* user interaction,
+* remote repository services.
+
+The repository architecture separates:
+
+* runtime-management wrappers,
+* core runtime commands,
+* environmental adapters.
+
+For architectural details, see:
+
+* `ARCHITECTURE.md`
+
+---
+
+## Commands
+
+```bash
+last-of-readme install
+last-of-readme contract <until-successor-of|last-of|correction-of>
+last-of-readme check-contract
+last-of-readme tag-doc <last-of|successor-of|correction-of>
+last-of-readme update-readme-link
+```
+
+---
+
+## Repository structure
+
+```txt
+scripts/last-of-readme/
+├── adapters/
+├── install/
+├── bin/
+├── attempt-*.cjs
+├── check-contract.cjs
+├── tag-doc.cjs
+└── update-readme-link.cjs
+```
+
+See `ARCHITECTURE.md` for the detailed orchestration and layering model.
