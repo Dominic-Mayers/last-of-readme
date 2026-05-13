@@ -9,6 +9,7 @@ const {
   assertPackageFileCanBeCreated,
   packageFileExists,
   readPackageFileContent,
+  createPackageFileIfAbsent,
 } = require('../adapters/filesystem-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
@@ -280,6 +281,23 @@ function finalizeDocLinkPlaceholderState(pipelineState = {}) {
 }
 
 
+function createDocLinkFileIfNeeded(pipelineState = {}) {
+  if ((pipelineState.control || {}).mode !== 'create-minimal-file') {
+    return pipelineState;
+  }
+  const packageFilePath = normalizePackageFilePath(pipelineState.config?.packageFilePath);
+  createPackageFileIfAbsent(packageFilePath, `Last of Readme : ${START_MARKER}${END_MARKER}\n`);
+  return pipelineState;
+}
+
+function finalizeDocLinkFileInstallationState(pipelineState = {}) {
+  const { mode, ...controlWithoutMode } = pipelineState.control || {};
+  return {
+    ...pipelineState,
+    control: controlWithoutMode,
+  };
+}
+
 function checkPackageFilePathConfigRequirements(pipelineState = {}) {
   return pipelineState;
 }
@@ -309,4 +327,6 @@ module.exports = {
   prepareDocLinkPlaceholderEnvironmentInput,
   checkLinkPlaceholderRequirements,
   finalizeDocLinkPlaceholderState,
+  createDocLinkFileIfNeeded,
+  finalizeDocLinkFileInstallationState,
 };

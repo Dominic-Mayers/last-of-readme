@@ -7,9 +7,11 @@ const {
   getCurrentRemoteConfiguration,
   getCurrentRepositoryUrlPath,
   getExistingInstallationFingerprint,
+  getLastOfReadmeConfig,
   getLastOfReadmeOwnedHookInstallationState,
   installLastOfReadmeOwnedHookCommand,
   npmPackageRoot,
+  updatePackageJsonFields,
 } = require('../adapters/npm-adapter.cjs');
 const {
   printFingerprintedHookInstalled,
@@ -109,6 +111,122 @@ const LAST_OF_README_OWNED_VERSION_HOOKS = [
   },
 ];
 
+function updateFilesField(
+  currentFiles,
+  packageFilePath,
+  previousPackageFilePath,
+  shouldRemovePrevious
+) {
+  if (!Array.isArray(currentFiles)) {
+    return null;
+  }
+
+  const updatedFiles = [...currentFiles];
+
+  if (!updatedFiles.includes(packageFilePath)) {
+    updatedFiles.push(packageFilePath);
+  }
+
+  if (
+    shouldRemovePrevious &&
+    typeof previousPackageFilePath === 'string' &&
+    previousPackageFilePath !== packageFilePath
+  ) {
+    return updatedFiles.filter((item) => item !== previousPackageFilePath);
+  }
+
+  return updatedFiles;
+}
+
+function installNonInteractivePolicyField(pipelineState = {}) {
+  const currentConfig = getLastOfReadmeConfig();
+
+  if (currentConfig.nonInteractiveFailurePolicy !== undefined) {
+    return pipelineState;
+  }
+
+  updatePackageJsonFields({
+    'lastOfReadme.nonInteractiveFailurePolicy': 'continue',
+  });
+
+  return pipelineState;
+}
+
+function finalizeNonInteractivePolicyInstallationState(pipelineState = {}) {
+  return pipelineState;
+}
+
+function installDocLinkConfigFields(pipelineState = {}) {
+  const config = pipelineState.config || {};
+  const control = pipelineState.control || {};
+  const packageFilePath = config.packageFilePath;
+
+  if (!packageFilePath) {
+    throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
+  }
+
+  updatePackageJsonFields({
+    'lastOfReadme.packageFilePath': packageFilePath,
+    ...(typeof config.repositoryUrlPath === 'string'
+      ? { 'lastOfReadme.repositoryUrlPath': config.repositoryUrlPath }
+      : {}),
+  });
+
+  const currentFiles = getCurrentFilesField();
+  const updatedFiles = updateFilesField(
+    currentFiles,
+    packageFilePath,
+    control.previousPackageFilePath,
+    Boolean(control.removePreviousPackageFileFromFiles)
+  );
+
+  if (updatedFiles !== null) {
+    updatePackageJsonFields({ files: updatedFiles });
+  }
+
+  return pipelineState;
+}
+
+function finalizeDocLinkConfigInstallationState(pipelineState = {}) {
+  const {
+    previousPackageFilePath,
+    removePreviousPackageFileFromFiles,
+    ...controlWithoutDocLinkConfigInput
+  } = pipelineState.control || {};
+  return {
+    ...pipelineState,
+    control: controlWithoutDocLinkConfigInput,
+  };
+}
+
+function installRemoteConfigFields(pipelineState = {}) {
+  const config = pipelineState.config || {};
+  const control = pipelineState.control || {};
+  const remoteConfig = config.remote || {};
+  const remoteName = config.remoteName;
+
+  if (!remoteName || !control.repositoryUrl) {
+    throw new Error('Remote installation requires resolved remote cycle state');
+  }
+
+  updatePackageJsonFields({
+    'lastOfReadme.remoteName': remoteName,
+    'lastOfReadme.remote.kind': remoteConfig.kind,
+    'lastOfReadme.remote.repositoryApiUrl': remoteConfig.repositoryApiUrl,
+    'lastOfReadme.remote.repositoryBrowserUrl': remoteConfig.repositoryBrowserUrl,
+  });
+
+  return pipelineState;
+}
+
+function finalizeRemoteConfigInstallationState(pipelineState = {}) {
+  const { repositoryUrl, ...controlWithoutRepositoryUrl } = pipelineState.control || {};
+  return {
+    ...pipelineState,
+    control: controlWithoutRepositoryUrl,
+  };
+}
+
 function collectLastOfReadmeOwnedVersionHooksEnvironmentInput(
   pipelineState = {}
 ) {
@@ -172,6 +290,12 @@ module.exports = {
   collectPackageFilePathDefaultsEnvironmentInput,
   collectExistingInstallationEnvironmentInput,
   finalizeExistingInstallationState,
+  installNonInteractivePolicyField,
+  finalizeNonInteractivePolicyInstallationState,
+  installDocLinkConfigFields,
+  finalizeDocLinkConfigInstallationState,
+  installRemoteConfigFields,
+  finalizeRemoteConfigInstallationState,
   collectLastOfReadmeOwnedVersionHooksEnvironmentInput,
   installLastOfReadmeOwnedVersionHookCommands,
   finalizeLastOfReadmeOwnedVersionHooksInstallationState,
