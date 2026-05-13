@@ -12,6 +12,12 @@ Last of Readme manages README resolver links through documentation contracts.
 
 A contract determines how the resolver selects documentation associated with a package version.
 
+Last of Readme currently supports three contracts:
+
+* `until-successor-of`
+* `last-of`
+* `correction-of`
+
 ### `until-successor-of`
 
 The resolver first looks for a `last-of` tag associated with the package version.
@@ -45,12 +51,6 @@ The contracts correspond to different ways documentation may evolve after a pack
 * `last-of` supports workflows where a later commit is explicitly designated as the final documentation state associated with a package version.
 
 * `correction-of` supports workflows where documentation associated with a package version may later receive explicit corrections while remaining attached to that version.
-
-Last of Readme currently supports three contracts:
-
-* `until-successor-of`
-* `last-of`
-* `correction-of`
 
 These contracts determine how README links evolve as newer versions and documentation corrections are published.
 
