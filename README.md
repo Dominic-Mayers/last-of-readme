@@ -65,7 +65,10 @@ The resolution order in the `until-successor-of` contract is as follows:
             |   |-- check-package-file-path-config.cjs
             |   |-- check-remote-name-config.cjs
             |   |-- check-remote-urls-config.cjs
+            |   |-- install-owned-version-hooks.cjs
             |   |-- install.cjs
+            |   |-- run-installation-per-se.cjs
+            |   |-- run-pre-installation-pipeline.cjs
             |   |-- step-logic-filesystem.cjs
             |   |-- step-logic-git.cjs
             |   |-- step-logic-npm.cjs
@@ -89,11 +92,11 @@ The core of Last of Readme consists of
 
 ## The installer of Last of Readme
 
-The installer is an important and integral part of Last of Readme. It can be compared to a rendering pipeline in a graph viewer SPA: the rendering pipeline installs the graph, but is an integral part of the graph viewer. The installation process roughly consists of a pre-installation pipeline that collects inputs and checks requirements followed by the installation-per-se.
+The installer is an important and integral part of Last of Readme. It can be compared to a rendering pipeline in a graph viewer SPA: the rendering pipeline installs the graph, but is an integral part of the graph viewer. The installation process consists of two global phases: a pre-installation pipeline that collects inputs and checks requirements, followed by the installation-per-se. Each global phase has its own orchestrator.
 
 ### The pipeline
 
-The pipeline consists of a sequence of phases. Each phase starts with zero or more collect and prepare steps. A prepare step does not necessarily correspond to a collect step. These input and prepare steps are followed by a single check-requirements step, the most important step of the phase. The phase ends with a finalize step. For example, a phase might have 6 steps:
+The pre-installation pipeline consists of a sequence of phases. Each phase starts with zero or more collect and prepare steps. A prepare step does not necessarily correspond to a collect step. These input and prepare steps are followed by a single check-requirements step, the most important step of a pre-installation pipeline phase. The phase ends with a finalize step. For example, a phase might have 6 steps:
 
 * Step 1 — Collect user input
 
@@ -110,7 +113,7 @@ The pipeline consists of a sequence of phases. Each phase starts with zero or mo
 Every  collect step is tied with a single part of the environment, but different steps can query different parts. The check-requirements step is also tied with a single part of the environment. Thus, for its main purpose, which is to check requirements, but not for collection of inputs, the phase is tied to that same part.
 
 > [!Note]
-> The phases are not expected to cover entirely the part of the environment to which they are tied. **It's a many-to-one relation.** They each correspond to one requirement cycle so that they can have precise names and their orchestration by `install.cjs` can present a detailed narrative of the work done in the pipeline.
+> The phases are not expected to cover entirely the part of the environment to which they are tied. **It's a many-to-one relation.** They each correspond to one requirement cycle so that they can have precise names and their orchestration by the pre-installation pipeline orchestrator can present a detailed narrative of the work done in the pipeline.
 
 ### The check-requirement steps
 
@@ -124,7 +127,7 @@ There are two kind of check-requirements steps: the check-config-requirements st
 > The collect of a configuration value is a check-congig-requirement step. It must not be confused with an ordinary collect-step. A value collected in a collect step is saved in `pipelineState.control` whereas a configuration value is saved in `pipelineState.config`.
 
 > [!Note]
-> The check-requirements step is the most important of the phase. It can collect information, do some resolving, whatever it needs as long as it does not cross the boundary of its part and does not do pure preparations that never abort. The collect steps are usually used to get information from other parts. Prepare steps are pure preparationd that do not throw and abort.
+> For pre-installation pipeline phases, the check-requirements step is the most important step of the phase. It can collect information, do some resolving, whatever it needs as long as it does not cross the boundary of its part and does not do pure preparations that never abort. The collect steps are usually used to get information from other parts. Prepare steps are pure preparationd that do not throw and abort.
 
 ### The pipelineState
 
@@ -132,9 +135,14 @@ The pipeline state has two sub-objects: `pipelineState.control` and `pipelineSta
 
 ### Main orchestration
 
-The main orchestrator of the pipeline and  installation-per-se is `install.cjs`. It orchestrates:
+The top-level installer orchestrator is `install.cjs`. It orchestrates:
 
     - `basic-requirements.cjs`
+    - `run-pre-installation-pipeline.cjs`
+    - `run-installation-per-se.cjs`
+
+The pre-installation pipeline orchestrator orchestrates the requirement-checking phases:
+
     - `checkCwdIsPackageRoot`,
     - `checkInstallationPreconditions`,
     - `checkRemoteNameConfig`,
@@ -142,12 +150,13 @@ The main orchestrator of the pipeline and  installation-per-se is `install.cjs`.
     - `checkGitRemote`,
     - `checkPackageFilePathConfig`,
     - `checkPackageFilePath`,
-    - `checkLinkPlaceholder`,
-    - `apply-installation.cjs`
+    - `checkLinkPlaceholder`
 
-As we proceed, other phases for checking requirements might be added and wired in the orchestrator `install.cjs`. The phases are only tiny orchestrators of steps. These steps are functions exported by the  `step-logic-*.cjs` scripts. Each `step-logic-*.cjs` script corresponds to a single part of the environment.
+The installation-per-se orchestrator orchestrates installation phases such as `install-owned-version-hooks.cjs`.
 
-A `step-logic-*.cjs` script cannot cross boundaries between parts. Boundaries between parts must be crossed by a phase orchestrator or the main orchestrator.
+As we proceed, other phases for checking requirements or for performing installation actions might be added and wired in the corresponding global phase orchestrator. The phases of both global phases are tiny orchestrators of steps. These steps are functions exported by the  `step-logic-*.cjs` scripts. Each `step-logic-*.cjs` script corresponds to a single part of the environment. The `step-logic-*.cjs` scripts are shared by the pre-installation pipeline and the installation-per-se. They are divided by environment part, not by global phase.
+
+A `step-logic-*.cjs` script cannot cross boundaries between parts. Boundaries between parts must be crossed by a phase orchestrator or the top-level orchestrator.
 
 
 ### The role of adapters
@@ -156,12 +165,12 @@ As for any other part of Last of Readme, the installer does not directly connect
 
     `install.cjs` => `basic-requirements.cjs` => `*-adapter.cjs`
 
-    `install.cjs` => `*-phase.cjs` => `step-logic-*.cjs` => `*-adapter.cjs`
+    `install.cjs` => `run-pre-installation-pipeline.cjs` => `check-*.cjs` => `step-logic-*.cjs` => `*-adapter.cjs`
 
-    `install.cjs` => `apply-installation.cjs` => `*-adapter.cjs`
+    `install.cjs` => `run-installation-per-se.cjs` => `install-*.cjs` => `step-logic-*.cjs` => `*-adapter.cjs`
 
 
-The adapter functions define the boundary between Last of Readme and its environment.  An adapter function can call helper functions in the adapter script. The adapter functions and these helper functions are said to belong in the adapter-zone. A function in the adapter-zone does not have to cross the boundary toward system functions such as filesystem functions, git functions or npm functions.
+The adapter functions define the boundary between Last of Readme and its environment.  An adapter function can call helper functions in the adapter script. The adapter functions and these helper functions are said to belong in the adapter-zone. The adapter-zone is shared by the pre-installation pipeline and the installation-per-se. The adapter scripts are divided by environment part, not by global phase. A function in the adapter-zone does not have to cross the boundary toward system functions such as filesystem functions, git functions or npm functions.
 
 > [!Tip]
 > We should think of the adapter-zone as a layer around the core logic of Last of Readme, which is as large as needed so that  Last of Readme is as focused as possible on its core logic.
@@ -176,7 +185,11 @@ All prompts for interaction with the user are generated by prompt functions in t
 
 ### The installation-per-se
 
-Once the configuration values have been collected and the requirements checked in the pipeline, the installation-per-se consists in writing the configuration values and wiring Last of Readme commands in `package.json`.
+Once the configuration values have been collected and the requirements checked in the pipeline, the installation-per-se consists in writing the configuration values and wiring Last of Readme commands in `package.json`. The installation-per-se is itself orchestrated as a sequence of installation phases. These phases do not check requirements as their main purpose; they perform installation actions associated with parts of the environment.
+
+> [!Note]
+> As with pre-installation pipeline phases, installation-per-se phases are not expected to cover entirely the part of the environment to which they are tied. Multiple installation phases may interact with the same environment part while corresponding to different installation cycles.
+
 
 The runtime scripts of Last of Readme remain in the installed npm package. They are exposed through the npm bin command `last-of-readme` and are not copied into the target package. The installer itself is executed automatically through the `postinstall` hook of Last of Readme.
 
@@ -377,7 +390,7 @@ An easy made criticism is that the contracts should be stable and visible. Howev
 
 ### Finishing the installation-per-se
 
-Once the requirements are well identified the best we can, the installation-per-se should be completed. (See above).
+Once the requirements are well identified the best we can, the installation-per-se should be completed. (See above). The installation-per-se is expected to progressively evolve toward a structure similar to the pre-installation pipeline, with installation phases corresponding to specific installation cycles tied to parts of the environment.
 
 ### Determining installation requirements
 
@@ -390,10 +403,10 @@ To design the check-requirement pipeline, we ask what is needed by each adapter 
 
 Important: This task might involve changes in other parts of Last of Readme. It is important to understand and respect the current architecture:
 
-* The script `install.cjs` is the main orchestrator. It orchestrates the basic-requirements, the phases and the installation-per-se.
-* The phases themselves are tiny orchestrators. They orchestrate steps, starting with collect and prepare steps, followed by a single check-requirements step and ending with a finalize step.
+* The script `install.cjs` is the top-level orchestrator. It orchestrates the basic requirements, the pre-installation pipeline orchestrator and the installation-per-se orchestrator.
+* The phases themselves are tiny orchestrators. Pre-installation pipeline phases orchestrate steps starting with collect and prepare steps, followed by a single check-requirements step and ending with a finalize step. Installation-per-se phases orchestrate steps that perform installation actions associated with parts of the environment.
 * Each step should focus on its responsibility. For example, a check-requirements step should not collect input or prepare input to be saved in pipeline state.
-* The step functions are defined in the `step-logic-*.cjs` scripts. Each step-logic script is tied with a single part of the environment.
+* The step functions are defined in the `step-logic-*.cjs` scripts. Each step-logic script is tied with a single part of the environment and can contain step logic for both global phases.
 * The step-logic scripts never directly cross the boundary of Last of Readme by calling a function of the environment. The boundary toward the environment must be crossed by adapter functions.
 * The adapter functions can call helper functions. The helper functions only used by the adapter functions are said to be in the adapter-zone.
 * All prompts are generated by prompt functions in the script `prompt-user-input.cjs`. These prompt functions belong in the adapter-zone.
