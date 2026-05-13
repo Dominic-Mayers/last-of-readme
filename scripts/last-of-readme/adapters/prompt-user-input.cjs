@@ -22,7 +22,7 @@ async function askRepositoryApiUrl({
   defaultRepositoryApiUrl,
 }) {
   const question = defaultRepositoryApiUrl
-    ? `Repository API URL [${defaultRepositoryApiUrl}]: `
+    ? `Repository API URL [${defaultRepositoryApiUrl}] (press Enter to accept): `
     : 'Repository API URL: ';
 
   return askQuestion(question);
@@ -33,7 +33,7 @@ async function askRepositoryBrowserUrl({
   defaultRepositoryBrowserUrl,
 }) {
   const question = defaultRepositoryBrowserUrl
-    ? `Repository browser URL [${defaultRepositoryBrowserUrl}]: `
+    ? `Repository browser URL [${defaultRepositoryBrowserUrl}] (press Enter to accept): `
     : 'Repository browser URL: ';
 
   return askQuestion(question);
@@ -106,7 +106,7 @@ function formatExistingInstallationDetails(details) {
     lines.push('  - lastOfReadme field in package.json');
   }
   for (const hook of details.hooksWithInstallation) {
-    lines.push(`  - ${hook} scripts hook references scripts/last-of-readme/`);
+    lines.push(`  - ${hook} scripts hook references last-of-readme`);
   }
   return lines.join('\n');
 }
@@ -139,15 +139,15 @@ async function askInstallationPreconditions({
   }
 
   if (convenienceNeeds.length > 0) {
-    console.log('ℹ️  Last of Readme also has the following needs in your scripts hooks:');
+    console.log('ℹ️  Last of Readme also needs the following commands in your scripts hooks.');
+    console.log('   These are not installed automatically — you will be reminded at the end');
+    console.log('   of installation to add them yourself.');
     for (const need of convenienceNeeds) {
       const { needs } = getConvenienceNeedText(need);
       console.log(`\n  ${need.hook}:`);
       console.log(`    ${needs}`);
       console.log(`    Command: ${need.command}`);
     }
-    console.log('\nIf you proceed, Last of Readme will remind you to ensure these');
-    console.log('commands are executed, either automatically or manually.');
     console.log('');
   }
 
@@ -170,13 +170,13 @@ const CONVENIENCE_NEED_TEXT = {
     needs:
       'The updated package file must be staged before the version commit is created. Otherwise the commit will not include the updated file.',
     insure: ({ command }) =>
-      `Please ensure that ${command} is executed in your version hook, either automatically or manually.`,
+      `Last of Readme will not install this command. Add it yourself to your version hook,\n   or make sure your existing hook includes:\n     ${command}`,
   },
   pushTagsAfterVersion: {
     needs:
       'Last of Readme tags are not pushed to the remote automatically. Without them, the Last of Readme resolver will not work.',
     insure: ({ command }) =>
-      `Please ensure that ${command} is executed in your postversion hook, either automatically or manually.`,
+      `Last of Readme will not install this command. Add it yourself to your postversion hook,\n   or make sure your existing hook includes:\n     ${command}`,
   },
 };
 
@@ -252,8 +252,8 @@ async function askFingerprintedHookInstallation({
   console.log('\nWe need to prepend the command:');
   console.log(`\n  ${command}`);
   console.log('\nChoose:');
-  console.log('  1. Prepend the command');
-  console.log("  2. I'll do it myself");
+  console.log('  1. Prepend the command automatically');
+  console.log(`  2. I'll do it myself (edit package.json to ensure the command runs in the ${hook} hook)`);
 
   const answer = await askQuestion('Choose an option [1]: ');
   const normalized = (answer || '').trim();
