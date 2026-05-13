@@ -22,10 +22,17 @@ function createRemoteRepositoryAPI(remote, urlPath = '') {
   }
 
   async function branchesContaining(repoNode) {
-    const r = await fetch(api(`/branches`));
-    if (!r.ok) return [];
+    const branches = [];
+    let url = api(`/branches?per_page=100`);
+    while (url) {
+      const r = await fetch(url);
+      if (!r.ok) return [];
+      branches.push(...await r.json());
+      const link = r.headers.get('Link') || '';
+      const match = link.match(/<([^>]+)>;\s*rel="next"/);
+      url = match ? match[1] : null;
+    }
 
-    const branches = await r.json();
     const result = [];
 
     for (const b of branches) {
