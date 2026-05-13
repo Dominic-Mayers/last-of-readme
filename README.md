@@ -101,43 +101,6 @@ During the version lifecycle, Last of Readme:
 
 ---
 
-## Managed README block
-
-Last of Readme manages a placeholder block inside the selected package documentation file:
-
-```html
-<!-- DOC-LINK-START -->
-<!-- DOC-LINK-END -->
-```
-
-During release operations, this block is replaced with a resolver link.
-
----
-
-## Runtime model
-
-At runtime, external package-management processes drive Last of Readme through npm lifecycle hooks and CLI commands.
-
-Last of Readme in turn interacts with:
-
-* Git,
-* npm configuration,
-* the filesystem,
-* user interaction,
-* remote repository services.
-
-The repository architecture separates:
-
-* runtime-management wrappers,
-* core runtime commands,
-* environmental adapters.
-
-For architectural details, see:
-
-* `ARCHITECTURE.md`
-
----
-
 ## Commands
 
 ```bash
@@ -163,4 +126,4 @@ scripts/last-of-readme/
 └── update-readme-link.cjs
 ```
 
-See `ARCHITECTURE.md` for the detailed orchestration and layering model.
+See [ARCHITECTURE](ARCHITECTURE.md) for the detailed orchestration and layering model.
