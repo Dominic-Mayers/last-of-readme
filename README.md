@@ -9,7 +9,7 @@ Instead of linking directly to a mutable README location, Last of Readme maintai
 > [!NOTE]
 > For detailed installation behavior, runtime orchestration, architectural layering, resolver semantics, and design rationale, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 >
-> `ARCHITECTURE.md` is also maintained as a structured architectural context suitable for AI-assisted code analysis and development.
+> `ARCHITECTURE.md` is also currently used as a structured architectural context for AI-assisted code analysis and development.
 
 ## Documentation contracts
 
