@@ -1,7 +1,5 @@
 # Last of README
 
-[![npm version](https://img.shields.io/npm/v/@dominic.mayers/last-of-readme)](https://www.npmjs.com/package/@dominic.mayers/last-of-readme) 
-
 Last of Readme is used in the context of package management. It is used to insert  a link in a file of the package that will be resolved to a commit of the package repository that documents the package. The Last of Readme updater is called at each version bump to update the link. This is done using hooks in package.json.
 
 The Last of Readme resolver redirects the link to the adequate commit following a set of rules or contract that is chosen by the maintainer. Currently, Last of Readme offers three contracts: the `correction-of`, `last-of` and `until-successor-of` contracts.
