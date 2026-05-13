@@ -303,6 +303,99 @@ function updatePackageJsonFields(updates) {
   );
 }
 
+function updateFilesField(
+  currentFiles,
+  packageFilePath,
+  previousPackageFilePath,
+  shouldRemovePrevious
+) {
+  if (!Array.isArray(currentFiles)) {
+    return null;
+  }
+
+  const updatedFiles = [...currentFiles];
+
+  if (!updatedFiles.includes(packageFilePath)) {
+    updatedFiles.push(packageFilePath);
+  }
+
+  if (
+    shouldRemovePrevious &&
+    typeof previousPackageFilePath === 'string' &&
+    previousPackageFilePath !== packageFilePath
+  ) {
+    return updatedFiles.filter((item) => item !== previousPackageFilePath);
+  }
+
+  return updatedFiles;
+}
+
+/**
+ * Writes the Last of Readme remote configuration to package.json.
+ *
+ * @param {{ remoteName: string, remote: { kind: string, repositoryApiUrl: string, repositoryBrowserUrl: string } }} params
+ * @returns {void}
+ */
+function writeRemoteConfig({ remoteName, remote }) {
+  updatePackageJsonFields({
+    'lastOfReadme.remoteName': remoteName,
+    'lastOfReadme.remote.kind': remote.kind,
+    'lastOfReadme.remote.repositoryApiUrl': remote.repositoryApiUrl,
+    'lastOfReadme.remote.repositoryBrowserUrl': remote.repositoryBrowserUrl,
+  });
+}
+
+/**
+ * Writes the Last of Readme doc-link configuration to package.json and
+ * ensures the documentation file is listed in the files field.
+ *
+ * @param {{ packageFilePath: string, repositoryUrlPath: string | undefined, previousPackageFilePath: string | undefined, removePreviousPackageFileFromFiles: boolean }} params
+ * @returns {void}
+ */
+function writeDocLinkConfig({
+  packageFilePath,
+  repositoryUrlPath,
+  previousPackageFilePath,
+  removePreviousPackageFileFromFiles,
+}) {
+  updatePackageJsonFields({
+    'lastOfReadme.packageFilePath': packageFilePath,
+    ...(typeof repositoryUrlPath === 'string'
+      ? { 'lastOfReadme.repositoryUrlPath': repositoryUrlPath }
+      : {}),
+  });
+
+  const currentFiles = getCurrentFilesField();
+  const updatedFiles = updateFilesField(
+    currentFiles,
+    packageFilePath,
+    previousPackageFilePath,
+    Boolean(removePreviousPackageFileFromFiles)
+  );
+
+  if (updatedFiles !== null) {
+    updatePackageJsonFields({ files: updatedFiles });
+  }
+}
+
+/**
+ * Writes the default nonInteractiveFailurePolicy to package.json if it is
+ * not already set.
+ *
+ * @returns {void}
+ */
+function writeNonInteractivePolicyIfAbsent() {
+  const currentConfig = getLastOfReadmeConfig();
+
+  if (currentConfig.nonInteractiveFailurePolicy !== undefined) {
+    return;
+  }
+
+  updatePackageJsonFields({
+    'lastOfReadme.nonInteractiveFailurePolicy': 'continue',
+  });
+}
+
 function getPackageJsonField(field, { allowEmpty = false } = {}) {
   const value = runNpmPkg(['get', field, '--json'], { expectJson: true });
   const normalized = Array.isArray(value) && value.length === 1 ? value[0] : value;
@@ -345,7 +438,7 @@ function getCurrentScriptsHooks() {
  * An installation is detected when:
  * - The lastOfReadme field is present, or
  * - Any of preversion, version, or postversion contains a reference to
- *   scripts/last-of-readme/.
+ *   the last-of-readme bin command.
  *
  * @returns {{ hasLastOfReadmeField: boolean, hooksWithInstallation: string[] } | null}
  */
@@ -359,7 +452,7 @@ function getExistingInstallationFingerprint() {
 
   const hooks = getCurrentScriptsHooks();
   const hooksWithInstallation = Object.entries(hooks)
-    .filter(([, value]) => value.includes('scripts/last-of-readme/'))
+    .filter(([, value]) => value.includes('last-of-readme'))
     .map(([key]) => key);
 
   if (!hasLastOfReadmeField && hooksWithInstallation.length === 0) {
@@ -450,6 +543,9 @@ module.exports = {
     getCurrentRepositoryUrlPath,
     getCurrentFilesField,
     updatePackageJsonFields,
+    writeRemoteConfig,
+    writeDocLinkConfig,
+    writeNonInteractivePolicyIfAbsent,
     getCurrentScriptsHooks,
     getExistingInstallationFingerprint,
     getLastOfReadmeConfig,

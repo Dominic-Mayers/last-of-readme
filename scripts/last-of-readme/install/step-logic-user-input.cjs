@@ -12,6 +12,8 @@ const {
   collectDocLinkPlaceholderInput,
   checkInstallationPreconditionsConsentInput,
   interactivelyInstallFingerprintedHook,
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
 } = require('../adapters/user-input-adapter.cjs');
 
 function prepareRemoteInput(pipelineState = {}) {
@@ -261,6 +263,21 @@ async function collectLastOfReadmeOwnedHookInstallationInput(pipelineState = {})
   };
 }
 
+function reportOwnedHookInstallationResults(pipelineState = {}) {
+  const hookStates =
+    (pipelineState.control || {}).lastOfReadmeOwnedVersionHookStates || [];
+
+  for (const hookState of hookStates) {
+    if (hookState.chosenAction === 'install') {
+      printFingerprintedHookInstalled(hookState.hook);
+    } else if (hookState.chosenAction === 'prepend') {
+      printFingerprintedHookPrepended(hookState.hook);
+    }
+  }
+
+  return pipelineState;
+}
+
 module.exports = {
   collectRemoteInput,
   collectRemoteUrlsInput,
@@ -273,4 +290,5 @@ module.exports = {
   prepareDocLinkPlaceholderInput,
   checkInstallationPreconditionsRequirements,
   collectLastOfReadmeOwnedHookInstallationInput,
+  reportOwnedHookInstallationResults,
 };

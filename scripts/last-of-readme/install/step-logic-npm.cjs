@@ -7,16 +7,13 @@ const {
   getCurrentRemoteConfiguration,
   getCurrentRepositoryUrlPath,
   getExistingInstallationFingerprint,
-  getLastOfReadmeConfig,
   getLastOfReadmeOwnedHookInstallationState,
   installLastOfReadmeOwnedHookCommand,
   npmPackageRoot,
-  updatePackageJsonFields,
+  writeRemoteConfig,
+  writeDocLinkConfig,
+  writeNonInteractivePolicyIfAbsent,
 } = require('../adapters/npm-adapter.cjs');
-const {
-  printFingerprintedHookInstalled,
-  printFingerprintedHookPrepended,
-} = require('../adapters/user-input-adapter.cjs');
 
 function collectNpmPackageRootEnvironmentInput(pipelineState = {}) {
   return {
@@ -111,44 +108,8 @@ const LAST_OF_README_OWNED_VERSION_HOOKS = [
   },
 ];
 
-function updateFilesField(
-  currentFiles,
-  packageFilePath,
-  previousPackageFilePath,
-  shouldRemovePrevious
-) {
-  if (!Array.isArray(currentFiles)) {
-    return null;
-  }
-
-  const updatedFiles = [...currentFiles];
-
-  if (!updatedFiles.includes(packageFilePath)) {
-    updatedFiles.push(packageFilePath);
-  }
-
-  if (
-    shouldRemovePrevious &&
-    typeof previousPackageFilePath === 'string' &&
-    previousPackageFilePath !== packageFilePath
-  ) {
-    return updatedFiles.filter((item) => item !== previousPackageFilePath);
-  }
-
-  return updatedFiles;
-}
-
 function installNonInteractivePolicyField(pipelineState = {}) {
-  const currentConfig = getLastOfReadmeConfig();
-
-  if (currentConfig.nonInteractiveFailurePolicy !== undefined) {
-    return pipelineState;
-  }
-
-  updatePackageJsonFields({
-    'lastOfReadme.nonInteractiveFailurePolicy': 'continue',
-  });
-
+  writeNonInteractivePolicyIfAbsent();
   return pipelineState;
 }
 
@@ -159,30 +120,17 @@ function finalizeNonInteractivePolicyInstallationState(pipelineState = {}) {
 function installDocLinkConfigFields(pipelineState = {}) {
   const config = pipelineState.config || {};
   const control = pipelineState.control || {};
-  const packageFilePath = config.packageFilePath;
 
-  if (!packageFilePath) {
+  if (!config.packageFilePath) {
     throw new Error('Doc-link package.json installation requires resolved doc-link cycle state');
   }
 
-  updatePackageJsonFields({
-    'lastOfReadme.packageFilePath': packageFilePath,
-    ...(typeof config.repositoryUrlPath === 'string'
-      ? { 'lastOfReadme.repositoryUrlPath': config.repositoryUrlPath }
-      : {}),
+  writeDocLinkConfig({
+    packageFilePath: config.packageFilePath,
+    repositoryUrlPath: config.repositoryUrlPath,
+    previousPackageFilePath: control.previousPackageFilePath,
+    removePreviousPackageFileFromFiles: control.removePreviousPackageFileFromFiles,
   });
-
-  const currentFiles = getCurrentFilesField();
-  const updatedFiles = updateFilesField(
-    currentFiles,
-    packageFilePath,
-    control.previousPackageFilePath,
-    Boolean(control.removePreviousPackageFileFromFiles)
-  );
-
-  if (updatedFiles !== null) {
-    updatePackageJsonFields({ files: updatedFiles });
-  }
 
   return pipelineState;
 }
@@ -202,18 +150,14 @@ function finalizeDocLinkConfigInstallationState(pipelineState = {}) {
 function installRemoteConfigFields(pipelineState = {}) {
   const config = pipelineState.config || {};
   const control = pipelineState.control || {};
-  const remoteConfig = config.remote || {};
-  const remoteName = config.remoteName;
 
-  if (!remoteName || !control.repositoryUrl) {
+  if (!config.remoteName || !control.repositoryUrl) {
     throw new Error('Remote installation requires resolved remote cycle state');
   }
 
-  updatePackageJsonFields({
-    'lastOfReadme.remoteName': remoteName,
-    'lastOfReadme.remote.kind': remoteConfig.kind,
-    'lastOfReadme.remote.repositoryApiUrl': remoteConfig.repositoryApiUrl,
-    'lastOfReadme.remote.repositoryBrowserUrl': remoteConfig.repositoryBrowserUrl,
+  writeRemoteConfig({
+    remoteName: config.remoteName,
+    remote: config.remote || {},
   });
 
   return pipelineState;
@@ -249,20 +193,12 @@ function installLastOfReadmeOwnedVersionHookCommands(pipelineState = {}) {
     (pipelineState.control || {}).lastOfReadmeOwnedVersionHookStates || [];
 
   for (const hookState of hookStates) {
-    if (hookState.chosenAction === 'install') {
+    if (hookState.chosenAction === 'install' || hookState.chosenAction === 'prepend') {
       installLastOfReadmeOwnedHookCommand({
         hook: hookState.hook,
         command: hookState.command,
         remainingContent: hookState.remainingContent,
       });
-      printFingerprintedHookInstalled(hookState.hook);
-    } else if (hookState.chosenAction === 'prepend') {
-      installLastOfReadmeOwnedHookCommand({
-        hook: hookState.hook,
-        command: hookState.command,
-        remainingContent: hookState.remainingContent,
-      });
-      printFingerprintedHookPrepended(hookState.hook);
     }
   }
 
