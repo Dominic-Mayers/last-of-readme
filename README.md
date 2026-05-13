@@ -7,7 +7,7 @@ Last of Readme helps package maintainers publish README links that continue to r
 Instead of linking directly to a mutable README location, Last of Readme maintains resolver links backed by Git tags and explicit documentation contracts.
 
 > [!NOTE]
-> For detailed installation behavior, runtime orchestration, architectural layering, resolver semantics, and design rationale, see `ARCHITECTURE.md`.
+> For detailed installation behavior, runtime orchestration, architectural layering, resolver semantics, and design rationale, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 >
 > `ARCHITECTURE.md` is also maintained as a structured architectural context suitable for AI-assisted code analysis and development.
 
