@@ -38,7 +38,7 @@
     },
     "packageFilePath": "README.md",
     "repositoryUrlPath": "",
-    "nextContract": "until-last-of",
+    "nextContract": "until-next-warn",
     "nonInteractiveFailurePolicy": "continue"
   }
 }
