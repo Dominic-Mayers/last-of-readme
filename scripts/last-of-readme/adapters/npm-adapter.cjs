@@ -123,9 +123,9 @@ function getCurrentConfiguredRemoteName() {
  * Returns the next documentation contract used by update-readme-link.cjs to build
  * resolver links.
  *
- * @configRequirement The Last of Readme next documentation contract must be
- * configured before a version bump. Configured by
- * last-of-readme-contract.cjs.
+ * @remarks The next documentation contract must be set before each version bump
+ * by running `last-of-readme contract <name>`. This is a runtime workflow
+ * requirement, not an installation requirement.
  * @returns {string} Installed next documentation contract.
  */
 function configuredNextDocumentationContract() {
