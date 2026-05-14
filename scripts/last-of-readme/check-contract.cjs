@@ -2,7 +2,7 @@
 
 const { configuredNextDocumentationContract } = require('./adapters/npm-adapter.cjs');
 
-const SUPPORTED_CONTRACTS = new Set(['until-successor-of', 'last-of', 'continuation-of', 'correction-of']);
+const SUPPORTED_CONTRACTS = new Set(['until-successor-of', 'until-last-of', 'last-of', 'continuation-of', 'correction-of']);
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -18,6 +18,7 @@ function main() {
         `Unsupported Last of Readme contract: "${contract}".\n\n` +
         `From the package root, run one of:\n` +
         `  npx last-of-readme contract until-successor-of\n` +
+        `  npx last-of-readme contract until-last-of\n` +
         `  npx last-of-readme contract last-of\n` +
         `  npx last-of-readme contract continuation-of\n` +
         `  npx last-of-readme contract correction-of\n\n` +

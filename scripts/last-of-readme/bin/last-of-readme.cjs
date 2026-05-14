@@ -23,7 +23,7 @@ function usage() {
     '  check-contract',
     '  tag-doc <last-of|successor-of|correction-of> [--no-push]',
     '  update-readme-link [documentation-path] [url-path]',
-    '  contract <until-successor-of|last-of|continuation-of|correction-of>',
+    '  contract <until-successor-of|until-last-of|last-of|continuation-of|correction-of>',
     '  attempt-check-contract',
     '  attempt-successor-tag',
     '  attempt-readme-link',

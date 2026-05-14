@@ -51,24 +51,43 @@ function renderResolutionPage(page) {
   document.body.appendChild(list);
 }
 
-async function resolveUntilSuccessorOfContract(remoteRepository, version) {
+async function resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning }) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
   const next = `${base}-successor-of`;
+  const fallbackMessage =
+    'No last-of tag was found. The following documentation is not marked as authoritative for this version.';
+
+  function singleLinkOutcome({ label, url }) {
+    if (!hasWarning) {
+      return redirectOutcome(url);
+    }
+
+    return renderOutcome({
+      kind: 'fallback',
+      message: fallbackMessage,
+      links: [{ label, url }],
+    });
+  }
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
   }
 
   if (await remoteRepository.resolveTag(next)) {
-    return redirectOutcome(remoteRepository.browseDocumentation(next));
+    return singleLinkOutcome({
+      label: next,
+      url: remoteRepository.browseDocumentation(next),
+    });
   }
 
   const baseRepoNode = await remoteRepository.resolveTag(base);
   if (!baseRepoNode) {
     return renderOutcome({
       kind: 'not-found',
-      message: 'version tag not found',
+      message: hasWarning
+        ? 'No last-of tag was found, and the version tag was not found.'
+        : 'version tag not found',
       links: [],
     });
   }
@@ -76,13 +95,18 @@ async function resolveUntilSuccessorOfContract(remoteRepository, version) {
   const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
 
   if (containingBranches.length === 1) {
-    return redirectOutcome(remoteRepository.browseDocumentation(containingBranches[0]));
+    return singleLinkOutcome({
+      label: containingBranches[0],
+      url: remoteRepository.browseDocumentation(containingBranches[0]),
+    });
   }
 
   if (containingBranches.length > 1) {
     return renderOutcome({
       kind: 'ambiguous',
-      message: 'multiple branches: ' + containingBranches.join(', '),
+      message: hasWarning
+        ? 'No last-of tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.'
+        : 'multiple branches: ' + containingBranches.join(', '),
       links: containingBranches.map((branch) => ({
         label: branch,
         url: remoteRepository.browseDocumentation(branch),
@@ -90,10 +114,21 @@ async function resolveUntilSuccessorOfContract(remoteRepository, version) {
     });
   }
 
-  return redirectOutcome(remoteRepository.browseDocumentation(base));
+  return singleLinkOutcome({
+    label: base,
+    url: remoteRepository.browseDocumentation(base),
+  });
 }
 
-async function resolveLastStyleContract(remoteRepository, version, { hasWarning }) {
+async function resolveUntilSuccessorOfContract(remoteRepository, version) {
+  return resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning: false });
+}
+
+async function resolveUntilLastOfContract(remoteRepository, version) {
+  return resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning: true });
+}
+
+async function resolveBranchPriorityContract(remoteRepository, version, { hasWarning }) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
   const next = `${base}-successor-of`;
@@ -163,11 +198,11 @@ async function resolveLastStyleContract(remoteRepository, version, { hasWarning 
 }
 
 async function resolveLastOfContract(remoteRepository, version) {
-  return resolveLastStyleContract(remoteRepository, version, { hasWarning: true });
+  return resolveBranchPriorityContract(remoteRepository, version, { hasWarning: true });
 }
 
 async function resolveContinuationOfContract(remoteRepository, version) {
-  return resolveLastStyleContract(remoteRepository, version, { hasWarning: false });
+  return resolveBranchPriorityContract(remoteRepository, version, { hasWarning: false });
 }
 
 
@@ -192,6 +227,7 @@ async function resolveCorrectionOfContract(remoteRepository, version) {
 
 const contractResolvers = {
   'until-successor-of': resolveUntilSuccessorOfContract,
+  'until-last-of': resolveUntilLastOfContract,
   'last-of': resolveLastOfContract,
   'continuation-of': resolveContinuationOfContract,
   'correction-of': resolveCorrectionOfContract,

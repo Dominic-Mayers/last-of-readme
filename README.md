@@ -17,14 +17,15 @@ Last of Readme manages README resolver links through documentation contracts.
 
 These contracts determine how the documents presented through the README link evolve as newer versions and documentation corrections are published.
 
-Last of Readme currently supports four contracts:
+Last of Readme currently supports five contracts:
 
 * `until-successor-of`
+* `until-last-of`
 * `last-of`
 * `continuation-of`
 * `correction-of`
 
-The `until-successor-of`, `last-of`, and `continuation-of` contracts use the `successor-of` and `last-of` tags, but they interpret them differently. The `correction-of` contract uses only the `correction-of` tag.
+The `until-successor-of`, `until-last-of`, `last-of`, and `continuation-of` contracts use the `successor-of` and `last-of` tags, but they interpret them differently. The `correction-of` contract uses only the `correction-of` tag.
 
 The `last-of` and `correction-of` tags are normally added manually by maintainers. The `successor-of` tag is normally added automatically at the next version bump.
 
@@ -41,6 +42,20 @@ Resolution order:
 In this contract, either a `last-of` tag or a `successor-of` tag is sufficient to directly present documentation, even when many branch alternatives exist.
 
 Documentation presented through a `successor-of` tag or through the HEAD of a single containing branch is presented without warning.
+
+### `until-last-of`
+
+Resolution order:
+
+1. `last-of` tag
+2. `successor-of` tag
+3. HEAD of the single containing branch
+4. options when several containing branches exist
+5. package version
+
+In this contract, either a `last-of` tag or a `successor-of` tag is sufficient to present documentation even when many branch alternatives exist.
+
+Documentation presented without a `last-of` tag is presented with a warning.
 
 ### `last-of`
 
@@ -129,7 +144,7 @@ During the version lifecycle, Last of Readme:
 
 ```bash
 last-of-readme install
-last-of-readme contract <until-successor-of|last-of|continuation-of|correction-of>
+last-of-readme contract <until-successor-of|until-last-of|last-of|continuation-of|correction-of>
 last-of-readme check-contract
 last-of-readme tag-doc <last-of|successor-of|correction-of>
 last-of-readme update-readme-link
