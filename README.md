@@ -133,7 +133,7 @@ scripts/last-of-readme/
 
 ## Architecture and design
 
-The repository contains a more detailed architecture and design document covering:
+The [ARCHITECTURE](ARCHITECTURE.md)  document contains a more detailed description of architecture and design covering:
 
 - installation orchestration,
 - runtime-management wrappers,
@@ -141,5 +141,3 @@ The repository contains a more detailed architecture and design document coverin
 - resolver management,
 - environment-part decomposition,
 - and architectural rationale.
-
-See [ARCHITECTURE](ARCHITECTURE.md) for the detailed orchestration and layering model.
