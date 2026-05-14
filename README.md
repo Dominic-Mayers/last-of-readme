@@ -133,7 +133,7 @@ scripts/last-of-readme/
 
 ## Architecture and design
 
-The [ARCHITECTURE](ARCHITECTURE.md)  document contains a more detailed description of architecture and design covering:
+The [ARCHITECTURE](ARCHITECTURE.md) document provides a more detailed account of the project architecture and design, including:
 
 - installation orchestration,
 - runtime-management wrappers,
