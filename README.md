@@ -33,9 +33,9 @@ Resolution order:
 4. options when several containing branches exist
 5. package version
 
-In this contract, both `last-of` and `successor-of` tags are individually sufficient to choose a documentation, even when there are many containing branches.
+In this contract, either a `last-of` tag or a `successor-of` tag is sufficient to directly present documentation, even when many branch alternatives exist.
 
-When the resolver picks the `successor-of` tag or the HEAD of a single containing branch, it does it without warning.
+Documentation presented through a `successor-of` tag or through the HEAD of a single containing branch is presented without warning.
 
 ### `last-of`
 
@@ -47,9 +47,9 @@ Resolution order:
 4. HEAD of the single containing branch
 5. package version
 
-In this contract, the `last-of` tag is sufficient to choose a documentation continuation despite many containing branches.
+In this contract, only a `last-of` tag is sufficient to directly present documentation, even when many branch alternatives exist.
 
-When the resolver proceeds without a `last-of` tag, the presented documentation is shown with a warning.
+Documentation presented without a `last-of` tag is presented with a warning.
 
 ### `correction-of`
 
