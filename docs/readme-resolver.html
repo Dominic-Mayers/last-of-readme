@@ -51,7 +51,10 @@ function renderResolutionPage(page) {
   document.body.appendChild(list);
 }
 
-async function resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning }) {
+async function resolveLineageContract(remoteRepository, version, {
+  hasWarning,
+  successorPriority,
+}) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
   const next = `${base}-successor-of`;
@@ -70,15 +73,26 @@ async function resolveSuccessorPriorityContract(remoteRepository, version, { has
     });
   }
 
-  if (await remoteRepository.resolveTag(last)) {
-    return redirectOutcome(remoteRepository.browseDocumentation(last));
-  }
+  async function trySuccessorOf() {
+    if (!await remoteRepository.resolveTag(next)) {
+      return null;
+    }
 
-  if (await remoteRepository.resolveTag(next)) {
     return singleLinkOutcome({
       label: next,
       url: remoteRepository.browseDocumentation(next),
     });
+  }
+
+  if (await remoteRepository.resolveTag(last)) {
+    return redirectOutcome(remoteRepository.browseDocumentation(last));
+  }
+
+  if (successorPriority === 'before-branches') {
+    const successorOutcome = await trySuccessorOf();
+    if (successorOutcome) {
+      return successorOutcome;
+    }
   }
 
   const baseRepoNode = await remoteRepository.resolveTag(base);
@@ -93,6 +107,13 @@ async function resolveSuccessorPriorityContract(remoteRepository, version, { has
   }
 
   const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
+
+  if (successorPriority === 'after-branches' && containingBranches.length <= 1) {
+    const successorOutcome = await trySuccessorOf();
+    if (successorOutcome) {
+      return successorOutcome;
+    }
+  }
 
   if (containingBranches.length === 1) {
     return singleLinkOutcome({
@@ -121,88 +142,31 @@ async function resolveSuccessorPriorityContract(remoteRepository, version, { has
 }
 
 async function resolveUntilNextContract(remoteRepository, version) {
-  return resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning: false });
+  return resolveLineageContract(remoteRepository, version, {
+    successorPriority: 'before-branches',
+    hasWarning: false,
+  });
 }
 
 async function resolveUntilNextWarnContract(remoteRepository, version) {
-  return resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning: true });
-}
-
-async function resolveBranchPriorityContract(remoteRepository, version, { hasWarning }) {
-  const base = `v${version}`;
-  const last = `${base}-last-of`;
-  const next = `${base}-successor-of`;
-  const fallbackMessage =
-    'No last-of tag was found. The following documentation is not marked as authoritative for this version.';
-
-  function singleLinkOutcome({ kind = 'fallback', label, url }) {
-    if (!hasWarning) {
-      return redirectOutcome(url);
-    }
-
-    return renderOutcome({
-      kind,
-      message: fallbackMessage,
-      links: [{ label, url }],
-    });
-  }
-
-  if (await remoteRepository.resolveTag(last)) {
-    return redirectOutcome(remoteRepository.browseDocumentation(last));
-  }
-
-  const baseRepoNode = await remoteRepository.resolveTag(base);
-  if (!baseRepoNode) {
-    return renderOutcome({
-      kind: 'not-found',
-      message: hasWarning
-        ? 'No last-of tag was found, and the version tag was not found.'
-        : 'version tag not found',
-      links: [],
-    });
-  }
-
-  const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
-
-  if (containingBranches.length > 1) {
-    return renderOutcome({
-      kind: 'ambiguous',
-      message: hasWarning
-        ? 'No last-of tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.'
-        : 'multiple branches: ' + containingBranches.join(', '),
-      links: containingBranches.map((branch) => ({
-        label: branch,
-        url: remoteRepository.browseDocumentation(branch),
-      })),
-    });
-  }
-
-  if (await remoteRepository.resolveTag(next)) {
-    return singleLinkOutcome({
-      label: next,
-      url: remoteRepository.browseDocumentation(next),
-    });
-  }
-
-  if (containingBranches.length === 1) {
-    return singleLinkOutcome({
-      label: containingBranches[0],
-      url: remoteRepository.browseDocumentation(containingBranches[0]),
-    });
-  }
-
-  return singleLinkOutcome({
-    label: base,
-    url: remoteRepository.browseDocumentation(base),
+  return resolveLineageContract(remoteRepository, version, {
+    successorPriority: 'before-branches',
+    hasWarning: true,
   });
 }
 
 async function resolveUntilBranchWarnContract(remoteRepository, version) {
-  return resolveBranchPriorityContract(remoteRepository, version, { hasWarning: true });
+  return resolveLineageContract(remoteRepository, version, {
+    successorPriority: 'after-branches',
+    hasWarning: true,
+  });
 }
 
 async function resolveUntilBranchContract(remoteRepository, version) {
-  return resolveBranchPriorityContract(remoteRepository, version, { hasWarning: false });
+  return resolveLineageContract(remoteRepository, version, {
+    successorPriority: 'after-branches',
+    hasWarning: false,
+  });
 }
 
 
