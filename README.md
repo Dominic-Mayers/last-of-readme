@@ -45,7 +45,7 @@ Documentation presented through a `successor-of` tag or through the HEAD of a si
 
 ### `until-next-warn`
 
-Resolution order:
+Resolution order (same as `until-next`):
 
 1. `last-of` tag
 2. `successor-of` tag
@@ -53,21 +53,7 @@ Resolution order:
 4. options when several containing branches exist
 5. package version
 
-In this contract, either a `last-of` tag or a `successor-of` tag is sufficient to present documentation even when many branch alternatives exist.
-
-Documentation presented without a `last-of` tag is presented with a warning.
-
-### `until-branch-warn`
-
-Resolution order:
-
-1. `last-of` tag
-2. options when several containing branches exist
-3. `successor-of` tag
-4. HEAD of the single containing branch
-5. package version
-
-In this contract, only a `last-of` tag is sufficient to directly present documentation, even when many branch alternatives exist.
+In this contract, as for `until-next`, either a `last-of` tag or a `successor-of` tag is sufficient to present documentation even when many branch alternatives exist.
 
 Documentation presented without a `last-of` tag is presented with a warning.
 
@@ -81,9 +67,23 @@ Resolution order:
 4. HEAD of the single containing branch
 5. package version
 
-In this contract, as in `until-branch-warn`, only a `last-of` tag is sufficient to directly present documentation when many branch alternatives exist.
+In this contract, only a `last-of` tag is sufficient to directly present documentation when many branch alternatives exist.
 
 Documentation presented without a `last-of` tag is presented without warning.
+
+### `until-branch-warn`
+
+Resolution order (same as `until-branch`):
+
+1. `last-of` tag
+2. options when several containing branches exist
+3. `successor-of` tag
+4. HEAD of the single containing branch
+5. package version
+
+In this contract, as in `until-branch`, only a `last-of` tag is sufficient to directly present documentation, even when many branch alternatives exist.
+
+Documentation presented without a `last-of` tag is presented with a warning.
 
 ### `correction-of`
 
