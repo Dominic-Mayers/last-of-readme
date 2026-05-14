@@ -7,10 +7,10 @@ const {
 } = require('./adapters/npm-adapter.cjs');
 
 const SUPPORTED_CONTRACTS = {
-  'until-successor-of': describeUntilSuccessorOf,
-  'until-last-of': describeUntilLastOf,
-  'last-of': describeLastOf,
-  'continuation-of': describeContinuationOf,
+  'until-next': describeUntilNext,
+  'until-next-warn': describeUntilNextWarn,
+  'until-branch': describeUntilBranch,
+  'until-branch-warn': describeUntilBranchWarn,
   'correction-of': describeCorrectionOf,
 };
 
@@ -21,11 +21,11 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: last-of-readme contract <contract>');
-  console.error('Supported contracts: until-successor-of, until-last-of, last-of, continuation-of, correction-of');
+  console.error('Supported contracts: until-next, until-next-warn, until-branch, until-branch-warn, correction-of');
   process.exit(1);
 }
 
-function describeUntilSuccessorOf(documentationPath) {
+function describeUntilNext(documentationPath) {
   return [
     `The documentation link will resolve ${documentationPath} using this order:`,
     '',
@@ -39,9 +39,9 @@ function describeUntilSuccessorOf(documentationPath) {
   ].join('\n');
 }
 
-function describeUntilLastOf(documentationPath) {
+function describeUntilNextWarn(documentationPath) {
   return [
-    `The documentation link will resolve ${documentationPath} using the same order as until-successor-of, but with a warning when vX.Y.Z-last-of is absent.`,
+    `The documentation link will resolve ${documentationPath} using the same order as until-next, but with a warning when vX.Y.Z-last-of is absent.`,
     '',
     'Resolution order:',
     '',
@@ -55,7 +55,7 @@ function describeUntilLastOf(documentationPath) {
   ].join('\n');
 }
 
-function describeLastOf(documentationPath) {
+function describeUntilBranchWarn(documentationPath) {
   return [
     `The documentation link will redirect directly to ${documentationPath} only when vX.Y.Z-last-of exists.`,
     '',
@@ -73,9 +73,9 @@ function describeLastOf(documentationPath) {
 }
 
 
-function describeContinuationOf(documentationPath) {
+function describeUntilBranch(documentationPath) {
   return [
-    `The documentation link will resolve ${documentationPath} using the same order as last-of, but without warning when vX.Y.Z-last-of is absent.`,
+    `The documentation link will resolve ${documentationPath} using the same order as until-branch-warn, but without warning when vX.Y.Z-last-of is absent.`,
     '',
     'Resolution order:',
     '',

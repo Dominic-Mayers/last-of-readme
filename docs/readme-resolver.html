@@ -120,11 +120,11 @@ async function resolveSuccessorPriorityContract(remoteRepository, version, { has
   });
 }
 
-async function resolveUntilSuccessorOfContract(remoteRepository, version) {
+async function resolveUntilNextContract(remoteRepository, version) {
   return resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning: false });
 }
 
-async function resolveUntilLastOfContract(remoteRepository, version) {
+async function resolveUntilNextWarnContract(remoteRepository, version) {
   return resolveSuccessorPriorityContract(remoteRepository, version, { hasWarning: true });
 }
 
@@ -197,11 +197,11 @@ async function resolveBranchPriorityContract(remoteRepository, version, { hasWar
   });
 }
 
-async function resolveLastOfContract(remoteRepository, version) {
+async function resolveUntilBranchWarnContract(remoteRepository, version) {
   return resolveBranchPriorityContract(remoteRepository, version, { hasWarning: true });
 }
 
-async function resolveContinuationOfContract(remoteRepository, version) {
+async function resolveUntilBranchContract(remoteRepository, version) {
   return resolveBranchPriorityContract(remoteRepository, version, { hasWarning: false });
 }
 
@@ -226,10 +226,10 @@ async function resolveCorrectionOfContract(remoteRepository, version) {
 }
 
 const contractResolvers = {
-  'until-successor-of': resolveUntilSuccessorOfContract,
-  'until-last-of': resolveUntilLastOfContract,
-  'last-of': resolveLastOfContract,
-  'continuation-of': resolveContinuationOfContract,
+  'until-next': resolveUntilNextContract,
+  'until-next-warn': resolveUntilNextWarnContract,
+  'until-branch': resolveUntilBranchContract,
+  'until-branch-warn': resolveUntilBranchWarnContract,
   'correction-of': resolveCorrectionOfContract,
 };
 
@@ -241,7 +241,7 @@ const contractResolvers = {
   const host = p.get('host') || 'github.com';
   const version = p.get('v');
   const urlPath = p.get('urlPath') || '';
-  const contract = p.get('contract') || 'until-successor-of';
+  const contract = p.get('contract') || 'until-next';
 
   if ((!repositoryApiUrl || !repositoryBrowserUrl) && !repository) {
     document.body.innerText = 'missing params';

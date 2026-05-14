@@ -19,17 +19,17 @@ These contracts determine how the documents presented through the README link ev
 
 Last of Readme currently supports five contracts:
 
-* `until-successor-of`
-* `until-last-of`
-* `last-of`
-* `continuation-of`
+* `until-next`
+* `until-next-warn`
+* `until-branch`
+* `until-branch-warn`
 * `correction-of`
 
-The `until-successor-of`, `until-last-of`, `last-of`, and `continuation-of` contracts use the `successor-of` and `last-of` tags, but they interpret them differently. The `correction-of` contract uses only the `correction-of` tag.
+The `until-next`, `until-next-warn`, `until-branch`, and `until-branch-warn` contracts use the `successor-of` and `last-of` tags, but they interpret them differently. The `correction-of` contract uses only the `correction-of` tag.
 
 The `last-of` and `correction-of` tags are normally added manually by maintainers. The `successor-of` tag is normally added automatically at the next version bump.
 
-### `until-successor-of`
+### `until-next`
 
 Resolution order:
 
@@ -43,7 +43,7 @@ In this contract, either a `last-of` tag or a `successor-of` tag is sufficient t
 
 Documentation presented through a `successor-of` tag or through the HEAD of a single containing branch is presented without warning.
 
-### `until-last-of`
+### `until-next-warn`
 
 Resolution order:
 
@@ -57,7 +57,7 @@ In this contract, either a `last-of` tag or a `successor-of` tag is sufficient t
 
 Documentation presented without a `last-of` tag is presented with a warning.
 
-### `last-of`
+### `until-branch-warn`
 
 Resolution order:
 
@@ -71,7 +71,7 @@ In this contract, only a `last-of` tag is sufficient to directly present documen
 
 Documentation presented without a `last-of` tag is presented with a warning.
 
-### `continuation-of`
+### `until-branch`
 
 Resolution order:
 
@@ -81,7 +81,7 @@ Resolution order:
 4. HEAD of the single containing branch
 5. package version
 
-In this contract, as in `last-of`, only a `last-of` tag is sufficient to directly present documentation when many branch alternatives exist.
+In this contract, as in `until-branch-warn`, only a `last-of` tag is sufficient to directly present documentation when many branch alternatives exist.
 
 Documentation presented without a `last-of` tag is presented without warning.
 
@@ -123,7 +123,7 @@ The installer configures:
 Choose the contract for the next version:
 
 ```bash
-npx last-of-readme contract until-successor-of
+npx last-of-readme contract until-next
 ```
 
 Then bump the version normally:
@@ -144,7 +144,7 @@ During the version lifecycle, Last of Readme:
 
 ```bash
 last-of-readme install
-last-of-readme contract <until-successor-of|until-last-of|last-of|continuation-of|correction-of>
+last-of-readme contract <until-next|until-next-warn|until-branch|until-branch-warn|correction-of>
 last-of-readme check-contract
 last-of-readme tag-doc <last-of|successor-of|correction-of>
 last-of-readme update-readme-link

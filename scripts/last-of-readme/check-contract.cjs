@@ -2,7 +2,7 @@
 
 const { configuredNextDocumentationContract } = require('./adapters/npm-adapter.cjs');
 
-const SUPPORTED_CONTRACTS = new Set(['until-successor-of', 'until-last-of', 'last-of', 'continuation-of', 'correction-of']);
+const SUPPORTED_CONTRACTS = new Set(['until-next', 'until-next-warn', 'until-branch', 'until-branch-warn', 'correction-of']);
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -17,10 +17,10 @@ function main() {
       fail(
         `Unsupported Last of Readme contract: "${contract}".\n\n` +
         `From the package root, run one of:\n` +
-        `  npx last-of-readme contract until-successor-of\n` +
-        `  npx last-of-readme contract until-last-of\n` +
-        `  npx last-of-readme contract last-of\n` +
-        `  npx last-of-readme contract continuation-of\n` +
+        `  npx last-of-readme contract until-next\n` +
+        `  npx last-of-readme contract until-next-warn\n` +
+        `  npx last-of-readme contract until-branch\n` +
+        `  npx last-of-readme contract until-branch-warn\n` +
         `  npx last-of-readme contract correction-of\n\n` +
         `Then retry:\n` +
         `  npm version patch\n`
@@ -31,7 +31,7 @@ function main() {
       (err && err.message ? err.message : String(err)) +
       '\n\nBefore bumping the version, choose the resolver contract for the next README link.\n\n' +
       'From the package root, run:\n' +
-      '  npx last-of-readme contract until-successor-of\n\n' +
+      '  npx last-of-readme contract until-next\n\n' +
       'Then retry:\n' +
       '  npm version patch\n'
     );
