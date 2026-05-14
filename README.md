@@ -15,7 +15,7 @@ Instead of linking directly to a mutable README location, Last of Readme maintai
 
 Last of Readme manages README resolver links through documentation contracts.
 
-These contracts determine how README links evolve as newer versions and documentation corrections are published.
+These contracts determine how the documents presented through the README link evolve as newer versions and documentation corrections are published.
 
 Last of Readme currently supports three contracts:
 
