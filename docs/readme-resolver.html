@@ -105,17 +105,6 @@ async function resolveLastOfContract(remoteRepository, version) {
   const fallbackMessage =
     'No last-of tag was found. The following documentation is not marked as authoritative for this version.';
 
-  if (await remoteRepository.resolveTag(next)) {
-    return renderOutcome({
-      kind: 'fallback',
-      message: fallbackMessage,
-      links: [{
-        label: next,
-        url: remoteRepository.browseDocumentation(next),
-      }],
-    });
-  }
-
   const baseRepoNode = await remoteRepository.resolveTag(base);
   if (!baseRepoNode) {
     return renderOutcome({
@@ -147,6 +136,17 @@ async function resolveLastOfContract(remoteRepository, version) {
         label: branch,
         url: remoteRepository.browseDocumentation(branch),
       })),
+    });
+  }
+
+  if (await remoteRepository.resolveTag(next)) {
+    return renderOutcome({
+      kind: 'fallback',
+      message: fallbackMessage,
+      links: [{
+        label: next,
+        url: remoteRepository.browseDocumentation(next),
+      }],
     });
   }
 
