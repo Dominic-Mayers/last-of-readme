@@ -22,6 +22,13 @@ const {
   displayNonInteractiveFailureWarning,
 } = require('./prompt-user-input.cjs');
 
+/**
+ * Collects user consent for minimal package-file creation when the selected
+ * package file does not yet exist.
+ *
+ * The collected input is used by checkLinkPlaceholderRequirements() in the
+ * checkLinkPlaceholder phase.
+ */
 async function collectDocLinkPlaceholderInput(pipelineState = {}) {
   const control = pipelineState.control || {};
 
@@ -53,6 +60,15 @@ async function collectDocLinkPlaceholderInput(pipelineState = {}) {
   }
 }
 
+/**
+ * Collects the path of the file that will hold the resolver link and the
+ * documentation URL path embedded in that link, which become the
+ * `packageFilePath` and `repositoryUrlPath` configuration values.
+ *
+ * This also collects the optional decision used later by
+ * installDocLinkConfigFields() to determine whether a previous package file
+ * should be removed from the npm files field.
+ */
 async function collectPackageFilePathInput(pipelineState = {}) {
   const control = pipelineState.control || {};
   const previousPackageFilePath = control.previousPackageFilePath;
@@ -116,6 +132,15 @@ async function collectPackageFilePathInput(pipelineState = {}) {
   }
 }
 
+/**
+ * Collects the Git remote selection. The selected remote name becomes the Last
+ * of Readme remote configuration used at runtime to publish tags, and its URL
+ * is used to derive default browser and API URLs for the resolver link.
+ *
+ * This step depends on the remotes collected earlier by
+ * collectGitRemotesEnvironmentInput(). The selected remote is later validated
+ * for publication capability by a dry-run in checkGitRemoteRequirements().
+ */
 async function collectRemoteInput(pipelineState = {}) {
   const control = pipelineState.control || {};
   const remotes = Array.isArray(control.availableRemotes)
@@ -148,6 +173,15 @@ async function collectRemoteInput(pipelineState = {}) {
   }
 }
 
+/**
+ * Collects the repository API and browser URLs that the resolver uses to query
+ * tags and build documentation links. These become the `repositoryApiUrl` and
+ * `repositoryBrowserUrl` configuration values.
+ *
+ * The defaults shown to the user are derived earlier by
+ * prepareRemoteDefaultsInput() from the selected remote URL. The finalized
+ * URLs are later validated by checkGitRemoteRequirements().
+ */
 async function collectRemoteUrlsInput(pipelineState = {}) {
   const control = pipelineState.control || {};
   const defaultRepositoryApiUrl = control.defaultRepositoryApiUrl || '';
@@ -268,6 +302,13 @@ function resolveCollectedRepositoryUrlPathAnswer(
 }
 
 
+/**
+ * Attempts to derive GitHub repository API/browser URLs from the selected Git
+ * remote URL.
+ *
+ * This helper supports prepareRemoteDefaultsInput(), which uses the derived
+ * values as defaults for collectRemoteUrlsInput().
+ */
 function tryDeriveGitHubUrlsFromRemoteUrl(remoteUrl) {
   try {
     return deriveGitHubUrlsFromRemoteUrl(remoteUrl);
@@ -325,7 +366,13 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
 }
 
 
-async function checkInstallationPreconditionsConsentInput({
+/**
+ * Prompts the user for consent as part of
+ * checkInstallationPreconditionsRequirements(), presenting existing-installation
+ * detection results and convenience workflow requirements before the installer
+ * proceeds. Throws if the user does not consent.
+ */
+async function assertInstallationPreconditionsConsent({
   existingInstallation,
   convenienceNeeds,
 }) {
@@ -342,6 +389,15 @@ async function checkInstallationPreconditionsConsentInput({
 }
 
 
+/**
+ * Prompts the user to decide how a Last of Readme-owned npm hook command
+ * should be installed when the target hook already has content.
+ *
+ * Called from collectLastOfReadmeOwnedHookInstallationInput() in the
+ * installation-per-se phase install-owned-version-hooks.cjs, whose result is
+ * consumed by installLastOfReadmeOwnedVersionHookCommands() to update
+ * package.json.
+ */
 async function interactivelyInstallFingerprintedHook({
   hook,
   command,
@@ -390,7 +446,7 @@ module.exports = {
   collectRemoteInput,
   collectRemoteUrlsInput,
   tryDeriveGitHubUrlsFromRemoteUrl,
-  checkInstallationPreconditionsConsentInput,
+  assertInstallationPreconditionsConsent,
   interactivelyInstallFingerprintedHook,
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,

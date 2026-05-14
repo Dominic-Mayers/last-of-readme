@@ -351,7 +351,7 @@ Last of Readme is built on APIs provided by `*-adapter.cjs` scripts, including  
   collectRemoteInput,
   collectRemoteUrlsInput,
   tryDeriveGitHubUrlsFromRemoteUrl,
-  checkInstallationPreconditionsConsentInput,
+  assertInstallationPreconditionsConsent,
   interactivelyInstallFingerprintedHook,
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,

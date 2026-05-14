@@ -10,7 +10,7 @@ const {
   tryDeriveGitHubUrlsFromRemoteUrl,
   collectPackageFilePathInput,
   collectDocLinkPlaceholderInput,
-  checkInstallationPreconditionsConsentInput,
+  assertInstallationPreconditionsConsent,
   interactivelyInstallFingerprintedHook,
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,
@@ -211,7 +211,7 @@ async function checkInstallationPreconditionsRequirements(pipelineState = {}) {
     };
   }
 
-  const answer = await checkInstallationPreconditionsConsentInput({
+  const answer = await assertInstallationPreconditionsConsent({
     existingInstallation,
     convenienceNeeds,
   });

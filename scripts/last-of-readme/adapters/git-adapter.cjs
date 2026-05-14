@@ -165,10 +165,8 @@ function assertCanDryRunPublishTag(remote) {
       ['push', remote, 'HEAD:refs/tags/last-of-readme-install-probe', '--dry-run'],
       {
         cwd: WORKSPACE_ROOT,
-        stdio: ['ignore', 'pipe', 'pipe']
-      }/**
- * Reassert that the current working directory is inside a Git work tree.
- */
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
     );
   } catch (error) {
     fail(
