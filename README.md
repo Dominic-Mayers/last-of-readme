@@ -25,21 +25,27 @@ Last of Readme currently supports three contracts:
 
 ### `until-successor-of`
 
-The resolver first looks for a `last-of` tag associated with the package version.
+Resolution order:
 
-If none exists, it looks for a `successor-of` tag.
+1. `last-of` tag
+2. `successor-of` tag
+3. HEAD of the single containing branch
+4. options when several containing branches exist
+5. package version
 
-If none exists and the package version belongs to a single containing branch, the resolver uses the HEAD of that branch.
-
-If several containing branches exist, the resolver presents options.
+With this contract, both `last-of` and `successor-of` tags are sufficient to resolve branch ambiguity.
 
 ### `last-of`
 
-The resolver looks for a `last-of` tag associated with the package version.
+Resolution order:
 
-If none exists and the package version belongs to a single containing branch, the resolver may use the HEAD of that branch while indicating that no `last-of` tag is present.
+1. `last-of` tag
+2. `successor-of` tag
+3. HEAD of the single containing branch
+4. options when several containing branches exist
+5. package version
 
-If several containing branches exist, the resolver presents options.
+With this contract, only the `last-of` tag is sufficient to resolve branch ambiguity.
 
 ### `correction-of`
 
