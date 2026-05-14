@@ -2,7 +2,7 @@
 
 const { configuredNextDocumentationContract } = require('./adapters/npm-adapter.cjs');
 
-const SUPPORTED_CONTRACTS = new Set(['until-successor-of', 'last-of', 'correction-of']);
+const SUPPORTED_CONTRACTS = new Set(['until-successor-of', 'last-of', 'continuation-of', 'correction-of']);
 
 function fail(message) {
   console.error(`❌ ${message}`);
@@ -19,6 +19,7 @@ function main() {
         `From the package root, run one of:\n` +
         `  npx last-of-readme contract until-successor-of\n` +
         `  npx last-of-readme contract last-of\n` +
+        `  npx last-of-readme contract continuation-of\n` +
         `  npx last-of-readme contract correction-of\n\n` +
         `Then retry:\n` +
         `  npm version patch\n`

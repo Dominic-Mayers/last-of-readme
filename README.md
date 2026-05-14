@@ -17,13 +17,14 @@ Last of Readme manages README resolver links through documentation contracts.
 
 These contracts determine how the documents presented through the README link evolve as newer versions and documentation corrections are published.
 
-Last of Readme currently supports three contracts:
+Last of Readme currently supports four contracts:
 
 * `until-successor-of`
 * `last-of`
+* `continuation-of`
 * `correction-of`
 
-Both the `until-successor-of` and `last-of` contracts use the `successor-of` and `last-of` tags, but they interpret them differently. The `correction-of` contract uses only the `correction-of` tag.
+The `until-successor-of`, `last-of`, and `continuation-of` contracts use the `successor-of` and `last-of` tags, but they interpret them differently. The `correction-of` contract uses only the `correction-of` tag.
 
 The `last-of` and `correction-of` tags are normally added manually by maintainers. The `successor-of` tag is normally added automatically at the next version bump.
 
@@ -54,6 +55,20 @@ Resolution order:
 In this contract, only a `last-of` tag is sufficient to directly present documentation, even when many branch alternatives exist.
 
 Documentation presented without a `last-of` tag is presented with a warning.
+
+### `continuation-of`
+
+Resolution order:
+
+1. `last-of` tag
+2. options when several containing branches exist
+3. `successor-of` tag
+4. HEAD of the single containing branch
+5. package version
+
+In this contract, as in `last-of`, only a `last-of` tag is sufficient to directly present documentation when many branch alternatives exist.
+
+Documentation presented without a `last-of` tag is presented without warning.
 
 ### `correction-of`
 
@@ -114,7 +129,7 @@ During the version lifecycle, Last of Readme:
 
 ```bash
 last-of-readme install
-last-of-readme contract <until-successor-of|last-of|correction-of>
+last-of-readme contract <until-successor-of|last-of|continuation-of|correction-of>
 last-of-readme check-contract
 last-of-readme tag-doc <last-of|successor-of|correction-of>
 last-of-readme update-readme-link

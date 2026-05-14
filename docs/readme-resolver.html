@@ -93,45 +93,48 @@ async function resolveUntilSuccessorOfContract(remoteRepository, version) {
   return redirectOutcome(remoteRepository.browseDocumentation(base));
 }
 
-async function resolveLastOfContract(remoteRepository, version) {
+async function resolveLastStyleContract(remoteRepository, version, { hasWarning }) {
   const base = `v${version}`;
   const last = `${base}-last-of`;
   const next = `${base}-successor-of`;
+  const fallbackMessage =
+    'No last-of tag was found. The following documentation is not marked as authoritative for this version.';
+
+  function singleLinkOutcome({ kind = 'fallback', label, url }) {
+    if (!hasWarning) {
+      return redirectOutcome(url);
+    }
+
+    return renderOutcome({
+      kind,
+      message: fallbackMessage,
+      links: [{ label, url }],
+    });
+  }
 
   if (await remoteRepository.resolveTag(last)) {
     return redirectOutcome(remoteRepository.browseDocumentation(last));
   }
 
-  const fallbackMessage =
-    'No last-of tag was found. The following documentation is not marked as authoritative for this version.';
-
   const baseRepoNode = await remoteRepository.resolveTag(base);
   if (!baseRepoNode) {
     return renderOutcome({
       kind: 'not-found',
-      message: 'No last-of tag was found, and the version tag was not found.',
+      message: hasWarning
+        ? 'No last-of tag was found, and the version tag was not found.'
+        : 'version tag not found',
       links: [],
     });
   }
 
   const containingBranches = await remoteRepository.branchesContaining(baseRepoNode);
 
-  if (containingBranches.length === 1) {
-    return renderOutcome({
-      kind: 'fallback',
-      message: fallbackMessage,
-      links: [{
-        label: containingBranches[0],
-        url: remoteRepository.browseDocumentation(containingBranches[0]),
-      }],
-    });
-  }
-
   if (containingBranches.length > 1) {
     return renderOutcome({
       kind: 'ambiguous',
-      message:
-        'No last-of tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.',
+      message: hasWarning
+        ? 'No last-of tag was found, and multiple branches contain this version. The following documentation is not marked as authoritative for this version.'
+        : 'multiple branches: ' + containingBranches.join(', '),
       links: containingBranches.map((branch) => ({
         label: branch,
         url: remoteRepository.browseDocumentation(branch),
@@ -140,24 +143,31 @@ async function resolveLastOfContract(remoteRepository, version) {
   }
 
   if (await remoteRepository.resolveTag(next)) {
-    return renderOutcome({
-      kind: 'fallback',
-      message: fallbackMessage,
-      links: [{
-        label: next,
-        url: remoteRepository.browseDocumentation(next),
-      }],
+    return singleLinkOutcome({
+      label: next,
+      url: remoteRepository.browseDocumentation(next),
     });
   }
 
-  return renderOutcome({
-    kind: 'fallback',
-    message: fallbackMessage,
-    links: [{
-      label: base,
-      url: remoteRepository.browseDocumentation(base),
-    }],
+  if (containingBranches.length === 1) {
+    return singleLinkOutcome({
+      label: containingBranches[0],
+      url: remoteRepository.browseDocumentation(containingBranches[0]),
+    });
+  }
+
+  return singleLinkOutcome({
+    label: base,
+    url: remoteRepository.browseDocumentation(base),
   });
+}
+
+async function resolveLastOfContract(remoteRepository, version) {
+  return resolveLastStyleContract(remoteRepository, version, { hasWarning: true });
+}
+
+async function resolveContinuationOfContract(remoteRepository, version) {
+  return resolveLastStyleContract(remoteRepository, version, { hasWarning: false });
 }
 
 
@@ -183,6 +193,7 @@ async function resolveCorrectionOfContract(remoteRepository, version) {
 const contractResolvers = {
   'until-successor-of': resolveUntilSuccessorOfContract,
   'last-of': resolveLastOfContract,
+  'continuation-of': resolveContinuationOfContract,
   'correction-of': resolveCorrectionOfContract,
 };
 

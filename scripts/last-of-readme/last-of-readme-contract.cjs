@@ -9,6 +9,7 @@ const {
 const SUPPORTED_CONTRACTS = {
   'until-successor-of': describeUntilSuccessorOf,
   'last-of': describeLastOf,
+  'continuation-of': describeContinuationOf,
   'correction-of': describeCorrectionOf,
 };
 
@@ -19,7 +20,7 @@ function fail(message) {
 
 function usage() {
   console.error('Usage: last-of-readme contract <contract>');
-  console.error('Supported contracts: until-successor-of, last-of, correction-of');
+  console.error('Supported contracts: until-successor-of, last-of, continuation-of, correction-of');
   process.exit(1);
 }
 
@@ -45,15 +46,31 @@ function describeLastOf(documentationPath) {
     '',
     'The intermediary page will propose fallback documentation using this order:',
     '',
-    '1. vX.Y.Z-until-successor-of',
-    '2. HEAD of a unique branch containing vX.Y.Z',
-    '3. A page listing multiple branches containing vX.Y.Z',
+    '1. A page listing multiple branches containing vX.Y.Z',
+    '2. vX.Y.Z-successor-of',
+    '3. HEAD of a unique branch containing vX.Y.Z',
     '4. vX.Y.Z itself',
     '',
     'Use this behavior for future version bumps?',
   ].join('\n');
 }
 
+
+function describeContinuationOf(documentationPath) {
+  return [
+    `The documentation link will resolve ${documentationPath} using the same order as last-of, but without warning when vX.Y.Z-last-of is absent.`,
+    '',
+    'Resolution order:',
+    '',
+    '1. vX.Y.Z-last-of',
+    '2. A page listing multiple branches containing vX.Y.Z',
+    '3. vX.Y.Z-successor-of',
+    '4. HEAD of a unique branch containing vX.Y.Z',
+    '5. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
 
 function describeCorrectionOf(documentationPath) {
   return [
