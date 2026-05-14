@@ -109,9 +109,18 @@ function publishTag(tag, remote) {
  *
  * @param {string} tag - The movable documentation tag to publish.
  * @param {string} remote - The configured Git remote to publish to.
+ * @returns {void}
+ *
+ * @configRequirement The remote name supplied at runtime must be installed as
+ * Last of Readme package configuration. Configured in installRemotePackageJson().
+ *
+ * @assertRequirement The configured remote must accept tag publication.
+ * Checked during installation by assertCanDryRunPublishTag().
+ *
  * @remarks Used for correction-of tags. The remote tag is force-updated
  * because the tag represents the current correction pointer for a version.
- * @returns {void}
+ * The actual push is still subject to runtime Git, network, authentication,
+ * and remote-state failures.
  */
 function publishMovableTag(tag, remote) {
   ensureGitWorkspace();
