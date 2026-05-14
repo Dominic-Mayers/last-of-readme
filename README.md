@@ -15,7 +15,7 @@ Instead of linking directly to a mutable README location, Last of Readme maintai
 
 Last of Readme manages README resolver links through documentation contracts.
 
-A contract determines how the resolver selects documentation associated with a package version.
+These contracts determine how README links evolve as newer versions and documentation corrections are published.
 
 Last of Readme currently supports three contracts:
 
@@ -35,17 +35,21 @@ Resolution order:
 
 With this contract, both `last-of` and `successor-of` tags are sufficient to resolve branch ambiguity.
 
+This contract supports documentation that evolves through successor versions and branch continuation.
+
 ### `last-of`
 
 Resolution order:
 
 1. `last-of` tag
-2. `successor-of` tag
-3. HEAD of the single containing branch
-4. options when several containing branches exist
+2. options when several containing branches exist
+3. `successor-of` tag
+4. HEAD of the single containing branch
 5. package version
 
-With this contract, only the `last-of` tag is sufficient to resolve branch ambiguity.
+With this contract, only the `last-of` tag is sufficient to resolve branch ambiguity. The `successor-of` tag is still used to follow the documentation lineage associated with the package version.
+
+This contract supports workflows where a later commit is explicitly designated as the final documentation state associated with a package version.
 
 ### `correction-of`
 
@@ -53,17 +57,7 @@ The resolver first looks for a `correction-of` tag associated with the package v
 
 If none exists, the resolver uses the package version itself.
 
-## Choosing a contract
-
-The contracts correspond to different ways documentation may evolve after a package version is published.
-
-* `until-successor-of` supports documentation that evolves through successor versions and branch continuation.
-
-* `last-of` supports workflows where a later commit is explicitly designated as the final documentation state associated with a package version.
-
-* `correction-of` supports workflows where documentation associated with a package version may later receive explicit corrections while remaining attached to that version.
-
-These contracts determine how README links evolve as newer versions and documentation corrections are published.
+This contract supports workflows where documentation associated with a package version may later receive explicit corrections while remaining attached to that version.
 
 ---
 
