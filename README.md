@@ -23,6 +23,8 @@ Last of Readme currently supports three contracts:
 * `last-of`
 * `correction-of`
 
+Both the `until-successor-of` and `last-of` contracts use both the `successor-of` and `last-of` tags in their own way. The `correction-of` contract uses the `correction-of` tag only.  The `last-of`and  `correction-of` tags are normally manually added by the maintainers. The `successor-of` tag is normally added automatically at the next version bump.
+
 ### `until-successor-of`
 
 Resolution order:
