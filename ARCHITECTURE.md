@@ -2,25 +2,44 @@
 
 Last of Readme is used in the context of package management. It is used to insert  a link in a file of the package that will be resolved to a commit of the package repository that documents the package. The Last of Readme updater is called at each version bump to update the link. This is done using hooks in package.json.
 
-The Last of Readme resolver redirects the link to the adequate commit following a set of rules or contract that is chosen by the maintainer. Currently, Last of Readme offers three contracts: the `correction-of`, `last-of` and `until-successor-of` contracts.
+The Last of Readme resolver redirects the link to the adequate commit following a set of rules or contract that is chosen by the maintainer. The user-facing list and behavior of the supported contracts is described in [README.md](README.md). This architecture document focuses on the rationale and implementation structure behind those contracts.
 
 > [!Note]
 > The correctness of the content of this commit, for example, executing a `git add` operation on the GitHub readme file, is a responsibility of the user or of an extra script such as `git-add-readme.cjs`, not a direct concern of Last of Readme. Doing otherwise would be too intrusive. Users normally have their own way to update their remote.
 
 ### The different contracts
 
-Currently, Last of Readme proposes three contracts that can be taken by users: the `correction-of` contract, the `last-of` contract and the `until-successor-of` contract. In the `correction-of` contract, the maintainer of the package says that the package version  contains normally the up-to-date documentation, but might have a corrected version that will be identified by a `correction-of` tag. That suggests a  resolution order in which the package version is always presented, except if there is a `correction-of` tag for that version. This is the contract that departs the least from the default package contract, which is that the package version is the most up-to-date version.
+The README gives the concise behavioral description of the contracts. The important architectural point is that the contracts are not arbitrary resolver modes. Four of them form a small family obtained by combining two independent choices:
 
-In the `last-of` contract, the maintainers acknowledge that the documentation of the current package version is not finalized and will be updated. This suggests a different resolution order in which the package version has low priority and, if the maintainers have not tagged the `last-of` version, then the users should be informed that the version is not up-to-date and not authoritative. Only an explicit `last-of` tag says the version is up-to-date. Moreover, as long as the maintainers have not tagged a correct version, we keep looking for a more up-to-date version. In that contract, if only a single branch contains the package version then the `successor-of` version in that branch, if it exists, is presented and, otherwise, the HEAD of that branch is presented. The successor-of tag is automatically added when a new version is created. This `successor-of` tag is then considered as an explicit mention that thereafter modifications do not apply to the previous (original) version. The version in the commit identified by the successor-of tag or HEAD is presented, but not as the up-to-date authoritative version, because only the `last-of` tag has this meaning. If there is no `last-of` tag and many branches exist, then the users are presented with options.
+* whether a `successor-of` tag is allowed to resolve before branch alternatives are exposed;
+* whether documentation presented without a `last-of` tag is shown with a warning.
 
-The resolution order in the `until-successor-of` contract is as follows:
+This decomposition is intentionally modest. Last of Readme does not decide what a version bump, a branch, or a tag must mean for every maintainer. Instead, it offers contracts whose observable behavior can be related by maintainers to their own documentation workflow.
 
-1. `last-of` tag
-2. `successor-of` tag
-3.  a unique branch contains the package version -> HEAD of branch
-4.  many branches contain the package version -> HEAD options
-5.  no branch contains the package version -> the package version
-6.  a clean not found page.
+The `correction-of` contract is separate from this family. It uses a movable `correction-of` tag to let maintainers attach an explicit correction to an already published package version. It does not participate in the `last-of`/`successor-of` lineage resolution family.
+
+The distinction between the four lineage contracts is reflected directly in the resolver implementation. The resolver has a shared lineage-resolution flow parameterized by two values:
+
+```js
+resolveLineageContract(remoteRepository, version, {
+  hasWarning,
+  successorPriority,
+})
+```
+
+The `successorPriority` value determines where the `successor-of` check appears in the sequence:
+
+* before branch alternatives, for contracts where the next version bump is allowed to choose the continuation before branch ambiguity is exposed;
+* after branch alternatives, for contracts where branch ambiguity is exposed before `successor-of` is considered.
+
+The `hasWarning` value determines whether documentation presented without a `last-of` tag is shown with a warning.
+
+Thus, as far as Last of Readme is concerned, a lineage contract is defined by:
+
+* a resolution-order policy;
+* a warning policy.
+
+The broader real-world meaning of those policies belongs to the maintainer's workflow. Last of Readme exposes the choices without enforcing a single interpretation of package versions, branches, or successor releases.
 
 > [!Note] 
 > The package.json field `last-of-readme.nextContract` sets only the contract in the next generated resolver link. The contract for each link is determined by its URL contract parameter.
@@ -87,6 +106,8 @@ The core of Last of Readme consists of
 * `update-readme-link.cjs`: Create and insert a link to be resolved by `readme-resolver.html`.
 * `tag-doc.cjs`: Create correction-of, last-of or successor-of tags, which are used by the resolver.
 * `readme-resolver.html` : Resolve the link by making use of the tags or the repository structure in accordance with the contract.
+
+The resolver contains the contract-specific logic. The four lineage contracts are thin parameterizations of a shared lineage-resolution flow, while `correction-of` remains a separate resolver path.
 
 ## The installer of Last of Readme
 
@@ -311,8 +332,14 @@ Last of Readme is built on APIs provided by `*-adapter.cjs` scripts, including  
     getCurrentRepositoryUrlPath,
     getCurrentFilesField,
     updatePackageJsonFields,
+    writeRemoteConfig,
+    writeDocLinkConfig,
+    writeNonInteractivePolicyIfAbsent,
     getCurrentScriptsHooks,
-    getExistingInstallationFingerprint
+    getExistingInstallationFingerprint,
+    getLastOfReadmeConfig,
+    getLastOfReadmeOwnedHookInstallationState,
+    installLastOfReadmeOwnedHookCommand,
 
 - Implemented in `npm-adapter.cjs`.
 
@@ -326,7 +353,12 @@ Last of Readme is built on APIs provided by `*-adapter.cjs` scripts, including  
   tryDeriveGitHubUrlsFromRemoteUrl,
   checkInstallationPreconditionsConsentInput,
   interactivelyInstallFingerprintedHook,
-  interactivelyInstallConvenienceHook,
+  printFingerprintedHookInstalled,
+  printFingerprintedHookPrepended,
+  printConvenienceHookReminder,
+  isInteractiveSession,
+  askWhetherToContinueAfterFailure,
+  displayNonInteractiveFailureWarning,
 
 - Implemented in `user-input-adapter.cjs`.
 
