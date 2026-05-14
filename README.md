@@ -33,9 +33,9 @@ Resolution order:
 4. options when several containing branches exist
 5. package version
 
-With this contract, both `last-of` and `successor-of` tags are sufficient to resolve branch ambiguity.
+In this contract, both `last-of` and `successor-of` tags are individually sufficient to choose a documentation, even when there are many containing branches.
 
-Supports documentation lineages that continue naturally through successor versions and branch continuation, with no warning when tags are not found.
+When the resolver picks the `successor-of` tag or the HEAD of a single containing branch, it does it without warning.
 
 ### `last-of`
 
@@ -47,9 +47,9 @@ Resolution order:
 4. HEAD of the single containing branch
 5. package version
 
-With this contract, only the `last-of` tag is sufficient to resolve branch ambiguity and it is required to avoid warning.  The `successor-of` tag is still used to follow the documentation lineage associated with the package version.
+In this contract, the `last-of` tag is sufficient to choose a documentation continuation despite many containing branches.
 
-This contract supports workflows where a later commit is explicitly designated as the final documentation state associated with a package version.
+When the resolver proceeds without a `last-of` tag, the presented documentation is shown with a warning.
 
 ### `correction-of`
 
