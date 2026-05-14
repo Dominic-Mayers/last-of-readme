@@ -493,9 +493,11 @@ Writing JSDoc comments for the exported functions of adapter scripts should help
 
 **Important invariant**
 
-Every `@configRequirement` tag should be traceable to a phase that checks and satisfies that configuration requirement. Conversely, every phase whose purpose is to check a configuration requirement should correspond to at least one `@configRequirement` tag.
+A requirement tag documents a requirement of the function on which the tag appears. It does not mark the phase or helper that checks the requirement.
 
-Similarly, every `@assertRequirement` tag should be traceable to a phase that asserts that requirement. Conversely, every phase whose purpose is to assert a requirement should correspond to at least one `@assertRequirement` tag.
+Every `@configRequirement` tag should be traceable to an installer phase that checks and satisfies that configuration requirement. Conversely, every phase whose purpose is to check or collect a configuration requirement should correspond to at least one `@configRequirement` tag on a function that needs the resulting configuration.
+
+Similarly, every `@assertRequirement` tag should be traceable to an installer phase that asserts that requirement. Conversely, every phase whose purpose is to assert an environmental requirement should correspond to at least one `@assertRequirement` tag on a function that needs the asserted condition.
 
 > [!Note] 
 > An @assertRequirement tag should only be used when it is possible to assert the requirement. When the installer already takes care of that, the comment should end with "Asserted in check-assert-requirements ...". Otherwise, we mention the requirement only and it will be understood as a TODO.
