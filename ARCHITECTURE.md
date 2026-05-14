@@ -461,10 +461,6 @@ Though it should be reasonably easy to install its own resolver, anyone can make
 
 An easy made criticism is that the contracts should be stable and visible. However, there is not much we can do in terms of architecture or even documentation to achieve that goal, except having a good architecture in terms of general standards and a useful system that people will discuss and naturally know about. We could have an encyclopedia of documentation and have many formal public declarations of the contracts and it will be useless if  people do not like the system and do not find it easy to use it and understand. Conversely, if the adapters, the resolver, etc. are well designed and structured, clear contracts will naturally be obtained and, because people can easily understand and use the system, making these contracts stable and visible will only be a formality. Therefore, the abstract question how to make the contracts stable and visible is not our concern at this time.
 
-### Finishing the installation-per-se
-
-Once the requirements are well identified the best we can, the installation-per-se should be completed. (See above). The installation-per-se is expected to progressively evolve toward a structure similar to the pre-installation pipeline, with installation phases corresponding to specific installation cycles tied to parts of the environment.
-
 ### Determining installation requirements
 
 To design the check-requirement pipeline, we ask what is needed by each adapter function so that it can fulfil its purpose in the environment.  We do not only require that the function can be executed : it must fulfil its purpose in the environment. This means that a requirement is not mechanically determined by the definition of the function alone.
@@ -494,6 +490,11 @@ Writing JSDoc comments for the exported functions of adapter scripts should help
 * @assertRequirement : This is used for a requirement on the environment that can be asserted.
 * @returns : Use as usual.
 * @remarks : Runtime requirements not on parameters can be mentioned here. The @configRequirement or @assertRequirement tags should not be used for runtime requirements.
+
+**Important invariant**
+
+For every @configRequirement tag, there should be a phase that check that requirement and for each phase that checks a configuration requirement there should be at the least one @configRequirement tag. Similarly, for every @assertRequirement tag, there should be a phase that assert that requirement and for each phase that asserts a requirement there should be at the least one @assertRequirement tag.
+
 
 > [!Note] 
 > An @assertRequirement tag should only be used when it is possible to assert the requirement. When the installer already takes care of that, the comment should end with "Asserted in check-assert-requirements ...". Otherwise, we mention the requirement only and it will be understood as a TODO.
