@@ -180,12 +180,12 @@ const CONVENIENCE_NEEDS = [
   {
     kind: 'stagePackageFileBeforeVersionCommit',
     hook: 'version',
-    command: 'node scripts/git-add-readme.cjs',
+    command: 'For example, node scripts/git-add-readme.cjs',
   },
   {
     kind: 'pushTagsAfterVersion',
     hook: 'postversion',
-    command: 'git push --follow-tags',
+    command: 'For example, git push --follow-tags',
   },
 ];
 
