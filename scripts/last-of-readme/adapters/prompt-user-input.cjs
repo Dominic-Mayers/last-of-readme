@@ -195,7 +195,7 @@ function formatExistingInstallationDetails(details) {
  * Presents a unified summary of installation preconditions and asks the user
  * to proceed or abort. Shows:
  * - Existing installation details (if any).
- * - Convenience commands that Last of Readme needs in version/postversion hooks.
+ * - Maintainer-owned workflow responsibilities that Last of Readme depends on.
  * Then asks once whether to proceed.
  *
  * @param {object} params
@@ -203,9 +203,9 @@ function formatExistingInstallationDetails(details) {
  * @param {{ hasLastOfReadmeField: boolean, hooksWithInstallation: string[] } | null} params.existingInstallation -
  * Existing installed Last of Readme footprint detected from lastOfReadme and
  * npm lifecycle hook fields.
- * @param {{ kind: string, hook: string, command: string }[]} params.convenienceNeeds -
- * User-owned workflow commands that Last of Readme needs but does not install
- * automatically.
+ * @param {{ kind: string, hook: string, exampleCommand: string }[]} params.convenienceNeeds -
+ * User-owned workflow responsibilities that Last of Readme needs maintainers to
+ * satisfy, with example commands shown only as possible implementations.
  * @returns {Promise<string>} User-entered yes/no answer that
  * assertInstallationPreconditionsConsent() interprets as consent or abort.
  */
@@ -224,15 +224,18 @@ async function askInstallationPreconditions({
   }
 
   if (convenienceNeeds.length > 0) {
-    console.log('ℹ️  Last of Readme also needs the following commands in your scripts hooks.');
-    console.log('   These are not installed automatically — you will be reminded at the end');
-    console.log('   of installation to add them yourself.');
+    console.log('ℹ️  Last of Readme also depends on maintainer-owned workflow steps.');
+    console.log('   These steps are not installed automatically because they belong to');
+    console.log('   your package workflow. The examples below show one possible way to');
+    console.log('   satisfy each responsibility.');
     for (const need of convenienceNeeds) {
-      const { needs } = getConvenienceNeedText(need);
+      const { responsibility, example } = getConvenienceNeedText(need);
       console.log(`\n  ${need.hook}:`);
-      console.log(`    ${needs}`);
-      console.log(`    Command: ${need.command}`);
+      console.log(`    Responsibility: ${responsibility}`);
+      console.log(`    Example: ${example}`);
     }
+    console.log('\n   You can use these examples, adapt them, or satisfy the responsibilities');
+    console.log('   through an existing workflow.');
     console.log('');
   }
 
@@ -254,14 +257,18 @@ const CONVENIENCE_NEED_TEXT = {
   stagePackageFileBeforeVersionCommit: {
     needs:
       'The updated package file must be staged before the version commit is created. Otherwise the commit will not include the updated file.',
-    insure: ({ command }) =>
-      `Last of Readme will not install this command. Add it yourself to your version hook,\n   or make sure your existing hook includes:\n     ${command}`,
+    exampleIntro:
+      'For example, a version hook could stage the package documentation file after Last of Readme updates it:',
+    insure:
+      'Last of Readme will not install this maintainer-owned step. Make sure your version workflow stages the updated package documentation file before the version commit is created.',
   },
   pushTagsAfterVersion: {
     needs:
       'Last of Readme tags are not pushed to the remote automatically. Without them, the Last of Readme resolver will not work.',
-    insure: ({ command }) =>
-      `Last of Readme will not install this command. Add it yourself to your postversion hook,\n   or make sure your existing hook includes:\n     ${command}`,
+    exampleIntro:
+      'For example, a postversion hook could push commits and tags after npm creates the version commit:',
+    insure:
+      'Last of Readme will not install this maintainer-owned step. Make sure your release workflow pushes the Last of Readme tags to the remote repository.',
   },
 };
 
@@ -272,9 +279,15 @@ function getConvenienceNeedText(need) {
     throw new Error(`Unknown convenience need kind: ${need.kind}`);
   }
 
+  const example = need.exampleCommand
+    ? `${text.exampleIntro}\n     ${need.exampleCommand}`
+    : text.exampleIntro;
+
   return {
     needs: text.needs,
-    insure: text.insure(need),
+    responsibility: text.needs,
+    example,
+    insure: text.insure,
   };
 }
 

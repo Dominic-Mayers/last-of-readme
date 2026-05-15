@@ -173,19 +173,20 @@ function normalizeUrl(value) {
 
 
 
-// Convenience commands that Last of Readme needs in the user's scripts hooks.
-// These are non-fingerprinted and may interfere with existing workflows.
+// Maintainer-owned workflow responsibilities that Last of Readme needs to be
+// satisfied. Last of Readme does not install these steps because maintainers own
+// how package files are staged and how commits/tags are pushed.
 // User-visible explanations for these needs live in prompt-user-input.cjs.
 const CONVENIENCE_NEEDS = [
   {
     kind: 'stagePackageFileBeforeVersionCommit',
     hook: 'version',
-    command: 'For example, node scripts/git-add-readme.cjs',
+    exampleCommand: 'node scripts/git-add-readme.cjs',
   },
   {
     kind: 'pushTagsAfterVersion',
     hook: 'postversion',
-    command: 'For example, git push --follow-tags',
+    exampleCommand: 'git push --follow-tags',
   },
 ];
 
