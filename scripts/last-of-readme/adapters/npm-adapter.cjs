@@ -90,7 +90,7 @@ function packageName() {
  * Returns the remote name used by tag-doc.cjs for tag publication.
  *
  * @configRequirement The Last of Readme remote name must be configured.
- * Configured in installRemotePackageJson().
+ * Configured in installRemoteConfigFields().
  * @returns {string} Installed Git remote name.
  */
 function configuredRemoteName() {
@@ -156,7 +156,7 @@ function getCurrentNextDocumentationContract() {
  * the resolver link.
  *
  * @configRequirement The Last of Readme remote API/browser URLs must be
- * configured. Configured in installRemotePackageJson().
+ * configured. Configured in installRemoteConfigFields().
  * @todo Maybe, if there is eventually a need to tell the resolver what kind of
  * API is offered by the remote, then a kind value might be added. For now, the
  * resolver uses GitHub API endpoints.
@@ -206,7 +206,7 @@ function getCurrentRemoteConfiguration() {
  * when no path is supplied on the command line.
  *
  * @configRequirement The Last of Readme package-file path must be configured.
- * Configured in installDocLinkPackageJson().
+ * Configured in installDocLinkConfigFields().
  * @returns {string} Installed documentation package-file path.
  */
 function packageFilePath() {
@@ -240,7 +240,7 @@ function getCurrentInstalledPackageFilePath() {
  * path is supplied on the command line.
  *
  * @configRequirement The Last of Readme repository URL path must be configured.
- * Configured in installDocLinkPackageJson().
+ * Configured in installDocLinkConfigFields().
  * @returns {string} Installed repository URL path.
  */
 function repositoryUrlPath() {
@@ -283,7 +283,8 @@ function getCurrentFilesField() {
 }
 
 /**
- * Writes npm configuration fields during apply-installation.
+ * Writes npm configuration fields for installation-per-se step functions such
+ * as installRemoteConfigFields() and installDocLinkConfigFields().
  *
  * @param {Record<string, unknown>} updates - npm pkg set assignments keyed by
  * configuration field path.
@@ -331,7 +332,8 @@ function updateFilesField(
 }
 
 /**
- * Writes the Last of Readme remote configuration to package.json.
+ * Writes the Last of Readme remote configuration to package.json for
+ * installRemoteConfigFields().
  *
  * @param {{ remoteName: string, remote: { kind: string, repositoryApiUrl: string, repositoryBrowserUrl: string } }} params
  * @returns {void}
@@ -346,9 +348,13 @@ function writeRemoteConfig({ remoteName, remote }) {
 }
 
 /**
- * Writes the Last of Readme doc-link configuration to package.json and
- * ensures the documentation file is listed in the files field.
+ * Writes the packageFilePath and the repositoryUrlPath to package.json, and
+ * ensures that file is listed in the npm files field. Called by
+ * installDocLinkConfigFields().
  *
+ * The files-field update also applies the decision to remove a previous
+ * package file from the npm files field, collected earlier by
+ * collectPackageFilePathInput().
  * @param {{ packageFilePath: string, repositoryUrlPath: string | undefined, previousPackageFilePath: string | undefined, removePreviousPackageFileFromFiles: boolean }} params
  * @returns {void}
  */
@@ -380,7 +386,7 @@ function writeDocLinkConfig({
 
 /**
  * Writes the default nonInteractiveFailurePolicy to package.json if it is
- * not already set.
+ * not already set, as requested by installNonInteractivePolicyField().
  *
  * @returns {void}
  */
@@ -416,7 +422,7 @@ function fail(message) {
 
 /**
  * Reads the preversion, version, and postversion scripts hooks used by
- * collectExistingInstallationEnvironmentInput() to detect an existing
+ * getExistingInstallationFingerprint() to detect an existing
  * Last of Readme installation.
  *
  * @returns {{ preversion: string, version: string, postversion: string }}
@@ -433,7 +439,9 @@ function getCurrentScriptsHooks() {
 
 /**
  * Detects an existing Last of Readme installation fingerprint in package.json.
- * Returns the detected fingerprint details, or null when no installation is found.
+ *
+ * The result is used by collectExistingInstallationEnvironmentInput() before
+ * checkInstallationPreconditionsRequirements() asks the user for consent.
  *
  * An installation is detected when:
  * - The lastOfReadme field is present, or
@@ -477,7 +485,8 @@ function getLastOfReadmeConfig() {
 
 /**
  * Reads the npm script hook as needed for installing a Last of Readme-owned
- * hook command.
+ * hook command. Used by collectLastOfReadmeOwnedVersionHooksEnvironmentInput()
+ * before the user-input step chooses how each hook should be installed.
  *
  * @param {{ hook: string, command: string }} params
  * @returns {{ hook: string, command: string, rawContent: string, remainingContent: string }}
@@ -501,7 +510,8 @@ function getLastOfReadmeOwnedHookInstallationState({ hook, command }) {
 }
 
 /**
- * Installs a Last of Readme-owned command in an npm script hook.
+ * Installs a Last of Readme-owned command in an npm script hook for
+ * installLastOfReadmeOwnedVersionHookCommands().
  *
  * @param {{ hook: string, command: string, remainingContent?: string }} params
  * @returns {void}
