@@ -61,8 +61,8 @@ async function collectDocLinkPlaceholderInput(pipelineState = {}) {
 }
 
 /**
- * Collects the path of the file that will hold the resolver link and the
- * documentation URL path embedded in that link, which become the
+ * Collects the packageFilePath value that selects the package documentation
+ * file and the repositoryUrlPath value embedded in resolver links, which become the
  * `packageFilePath` and `repositoryUrlPath` configuration values.
  *
  * This also collects the optional decision used later by
@@ -134,8 +134,8 @@ async function collectPackageFilePathInput(pipelineState = {}) {
 
 /**
  * Collects the Git remote selection. The selected remote name becomes the Last
- * of Readme remote configuration used at runtime to publish tags, and its URL
- * is used to derive default browser and API URLs for the resolver link.
+ * of Readme remoteName value used at runtime to publish tags, and its URL is
+ * used to derive default repositoryApiUrl and repositoryBrowserUrl values.
  *
  * This step depends on the remotes collected earlier by
  * collectGitRemotesEnvironmentInput(). The selected remote is later validated
@@ -174,9 +174,8 @@ async function collectRemoteInput(pipelineState = {}) {
 }
 
 /**
- * Collects the repository API and browser URLs that the resolver uses to query
- * tags and build documentation links. These become the `repositoryApiUrl` and
- * `repositoryBrowserUrl` configuration values.
+ * Collects the repositoryApiUrl and repositoryBrowserUrl values that the
+ * resolver uses to query tags and build documentation links.
  *
  * The defaults shown to the user are derived earlier by
  * prepareRemoteDefaultsInput() from the selected remote URL. The finalized
@@ -406,6 +405,14 @@ async function assertInstallationPreconditionsConsent({
  * installation-per-se phase install-owned-version-hooks.cjs, whose result is
  * consumed by installLastOfReadmeOwnedVersionHookCommands() to update
  * package.json.
+ *
+ * @param {object} params
+ * @param {string} params.hook - npm lifecycle hook that needs a Last of
+ * Readme-owned command.
+ * @param {string} params.command - Last of Readme-owned command to install.
+ * @param {string} params.remainingContent - Existing user-owned hook content
+ * that the installer may preserve after the Last of Readme command.
+ * @returns {Promise<'prepend'|'manual'>} User-selected hook installation action.
  */
 async function interactivelyInstallFingerprintedHook({
   hook,
@@ -434,6 +441,15 @@ function isInteractiveSession() {
   );
 }
 
+/**
+ * Asks whether an interactive runtime-management wrapper should continue after
+ * a Last of Readme operation failed.
+ *
+ * @param {object} params
+ * @param {string} params.operationName - Last of Readme operation that failed.
+ * @param {Error} params.error - Failure reported by the attempted operation.
+ * @returns {Promise<boolean>} True when the user explicitly chooses to continue.
+ */
 async function askWhetherToContinueAfterFailureInput({ operationName, error }) {
   const rl = createInterface();
   try {

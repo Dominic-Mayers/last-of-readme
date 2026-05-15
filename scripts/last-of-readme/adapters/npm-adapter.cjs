@@ -87,9 +87,9 @@ function packageName() {
 }
 
 /**
- * Returns the remote name used by tag-doc.cjs for tag publication.
+ * Returns the configured remoteName value used by tag-doc.cjs for tag publication.
  *
- * @configRequirement The Last of Readme remote name must be configured.
+ * @configRequirement The Last of Readme remoteName value must be configured.
  * Configured in installRemoteConfigFields().
  * @returns {string} Installed Git remote name.
  */
@@ -104,7 +104,7 @@ function configuredRemoteName() {
 }
 
 /**
- * Reads the previously installed Git remote name used by
+ * Reads the previously installed remoteName value used by
  * collectConfiguredRemoteNameEnvironmentInput() for remote-selection defaults.
  *
  * @returns {string} Installed Git remote name, or an empty string when absent.
@@ -120,8 +120,8 @@ function getCurrentConfiguredRemoteName() {
 }
 
 /**
- * Returns the next documentation contract used by update-readme-link.cjs to build
- * resolver links.
+ * Returns the configured nextContract value used by update-readme-link.cjs to
+ * build resolver links.
  *
  * @remarks The next documentation contract must be set before each version bump
  * by running `last-of-readme contract <name>`. This is a runtime workflow
@@ -152,10 +152,10 @@ function getCurrentNextDocumentationContract() {
 }
 
 /**
- * Returns repository API/browser URLs used by update-readme-link.cjs to build
- * the resolver link.
+ * Returns the repositoryApiUrl and repositoryBrowserUrl values used by
+ * update-readme-link.cjs to build the resolver link.
  *
- * @configRequirement The Last of Readme remote API/browser URLs must be
+ * @configRequirement The Last of Readme repositoryApiUrl and repositoryBrowserUrl values must be
  * configured. Configured in installRemoteConfigFields().
  * @todo Maybe, if there is eventually a need to tell the resolver what kind of
  * API is offered by the remote, then a kind value might be added. For now, the
@@ -174,8 +174,8 @@ function remoteConfiguration() {
 }
 
 /**
- * Reads the previously installed repository API/browser URLs used by
- * collectRemoteInput() for remote-configuration defaults.
+ * Reads the previously installed repositoryApiUrl and repositoryBrowserUrl
+ * values used by collectRemoteInput() for URL defaults.
  *
  * @returns {{repositoryApiUrl: string, repositoryBrowserUrl: string} | null}
  * Installed remote repository URLs, or null when absent.
@@ -241,7 +241,7 @@ function getCurrentInstalledPackageFilePath() {
  *
  * @configRequirement The Last of Readme repository URL path must be configured.
  * Configured in installDocLinkConfigFields().
- * @returns {string} Installed repository URL path.
+ * @returns {string} Installed repositoryUrlPath value.
  */
 function repositoryUrlPath() {
   const value = getCurrentRepositoryUrlPath();
@@ -254,7 +254,7 @@ function repositoryUrlPath() {
 }
 
 /**
- * Reads the previously installed repository URL path used by
+ * Reads the previously installed repositoryUrlPath value used by
  * collectPackageFilePathInput() for repository-url-path defaults.
  *
  * @returns {string | null} Installed repository URL path, or null when absent.
@@ -336,12 +336,15 @@ function updateFilesField(
  * installRemoteConfigFields().
  *
  * @param {object} params
- * @param {string} params.remoteName - Git remote name selected by the remote
- * configuration cycle.
- * @param {object} params.remote - Repository remote configuration.
+ * @param {string} params.remoteName - Git remote name used at runtime for
+ * documentation-tag publication.
+ * @param {object} params.remote - Values embedded in resolver links so the
+ * browser resolver can query and open the remote repository.
  * @param {string} params.remote.kind - Remote repository adapter kind.
- * @param {string} params.remote.repositoryApiUrl - Resolver API endpoint URL.
- * @param {string} params.remote.repositoryBrowserUrl - Browser URL for docs.
+ * @param {string} params.remote.repositoryApiUrl - GitHub API endpoint used by
+ * the resolver to query tags, branches, and comparisons.
+ * @param {string} params.remote.repositoryBrowserUrl - Browser URL used by the
+ * resolver to open documentation at the resolved tag or branch.
  * @returns {void}
  */
 function writeRemoteConfig({ remoteName, remote }) {
@@ -354,7 +357,7 @@ function writeRemoteConfig({ remoteName, remote }) {
 }
 
 /**
- * Writes the packageFilePath and the repositoryUrlPath to package.json, and
+ * Writes the packageFilePath and repositoryUrlPath values to package.json, and
  * ensures that file is listed in the npm files field. Called by
  * installDocLinkConfigFields().
  *
@@ -363,14 +366,14 @@ function writeRemoteConfig({ remoteName, remote }) {
  * collectPackageFilePathInput().
  *
  * @param {object} params
- * @param {string} params.packageFilePath - Documentation file path selected by
- * the doc-link configuration cycle.
+ * @param {string} params.packageFilePath - Package documentation file path that
+ * update-readme-link.cjs reads and rewrites.
  * @param {string | undefined} params.repositoryUrlPath - Repository-relative
- * documentation URL path embedded in generated resolver links.
+ * documentation path embedded in generated resolver links.
  * @param {string | undefined} params.previousPackageFilePath - Previously
- * installed documentation file path, if any.
+ * installed package documentation file path, if any.
  * @param {boolean} params.removePreviousPackageFileFromFiles - Whether the
- * previous package file should be removed from the npm files field.
+ * previous package documentation file should be removed from the npm files field.
  * @returns {void}
  */
 function writeDocLinkConfig({
@@ -505,7 +508,8 @@ function getLastOfReadmeConfig() {
  *
  * @param {object} params
  * @param {string} params.hook - npm lifecycle hook to inspect.
- * @param {string} params.command - Last of Readme-owned command to install.
+ * @param {string} params.command - Last of Readme-owned command to preserve,
+ * replace, or install in that hook.
  * @returns {{ hook: string, command: string, rawContent: string, remainingContent: string }}
  */
 function getLastOfReadmeOwnedHookInstallationState({ hook, command }) {
@@ -534,7 +538,7 @@ function getLastOfReadmeOwnedHookInstallationState({ hook, command }) {
  * @param {string} params.hook - npm lifecycle hook to update.
  * @param {string} params.command - Last of Readme-owned command to install.
  * @param {string} [params.remainingContent] - Existing user-owned hook content
- * to preserve after the installed Last of Readme command.
+ * that should run after the installed Last of Readme command.
  * @returns {void}
  */
 function installLastOfReadmeOwnedHookCommand({ hook, command, remainingContent = '' }) {

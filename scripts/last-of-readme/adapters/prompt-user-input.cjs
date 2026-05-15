@@ -1,5 +1,17 @@
 #!/usr/bin/env node
 
+/**
+ * Prompts for the remoteName value used by collectRemoteInput().
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @param {{ name: string, url: string }[]} params.remotes - Local Git remotes
+ * available for Last of Readme tag publication.
+ * @param {string} params.defaultRemoteName - Default remoteName value shown
+ * when one can be inferred from existing configuration or the local Git state.
+ * @returns {Promise<string>} User-entered remote selection.
+ */
 async function askRemoteChoice({
   askQuestion,
   remotes,
@@ -17,6 +29,16 @@ async function askRemoteChoice({
 }
 
 
+/**
+ * Prompts for the repositoryApiUrl value used by collectRemoteUrlsInput().
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @param {string} params.defaultRepositoryApiUrl - Default GitHub API endpoint
+ * derived from the selected remote or read from the installed repositoryApiUrl.
+ * @returns {Promise<string>} User-entered repositoryApiUrl answer.
+ */
 async function askRepositoryApiUrl({
   askQuestion,
   defaultRepositoryApiUrl,
@@ -28,6 +50,16 @@ async function askRepositoryApiUrl({
   return askQuestion(question);
 }
 
+/**
+ * Prompts for the repositoryBrowserUrl value used by collectRemoteUrlsInput().
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @param {string} params.defaultRepositoryBrowserUrl - Default repository
+ * browser URL derived from the selected remote or read from the installed value.
+ * @returns {Promise<string>} User-entered repositoryBrowserUrl answer.
+ */
 async function askRepositoryBrowserUrl({
   askQuestion,
   defaultRepositoryBrowserUrl,
@@ -39,6 +71,16 @@ async function askRepositoryBrowserUrl({
   return askQuestion(question);
 }
 
+/**
+ * Prompts for the packageFilePath value used by collectPackageFilePathInput().
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @param {string} params.defaultPackageFilePath - Default package documentation
+ * file path shown when the user presses Enter.
+ * @returns {Promise<string>} User-entered packageFilePath answer.
+ */
 async function askPackageFilePath({
   askQuestion,
   defaultPackageFilePath,
@@ -63,6 +105,18 @@ Learn more:
 `);
 }
 
+/**
+ * Prompts for the repositoryUrlPath value used by collectPackageFilePathInput().
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @param {string} params.defaultRepositoryUrlPath - Default repository-relative
+ * documentation path embedded in generated resolver links.
+ * @param {Function} params.shouldShowRepositoryUrlPathInformationForAnswer -
+ * Predicate used to decide whether to explain the empty repositoryUrlPath case.
+ * @returns {Promise<string>} User-entered repositoryUrlPath answer.
+ */
 async function askRepositoryUrlPath({
   askQuestion,
   defaultRepositoryUrlPath,
@@ -81,6 +135,17 @@ async function askRepositoryUrlPath({
   return answer;
 }
 
+/**
+ * Prompts for whether the previous package documentation file should be removed
+ * from package.json.files after packageFilePath changes.
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @param {string} params.previousPackageFilePath - Previously installed package
+ * documentation file path that may be removed from package.json.files.
+ * @returns {Promise<string>} User-entered yes/no answer.
+ */
 async function askRemovePreviousPackageFile({
   askQuestion,
   previousPackageFilePath,
@@ -90,11 +155,26 @@ async function askRemovePreviousPackageFile({
   );
 }
 
+/**
+ * Prints the explanation shown before collectDocLinkPlaceholderInput() asks
+ * whether to create a missing package documentation file.
+ *
+ * @param {string} packageFilePath - Missing package documentation file path.
+ */
 function printMissingPackageFileInformation(packageFilePath) {
   console.log(`
 ℹ️ ${packageFilePath} does not exist.`);
 }
 
+/**
+ * Prompts for whether createDocLinkFileIfNeeded() should create a minimal
+ * package documentation file.
+ *
+ * @param {object} params
+ * @param {Function} params.askQuestion - Function that displays the question
+ * and resolves with the user's answer.
+ * @returns {Promise<string>} User-entered yes/no answer.
+ */
 async function askCreateMinimalPackageFile({ askQuestion }) {
   return askQuestion('Create a minimal package file? [no]: ');
 }
@@ -120,9 +200,14 @@ function formatExistingInstallationDetails(details) {
  *
  * @param {object} params
  * @param {Function} params.askQuestion
- * @param {{ hasLastOfReadmeField: boolean, hooksWithInstallation: string[] } | null} params.existingInstallation
- * @param {{ hook: string, command: string, needs: string }[]} params.convenienceNeeds
- * @returns {Promise<string>} The user's answer.
+ * @param {{ hasLastOfReadmeField: boolean, hooksWithInstallation: string[] } | null} params.existingInstallation -
+ * Existing installed Last of Readme footprint detected from lastOfReadme and
+ * npm lifecycle hook fields.
+ * @param {{ kind: string, hook: string, command: string }[]} params.convenienceNeeds -
+ * User-owned workflow commands that Last of Readme needs but does not install
+ * automatically.
+ * @returns {Promise<string>} User-entered yes/no answer that
+ * assertInstallationPreconditionsConsent() interprets as consent or abort.
  */
 async function askInstallationPreconditions({
   askQuestion,
@@ -233,10 +318,13 @@ function printConvenienceHookReminder(need) {
  *
  * @param {object} params
  * @param {Function} params.askQuestion
- * @param {string} params.hook
- * @param {string} params.command
- * @param {string} params.remainingContent
- * @returns {Promise<'prepend'|'manual'>}
+ * @param {string} params.hook - npm lifecycle hook where the Last of
+ * Readme-owned command is needed.
+ * @param {string} params.command - Last of Readme-owned command that should run
+ * in the hook.
+ * @param {string} params.remainingContent - Existing user-owned hook content
+ * that would remain after removing the owned command.
+ * @returns {Promise<'prepend'|'manual'>} User-selected hook installation action.
  */
 async function askFingerprintedHookInstallation({
   askQuestion,
@@ -274,9 +362,10 @@ async function askFingerprintedHookInstallation({
  *
  * @param {object} params
  * @param {Function} params.askQuestion
- * @param {string} params.operationName
- * @param {Error} params.error
- * @returns {Promise<string>} The user's answer.
+ * @param {string} params.operationName - Last of Readme operation that failed.
+ * @param {Error} params.error - Failure reported by the attempted operation.
+ * @returns {Promise<string>} User-entered yes/no answer interpreted by
+ * askWhetherToContinueAfterFailureInput().
  */
 async function askWhetherToContinueAfterFailure({
   askQuestion,
@@ -295,8 +384,9 @@ async function askWhetherToContinueAfterFailure({
  * non-interactive session and the failure policy is not abort.
  *
  * @param {object} params
- * @param {string} params.operationName
- * @param {string} params.policy
+ * @param {string} params.operationName - Last of Readme operation that failed.
+ * @param {string} params.policy - nonInteractiveFailurePolicy value that allows
+ * the runtime-management wrapper to continue after the failure.
  */
 function displayNonInteractiveFailureWarning({ operationName, policy }) {
   console.warn(`⚠️  Last of Readme failed to ${operationName} (policy: ${policy}). Continuing.`);
