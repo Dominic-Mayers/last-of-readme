@@ -1,16 +1,8 @@
 #!/usr/bin/env node
 
-const { configuredNextDocumentationContract } = require('./adapters/npm-adapter.cjs');
-const {
-  printAbortMessage,
-} = require('./adapters/prompt-user-input.cjs');
+const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
 
 const SUPPORTED_CONTRACTS = new Set(['until-next', 'until-next-warn', 'until-branch', 'until-branch-warn', 'correction-of']);
-
-function fail(message) {
-  printAbortMessage(message);
-  process.exit(1);
-}
 
 function formatUnsupportedContractBeforeVersion(contract) {
   return (
@@ -37,16 +29,46 @@ function formatMissingContractBeforeVersion(error) {
   );
 }
 
-function main() {
+function runCheckContract({ ports }) {
   try {
-    const contract = configuredNextDocumentationContract();
+    const contract = ports.npm.configuredNextDocumentationContract();
 
     if (!SUPPORTED_CONTRACTS.has(contract)) {
-      fail(formatUnsupportedContractBeforeVersion(contract));
+      return {
+        ok: false,
+        message: formatUnsupportedContractBeforeVersion(contract),
+      };
     }
+
+    return {
+      ok: true,
+      contract,
+    };
   } catch (err) {
-    fail(formatMissingContractBeforeVersion(err));
+    return {
+      ok: false,
+      message: formatMissingContractBeforeVersion(err),
+    };
   }
 }
 
-main();
+function main() {
+  const ports = createDefaultRuntimePorts();
+  const result = runCheckContract({ ports });
+
+  if (!result.ok) {
+    ports.userInput.printAbortMessage(result.message);
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  SUPPORTED_CONTRACTS,
+  formatMissingContractBeforeVersion,
+  formatUnsupportedContractBeforeVersion,
+  runCheckContract,
+};

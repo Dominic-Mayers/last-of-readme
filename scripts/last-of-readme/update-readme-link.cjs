@@ -4,73 +4,54 @@
 // Must NOT depend on target repository hosting
 const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
 
-const { 
-    packageFilePath,
-    repositoryUrlPath,
-    currentPackageVersion,
-    packageName,
-    remoteConfiguration,
-    configuredNextDocumentationContract
-} = require('./adapters/npm-adapter.cjs');
-
-const {
-    readPackageFileContent,
-    writePackageFileContent
-} = require('./adapters/filesystem-adapter.cjs');
-
-const {
-  formatUpdateReadmeLinkUsage,
-  printAbortMessage,
-  printPackageFileUpdatedForVersion,
-} = require('./adapters/prompt-user-input.cjs');
+const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
-function fail(message) {
-  printAbortMessage(message);
-  process.exit(1);
+function makeFailure(message) {
+  return {
+    ok: false,
+    message,
+  };
 }
 
-function usage() {
-  printAbortMessage(formatUpdateReadmeLinkUsage());
-  process.exit(1);
-}
-
-function resolveInputs() {
-  const cliDocumentationPath = process.argv[2];
-  const cliUrlPath = process.argv[3] || '';
+function resolveInputs({ args, ports }) {
+  const cliDocumentationPath = args[0];
+  const cliUrlPath = args[1] || '';
 
   if (cliDocumentationPath) {
     return {
+      ok: true,
       documentationPath: cliDocumentationPath,
       urlPath: cliUrlPath,
     };
   }
 
   return {
-    documentationPath: packageFilePath(),
-    urlPath: repositoryUrlPath(),
+    ok: true,
+    documentationPath: ports.npm.packageFilePath(),
+    urlPath: ports.npm.repositoryUrlPath(),
   };
 }
 
-function buildResolverLink(urlPath = '') {
-  const version = currentPackageVersion();
-  const pckName = packageName();
-  const remote  = remoteConfiguration();
-  const documentationContract = configuredNextDocumentationContract();
-  const badgeMessage = `${documentationContract} ${version}`; 
+function buildResolverLink({ urlPath = '', ports }) {
+  const version = ports.npm.currentPackageVersion();
+  const pckName = ports.npm.packageName();
+  const remote  = ports.npm.remoteConfiguration();
+  const documentationContract = ports.npm.configuredNextDocumentationContract();
+  const badgeMessage = `${documentationContract} ${version}`;
   const badgeUrl = `https://img.shields.io/badge/README-${encodeBadgeField(badgeMessage)}-blue?logo=github`;
-  
+
   return (
     `<a href="${CENTRAL_RESOLVER_URL}?mode=last&pkg=${encodeURIComponent(pckName)}` +
     `&contract=${encodeURIComponent(documentationContract)}` +
     `&repositoryApiUrl=${encodeURIComponent(remote.repositoryApiUrl)}` +
     `&repositoryBrowserUrl=${encodeURIComponent(remote.repositoryBrowserUrl)}` +
     `&v=${encodeURIComponent(version)}` +
-    `&urlPath=${encodeURIComponent(urlPath)}">` +
+    `&urlPath=${encodeURIComponent(urlPath)}">`+
     `<img alt="README ${documentationContract} ${version}" ` +
     `src="${badgeUrl}">` +
     `</a>`
@@ -129,18 +110,80 @@ function encodeBadgeField(value) {
   return encodeURIComponent(value).replace(/-/g, '--');
 }
 
-function main() {
-  const { documentationPath, urlPath } = resolveInputs();
-
+function runUpdateReadmeLink({ args, ports }) {
   try {
-    const link = buildResolverLink(urlPath);
-    const content = readPackageFileContent(documentationPath);
+    const { documentationPath, urlPath } = resolveInputs({ args, ports });
+    const version = ports.npm.currentPackageVersion();
+    const link = buildResolverLink({ urlPath, ports });
+    const content = ports.filesystem.readPackageFileContent(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
-    writePackageFileContent(documentationPath, updatedContent);
-    printPackageFileUpdatedForVersion(documentationPath, currentPackageVersion());
+    ports.filesystem.writePackageFileContent(documentationPath, updatedContent);
+
+    return {
+      ok: true,
+      documentationPath,
+      urlPath,
+      version,
+      link,
+      updatedContent,
+      messages: [
+        {
+          kind: 'package-file-updated-for-version',
+          documentationPath,
+          version,
+        },
+      ],
+    };
   } catch (err) {
-    fail(err && err.message ? err.message : String(err));
+    return makeFailure(err && err.message ? err.message : String(err));
   }
 }
 
-main();
+function printUpdateReadmeLinkResult(result, ports) {
+  if (!result.ok) {
+    ports.userInput.printAbortMessage(result.message);
+    return;
+  }
+
+  for (const message of result.messages || []) {
+    if (message.kind === 'package-file-updated-for-version') {
+      ports.userInput.printPackageFileUpdatedForVersion(
+        message.documentationPath,
+        message.version
+      );
+    }
+  }
+}
+
+function main() {
+  const ports = createDefaultRuntimePorts();
+  const result = runUpdateReadmeLink({
+    args: process.argv.slice(2),
+    ports,
+  });
+
+  printUpdateReadmeLinkResult(result, ports);
+
+  if (!result.ok) {
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  CENTRAL_RESOLVER_URL,
+  END_MARKER,
+  EXAMPLE_END_MARKER,
+  EXAMPLE_START_MARKER,
+  START_MARKER,
+  buildResolverLink,
+  encodeBadgeField,
+  findManagedPlaceholder,
+  printUpdateReadmeLinkResult,
+  replaceManagedBlock,
+  resolveInputs,
+  runUpdateReadmeLink,
+};

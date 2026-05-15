@@ -1,51 +1,35 @@
 #!/usr/bin/env node
 
-const { 
-    currentPackageVersion,
-    configuredRemoteName
-} = require('./adapters/npm-adapter.cjs');
-
-const {
-    setTagAtCurrentCommit,
-    setMovableTagAtCurrentCommit,
-    publishTag,
-    publishMovableTag
-} = require('./adapters/git-adapter.cjs');
-
-const {
-  formatTagDocUsage,
-  formatUnknownDocTagKind,
-  printAbortMessage,
-  printMovableTagCreated,
-  printMovableTagPushed,
-  printTagCreated,
-  printTagNotPushed,
-  printTagPushed,
-} = require('./adapters/prompt-user-input.cjs');
+const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
 
 const ALLOWED_KINDS = new Set(['last-of', 'successor-of', 'correction-of']);
 const MOVABLE_KINDS = new Set(['correction-of']);
 
-function fail(message) {
-  printAbortMessage(message);
-  process.exit(1);
+function makeFailure(message) {
+  return {
+    ok: false,
+    message,
+  };
 }
 
-function parseArgs(argv) {
-  const args = argv.slice(2);
+function parseTagDocArgs(args, ports) {
   const push = !args.includes('--no-push');
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    fail(formatTagDocUsage());
+    return makeFailure(ports.userInput.formatTagDocUsage());
   }
 
   const kind = positional[0];
   if (!ALLOWED_KINDS.has(kind)) {
-    fail(formatUnknownDocTagKind(kind));
+    return makeFailure(ports.userInput.formatUnknownDocTagKind(kind));
   }
 
-  return { kind, push };
+  return {
+    ok: true,
+    kind,
+    push,
+  };
 }
 
 function annotationFor(kind, version) {
@@ -58,38 +42,103 @@ function annotationFor(kind, version) {
   return `Successor README anchor for version ${version}`;
 }
 
-function main() {
+function runTagDocCommand({ args, ports }) {
+  const parsed = parseTagDocArgs(args, ports);
+  if (!parsed.ok) {
+    return parsed;
+  }
+
   try {
-    const { kind, push } = parseArgs(process.argv);
-    const version = currentPackageVersion();
+    const { kind, push } = parsed;
+    const version = ports.npm.currentPackageVersion();
     const tag = `v${version}-${kind}`;
 
     const movable = MOVABLE_KINDS.has(kind);
     const annotation = annotationFor(kind, version);
+    const messages = [];
 
     if (movable) {
-      setMovableTagAtCurrentCommit(tag, annotation);
-      printMovableTagCreated(tag);
+      ports.git.setMovableTagAtCurrentCommit(tag, annotation);
+      messages.push({ kind: 'movable-tag-created', tag });
     } else {
-      setTagAtCurrentCommit(tag, annotation);
-      printTagCreated(tag);
+      ports.git.setTagAtCurrentCommit(tag, annotation);
+      messages.push({ kind: 'tag-created', tag });
     }
 
     if (push) {
-      const remote = configuredRemoteName();
+      const remote = ports.npm.configuredRemoteName();
       if (movable) {
-        publishMovableTag(tag, remote);
-        printMovableTagPushed(tag);
+        ports.git.publishMovableTag(tag, remote);
+        messages.push({ kind: 'movable-tag-pushed', tag, remote });
       } else {
-        publishTag(tag, remote);
-        printTagPushed(tag);
+        ports.git.publishTag(tag, remote);
+        messages.push({ kind: 'tag-pushed', tag, remote });
       }
     } else {
-      printTagNotPushed();
+      messages.push({ kind: 'tag-not-pushed' });
     }
+
+    return {
+      ok: true,
+      tag,
+      kind,
+      movable,
+      pushed: push,
+      messages,
+    };
   } catch (err) {
-    fail(err && err.message ? err.message : String(err));
+    return makeFailure(err && err.message ? err.message : String(err));
   }
 }
 
-main();
+function printTagDocResult(result, ports) {
+  if (!result.ok) {
+    ports.userInput.printAbortMessage(result.message);
+    return;
+  }
+
+  for (const message of result.messages || []) {
+    if (message.kind === 'movable-tag-created') {
+      ports.userInput.printMovableTagCreated(message.tag);
+    }
+    if (message.kind === 'tag-created') {
+      ports.userInput.printTagCreated(message.tag);
+    }
+    if (message.kind === 'movable-tag-pushed') {
+      ports.userInput.printMovableTagPushed(message.tag);
+    }
+    if (message.kind === 'tag-pushed') {
+      ports.userInput.printTagPushed(message.tag);
+    }
+    if (message.kind === 'tag-not-pushed') {
+      ports.userInput.printTagNotPushed();
+    }
+  }
+}
+
+function main() {
+  const ports = createDefaultRuntimePorts();
+  const result = runTagDocCommand({
+    args: process.argv.slice(2),
+    ports,
+  });
+
+  printTagDocResult(result, ports);
+
+  if (!result.ok) {
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  ALLOWED_KINDS,
+  MOVABLE_KINDS,
+  annotationFor,
+  parseTagDocArgs,
+  printTagDocResult,
+  runTagDocCommand,
+};

@@ -1,17 +1,6 @@
 #!/usr/bin/env node
 
-const {
-  packageFilePath,
-  updatePackageJsonFields,
-} = require('./adapters/npm-adapter.cjs');
-const {
-  askDocumentationContractConfirmation,
-  formatContractUsage,
-  formatUnsupportedContract,
-  printAbortMessage,
-  printNoChangesMade,
-  printNextContractSet,
-} = require('./adapters/prompt-user-input.cjs');
+const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
 
 const SUPPORTED_CONTRACTS = new Set([
   'until-next',
@@ -21,44 +10,97 @@ const SUPPORTED_CONTRACTS = new Set([
   'correction-of',
 ]);
 
-function fail(message) {
-  printAbortMessage(message);
-  process.exit(1);
+function makeFailure(message) {
+  return {
+    ok: false,
+    message,
+  };
 }
 
-function usage() {
-  fail(formatContractUsage());
-}
-
-async function main() {
-  const contract = process.argv[2];
+async function runContractCommand({ args, ports }) {
+  const contract = args[0];
 
   if (!contract) {
-    usage();
+    return makeFailure(ports.userInput.formatContractUsage());
   }
 
   if (!SUPPORTED_CONTRACTS.has(contract)) {
-    fail(formatUnsupportedContract(contract));
+    return makeFailure(ports.userInput.formatUnsupportedContract(contract));
   }
 
   try {
-    const documentationPath = packageFilePath();
-    const confirmed = await askDocumentationContractConfirmation({
+    const documentationPath = ports.npm.packageFilePath();
+    const confirmed = await ports.userInput.askDocumentationContractConfirmation({
       contract,
       documentationPath,
     });
 
     if (!confirmed) {
-      printNoChangesMade();
-      return;
+      return {
+        ok: true,
+        changed: false,
+        messages: [
+          {
+            kind: 'no-changes',
+          },
+        ],
+      };
     }
 
-    updatePackageJsonFields({ 'lastOfReadme.nextContract': contract });
+    ports.npm.updatePackageJsonFields({ 'lastOfReadme.nextContract': contract });
 
-    printNextContractSet(contract);
+    return {
+      ok: true,
+      changed: true,
+      contract,
+      messages: [
+        {
+          kind: 'next-contract-set',
+          contract,
+        },
+      ],
+    };
   } catch (err) {
-    fail(err && err.message ? err.message : String(err));
+    return makeFailure(err && err.message ? err.message : String(err));
   }
 }
 
-main();
+function printContractResult(result, ports) {
+  if (!result.ok) {
+    ports.userInput.printAbortMessage(result.message);
+    return;
+  }
+
+  for (const message of result.messages || []) {
+    if (message.kind === 'no-changes') {
+      ports.userInput.printNoChangesMade();
+    }
+    if (message.kind === 'next-contract-set') {
+      ports.userInput.printNextContractSet(message.contract);
+    }
+  }
+}
+
+async function main() {
+  const ports = createDefaultRuntimePorts();
+  const result = await runContractCommand({
+    args: process.argv.slice(2),
+    ports,
+  });
+
+  printContractResult(result, ports);
+
+  if (!result.ok) {
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  SUPPORTED_CONTRACTS,
+  printContractResult,
+  runContractCommand,
+};
