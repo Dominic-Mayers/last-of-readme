@@ -68,18 +68,13 @@ function checkGitRemoteRequirements(pipelineState = {}) {
     throw new Error(`Selected Git remote does not exist: ${localName}`);
   }
 
-  console.log("localName: ", localName ); 
-
   assertCanDryRunPublishTag(localName);
 
-  console.log("control.repositoryApiUrl: ", control.repositoryApiUrl); 
   assertHttpUrl(
     control.repositoryApiUrl,
     'A GitHub repository API URL must be provided for Last of Readme'
   );
   
-  console.log("control.repositoryBrowserUrl: ", control.repositoryBrowserUrl ); 
-
   assertHttpUrl(
     control.repositoryBrowserUrl,
     'A GitHub repository browser URL must be provided for Last of Readme'
