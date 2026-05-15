@@ -33,17 +33,7 @@
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
     published: {},
-    terminal: [
-      'Last of Readme demo ready.',
-      'No npm version has been published with a Last of Readme badge yet.',
-      'Try this flow:',
-      '  1. last-of-readme update-readme-link',
-      '  2. git add README.md',
-      '  3. git commit',
-      '  4. last-of-readme tag-doc correction-of',
-      '  5. npm publish',
-      'Then click the README badge in the npm pane.',
-    ],
+    terminal: [],
   };
 
   const demoPorts = {
@@ -234,15 +224,15 @@
       : `
         <div class="empty-readme-note">
           <h3>No published README yet</h3>
-          <p>
-            The Last of Readme badge will appear in this npm README after the
-            maintainer generates the resolver link and runs the first simulated
-            <code>npm publish</code>.
-          </p>
-          <p class="muted">
-            Suggested flow: run <code>last-of-readme update-readme-link</code>,
-            commit the README, create the documentation tag, then publish.
-          </p>
+          <p>Run these commands in the terminal to publish the first version with a resolver badge:</p>
+          <ol>
+            <li><code>last-of-readme update-readme-link</code></li>
+            <li><code>git add README.md</code></li>
+            <li><code>git commit</code></li>
+            <li><code>last-of-readme tag-doc correction-of</code></li>
+            <li><code>npm publish</code></li>
+          </ol>
+          <p class="muted">Then click the badge that appears in this README to see the resolver in action.</p>
         </div>`;
     return `
       <section class="${paneClass('npm')}" data-pane="npm">
