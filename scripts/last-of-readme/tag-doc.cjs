@@ -5,18 +5,29 @@ const {
     configuredRemoteName
 } = require('./adapters/npm-adapter.cjs');
 
-const { 
+const {
     setTagAtCurrentCommit,
     setMovableTagAtCurrentCommit,
     publishTag,
     publishMovableTag
 } = require('./adapters/git-adapter.cjs');
 
+const {
+  formatTagDocUsage,
+  formatUnknownDocTagKind,
+  printAbortMessage,
+  printMovableTagCreated,
+  printMovableTagPushed,
+  printTagCreated,
+  printTagNotPushed,
+  printTagPushed,
+} = require('./adapters/prompt-user-input.cjs');
+
 const ALLOWED_KINDS = new Set(['last-of', 'successor-of', 'correction-of']);
 const MOVABLE_KINDS = new Set(['correction-of']);
 
 function fail(message) {
-  console.error(`❌ ${message}`);
+  printAbortMessage(message);
   process.exit(1);
 }
 
@@ -26,12 +37,12 @@ function parseArgs(argv) {
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    fail('Usage: last-of-readme tag-doc <last-of|successor-of|correction-of> [--no-push]');
+    fail(formatTagDocUsage());
   }
 
   const kind = positional[0];
   if (!ALLOWED_KINDS.has(kind)) {
-    fail(`Unknown doc tag kind: ${kind}`);
+    fail(formatUnknownDocTagKind(kind));
   }
 
   return { kind, push };
@@ -58,23 +69,23 @@ function main() {
 
     if (movable) {
       setMovableTagAtCurrentCommit(tag, annotation);
-      console.log(`✅ Created or replaced tag ${tag}`);
+      printMovableTagCreated(tag);
     } else {
       setTagAtCurrentCommit(tag, annotation);
-      console.log(`✅ Created tag ${tag}`);
+      printTagCreated(tag);
     }
 
     if (push) {
-      const remote = configuredRemoteName(); 
+      const remote = configuredRemoteName();
       if (movable) {
         publishMovableTag(tag, remote);
-        console.log(`✅ Pushed or replaced tag ${tag}`);
+        printMovableTagPushed(tag);
       } else {
         publishTag(tag, remote);
-        console.log(`✅ Pushed tag ${tag}`);
+        printTagPushed(tag);
       }
     } else {
-      console.log('ℹ️ Tag not pushed');
+      printTagNotPushed();
     }
   } catch (err) {
     fail(err && err.message ? err.message : String(err));

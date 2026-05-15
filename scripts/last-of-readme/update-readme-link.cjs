@@ -18,18 +18,24 @@ const {
     writePackageFileContent
 } = require('./adapters/filesystem-adapter.cjs');
 
+const {
+  formatUpdateReadmeLinkUsage,
+  printAbortMessage,
+  printPackageFileUpdatedForVersion,
+} = require('./adapters/prompt-user-input.cjs');
+
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
 
 function fail(message) {
-  console.error(`❌ ${message}`);
+  printAbortMessage(message);
   process.exit(1);
 }
 
 function usage() {
-  console.error('Usage: node update-readme-link.cjs <documentation-path> [url-path]');
+  printAbortMessage(formatUpdateReadmeLinkUsage());
   process.exit(1);
 }
 
@@ -131,7 +137,7 @@ function main() {
     const content = readPackageFileContent(documentationPath);
     const updatedContent = replaceManagedBlock(content, link);
     writePackageFileContent(documentationPath, updatedContent);
-    console.log(`✅ ${documentationPath} updated for version ${currentPackageVersion()}`);
+    printPackageFileUpdatedForVersion(documentationPath, currentPackageVersion());
   } catch (err) {
     fail(err && err.message ? err.message : String(err));
   }

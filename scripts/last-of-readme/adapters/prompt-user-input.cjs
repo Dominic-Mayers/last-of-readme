@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+const {
+  createInterface,
+  ask,
+} = require('./user-input-utils.cjs');
+
 /**
  * Prompts for the remoteName value used by collectRemoteInput().
  *
@@ -407,6 +412,170 @@ function displayNonInteractiveFailureWarning({ operationName, policy }) {
   console.warn(`⚠️  Last of Readme failed to ${operationName} (policy: ${policy}). Continuing.`);
 }
 
+const CONTRACT_DESCRIPTIONS = {
+  'until-next': describeUntilNext,
+  'until-next-warn': describeUntilNextWarn,
+  'until-branch': describeUntilBranch,
+  'until-branch-warn': describeUntilBranchWarn,
+  'correction-of': describeCorrectionOf,
+};
+
+function describeUntilNext(documentationPath) {
+  return [
+    `The documentation link will resolve ${documentationPath} using this order:`,
+    '',
+    '1. vX.Y.Z-last-of',
+    '2. vX.Y.Z-successor-of',
+    '3. HEAD of a unique branch containing vX.Y.Z',
+    '4. A page listing multiple branches containing vX.Y.Z',
+    '5. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+function describeUntilNextWarn(documentationPath) {
+  return [
+    `The documentation link will resolve ${documentationPath} using the same order as until-next, but with a warning when vX.Y.Z-last-of is absent.`,
+    '',
+    'Resolution order:',
+    '',
+    '1. vX.Y.Z-last-of',
+    '2. vX.Y.Z-successor-of',
+    '3. HEAD of a unique branch containing vX.Y.Z',
+    '4. A page listing multiple branches containing vX.Y.Z',
+    '5. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+function describeUntilBranchWarn(documentationPath) {
+  return [
+    `The documentation link will redirect directly to ${documentationPath} only when vX.Y.Z-last-of exists.`,
+    '',
+    'If vX.Y.Z-last-of does not exist, the resolver will show an intermediary page saying that no authoritative documentation was found.',
+    '',
+    'The intermediary page will propose fallback documentation using this order:',
+    '',
+    '1. A page listing multiple branches containing vX.Y.Z',
+    '2. vX.Y.Z-successor-of',
+    '3. HEAD of a unique branch containing vX.Y.Z',
+    '4. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+function describeUntilBranch(documentationPath) {
+  return [
+    `The documentation link will resolve ${documentationPath} using the same order as until-branch-warn, but without warning when vX.Y.Z-last-of is absent.`,
+    '',
+    'Resolution order:',
+    '',
+    '1. vX.Y.Z-last-of',
+    '2. A page listing multiple branches containing vX.Y.Z',
+    '3. vX.Y.Z-successor-of',
+    '4. HEAD of a unique branch containing vX.Y.Z',
+    '5. vX.Y.Z itself',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+function describeCorrectionOf(documentationPath) {
+  return [
+    `The documentation link will redirect to ${documentationPath} at vX.Y.Z-correction-of when that tag exists.`,
+    '',
+    'If vX.Y.Z-correction-of does not exist, the resolver will redirect to vX.Y.Z.',
+    '',
+    'The correction-of tag is a movable documentation pointer. Running the tag script for correction-of again replaces the correction pointer for the current version.',
+    '',
+    'Use this behavior for future version bumps?',
+  ].join('\n');
+}
+
+async function askDocumentationContractConfirmation({
+  contract,
+  documentationPath,
+}) {
+  const describe = CONTRACT_DESCRIPTIONS[contract];
+  if (!describe) {
+    throw new Error(`Unsupported Last of Readme contract: ${contract}`);
+  }
+
+  const rl = createInterface();
+  try {
+    const answer = await ask(rl, `${describe(documentationPath)} [y/N] `);
+    return /^y(?:es)?$/i.test(answer.trim());
+  } finally {
+    rl.close();
+  }
+}
+
+function printNoChangesMade() {
+  console.log('No changes made.');
+}
+
+function printNextContractSet(contract) {
+  console.log(`✅ Last of Readme next contract set to ${contract}`);
+}
+
+function printTagCreated(tag) {
+  console.log(`✅ Created tag ${tag}`);
+}
+
+function printMovableTagCreated(tag) {
+  console.log(`✅ Created or replaced tag ${tag}`);
+}
+
+function printTagPushed(tag) {
+  console.log(`✅ Pushed tag ${tag}`);
+}
+
+function printMovableTagPushed(tag) {
+  console.log(`✅ Pushed or replaced tag ${tag}`);
+}
+
+function printTagNotPushed() {
+  console.log('ℹ️ Tag not pushed');
+}
+
+function printPackageFileUpdatedForVersion(documentationPath, version) {
+  console.log(`✅ ${documentationPath} updated for version ${version}`);
+}
+
+function printBasicRequirementsSatisfied() {
+  console.log('✔ Basic requirements satisfied');
+}
+
+function formatContractUsage() {
+  return [
+    'Usage: last-of-readme contract <contract>',
+    'Supported contracts: until-next, until-next-warn, until-branch, until-branch-warn, correction-of',
+  ].join('\n');
+}
+
+function formatTagDocUsage() {
+  return 'Usage: last-of-readme tag-doc <last-of|successor-of|correction-of> [--no-push]';
+}
+
+function formatUpdateReadmeLinkUsage() {
+  return 'Usage: last-of-readme update-readme-link [documentation-path] [url-path]';
+}
+
+function formatUnsupportedContract(contract) {
+  return `Unsupported Last of Readme contract: ${contract}`;
+}
+
+function formatUnknownDocTagKind(kind) {
+  return `Unknown doc tag kind: ${kind}`;
+}
+
+function printAbortMessage(message) {
+  console.error(`❌ ${message}`);
+}
+
 module.exports = {
   askRemoteChoice,
   askRepositoryApiUrl,
@@ -423,4 +592,20 @@ module.exports = {
   printConvenienceHookReminder,
   askWhetherToContinueAfterFailure,
   displayNonInteractiveFailureWarning,
+  askDocumentationContractConfirmation,
+  printNoChangesMade,
+  printNextContractSet,
+  printTagCreated,
+  printMovableTagCreated,
+  printTagPushed,
+  printMovableTagPushed,
+  printTagNotPushed,
+  printPackageFileUpdatedForVersion,
+  printBasicRequirementsSatisfied,
+  formatContractUsage,
+  formatTagDocUsage,
+  formatUpdateReadmeLinkUsage,
+  formatUnsupportedContract,
+  formatUnknownDocTagKind,
+  printAbortMessage,
 };

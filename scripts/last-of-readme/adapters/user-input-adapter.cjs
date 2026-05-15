@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
-const readline = require('readline');
 const {
   normalizeOptionalText,
 } = require('../install/utils.cjs');
+const {
+  createInterface,
+  ask,
+} = require('./user-input-utils.cjs');
 const {
   askRemoteChoice,
   askRepositoryApiUrl,
@@ -210,16 +213,6 @@ async function collectRemoteUrlsInput(pipelineState = {}) {
   }
 }
 
-function createInterface() {
-  return readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-}
-
-function ask(rl, question) {
-  return new Promise((resolve) => rl.question(question, resolve));
-}
 
 function parseBooleanAnswer(value, defaultValue) {
   const normalized = normalizeOptionalText(value).toLowerCase();
