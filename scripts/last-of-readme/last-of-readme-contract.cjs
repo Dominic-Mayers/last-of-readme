@@ -20,11 +20,16 @@ async function runContractCommand({ args, ports }) {
   const contract = args[0];
 
   if (!contract) {
-    return commandFailed(ports.userInput.formatContractUsage());
+    return commandFailed(ports.userInput.formatContractUsage(), {
+      failureKind: 'missing-contract-argument',
+    });
   }
 
   if (!SUPPORTED_CONTRACTS.has(contract)) {
-    return commandFailed(ports.userInput.formatUnsupportedContract(contract));
+    return commandFailed(ports.userInput.formatUnsupportedContract(contract), {
+      failureKind: 'unsupported-contract',
+      data: { contract },
+    });
   }
 
   try {
@@ -52,7 +57,9 @@ async function runContractCommand({ args, ports }) {
       effects: commandEffect('package-json-fields-updated', { fields }),
     });
   } catch (err) {
-    return commandFailed(err);
+    return commandFailed(err, {
+      failureKind: 'contract-command-failed',
+    });
   }
 }
 

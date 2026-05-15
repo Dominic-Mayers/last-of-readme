@@ -139,7 +139,9 @@ function runUpdateReadmeLink({ args, ports }) {
       }),
     });
   } catch (err) {
-    return commandFailed(err);
+    return commandFailed(err, {
+      failureKind: 'update-readme-link-command-failed',
+    });
   }
 }
 

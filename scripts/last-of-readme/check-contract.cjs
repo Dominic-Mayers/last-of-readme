@@ -40,7 +40,10 @@ function runCheckContract({ ports }) {
     const contract = ports.npm.configuredNextDocumentationContract();
 
     if (!SUPPORTED_CONTRACTS.has(contract)) {
-      return commandFailed(formatUnsupportedContractBeforeVersion(contract));
+      return commandFailed(formatUnsupportedContractBeforeVersion(contract), {
+        failureKind: 'unsupported-contract-before-version',
+        data: { contract },
+      });
     }
 
     return commandSucceeded({
@@ -49,7 +52,9 @@ function runCheckContract({ ports }) {
       effects: commandEffect('contract-read', { contract }),
     });
   } catch (err) {
-    return commandFailed(formatMissingContractBeforeVersion(err));
+    return commandFailed(formatMissingContractBeforeVersion(err), {
+      failureKind: 'missing-contract-before-version',
+    });
   }
 }
 

@@ -16,12 +16,18 @@ function parseTagDocArgs(args, ports) {
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    return commandFailed(ports.userInput.formatTagDocUsage());
+    return commandFailed(ports.userInput.formatTagDocUsage(), {
+      failureKind: 'invalid-tag-doc-arguments',
+      data: { positional },
+    });
   }
 
   const kind = positional[0];
   if (!ALLOWED_KINDS.has(kind)) {
-    return commandFailed(ports.userInput.formatUnknownDocTagKind(kind));
+    return commandFailed(ports.userInput.formatUnknownDocTagKind(kind), {
+      failureKind: 'unknown-doc-tag-kind',
+      data: { kind },
+    });
   }
 
   return {
@@ -94,7 +100,9 @@ function runTagDocCommand({ args, ports }) {
       effects,
     });
   } catch (err) {
-    return commandFailed(err);
+    return commandFailed(err, {
+      failureKind: 'tag-doc-command-failed',
+    });
   }
 }
 
