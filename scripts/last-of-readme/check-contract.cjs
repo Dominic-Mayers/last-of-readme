@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
 const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const {
+  commandEffect,
+  commandFailed,
+  commandMessage,
+  commandSucceeded,
+} = require('./core/command-result.cjs');
 
 const SUPPORTED_CONTRACTS = new Set(['until-next', 'until-next-warn', 'until-branch', 'until-branch-warn', 'correction-of']);
 
@@ -34,21 +40,16 @@ function runCheckContract({ ports }) {
     const contract = ports.npm.configuredNextDocumentationContract();
 
     if (!SUPPORTED_CONTRACTS.has(contract)) {
-      return {
-        ok: false,
-        message: formatUnsupportedContractBeforeVersion(contract),
-      };
+      return commandFailed(formatUnsupportedContractBeforeVersion(contract));
     }
 
-    return {
-      ok: true,
-      contract,
-    };
+    return commandSucceeded({
+      data: { contract },
+      messages: commandMessage('contract-supported', { contract }),
+      effects: commandEffect('contract-read', { contract }),
+    });
   } catch (err) {
-    return {
-      ok: false,
-      message: formatMissingContractBeforeVersion(err),
-    };
+    return commandFailed(formatMissingContractBeforeVersion(err));
   }
 }
 

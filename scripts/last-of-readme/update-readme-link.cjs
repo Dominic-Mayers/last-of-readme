@@ -5,18 +5,17 @@
 const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
 
 const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const {
+  commandEffect,
+  commandFailed,
+  commandMessage,
+  commandSucceeded,
+} = require('./core/command-result.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
 const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
 const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
-
-function makeFailure(message) {
-  return {
-    ok: false,
-    message,
-  };
-}
 
 function resolveInputs({ args, ports }) {
   const cliDocumentationPath = args[0];
@@ -119,23 +118,28 @@ function runUpdateReadmeLink({ args, ports }) {
     const updatedContent = replaceManagedBlock(content, link);
     ports.filesystem.writePackageFileContent(documentationPath, updatedContent);
 
-    return {
-      ok: true,
-      documentationPath,
-      urlPath,
-      version,
-      link,
-      updatedContent,
-      messages: [
-        {
-          kind: 'package-file-updated-for-version',
-          documentationPath,
-          version,
-        },
-      ],
-    };
+    return commandSucceeded({
+      changed: true,
+      data: {
+        documentationPath,
+        urlPath,
+        version,
+        link,
+        updatedContent,
+      },
+      messages: commandMessage('package-file-updated-for-version', {
+        documentationPath,
+        version,
+      }),
+      effects: commandEffect('package-file-updated', {
+        path: documentationPath,
+        version,
+        urlPath,
+        resolverLink: link,
+      }),
+    });
   } catch (err) {
-    return makeFailure(err && err.message ? err.message : String(err));
+    return commandFailed(err);
   }
 }
 

@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
 const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const {
+  commandEffect,
+  commandFailed,
+  commandMessage,
+  commandSucceeded,
+} = require('./core/command-result.cjs');
 
 const SUPPORTED_CONTRACTS = new Set([
   'until-next',
@@ -10,22 +16,15 @@ const SUPPORTED_CONTRACTS = new Set([
   'correction-of',
 ]);
 
-function makeFailure(message) {
-  return {
-    ok: false,
-    message,
-  };
-}
-
 async function runContractCommand({ args, ports }) {
   const contract = args[0];
 
   if (!contract) {
-    return makeFailure(ports.userInput.formatContractUsage());
+    return commandFailed(ports.userInput.formatContractUsage());
   }
 
   if (!SUPPORTED_CONTRACTS.has(contract)) {
-    return makeFailure(ports.userInput.formatUnsupportedContract(contract));
+    return commandFailed(ports.userInput.formatUnsupportedContract(contract));
   }
 
   try {
@@ -36,32 +35,24 @@ async function runContractCommand({ args, ports }) {
     });
 
     if (!confirmed) {
-      return {
-        ok: true,
+      return commandSucceeded({
         changed: false,
-        messages: [
-          {
-            kind: 'no-changes',
-          },
-        ],
-      };
+        data: { contract },
+        messages: commandMessage('no-changes'),
+      });
     }
 
-    ports.npm.updatePackageJsonFields({ 'lastOfReadme.nextContract': contract });
+    const fields = { 'lastOfReadme.nextContract': contract };
+    ports.npm.updatePackageJsonFields(fields);
 
-    return {
-      ok: true,
+    return commandSucceeded({
       changed: true,
-      contract,
-      messages: [
-        {
-          kind: 'next-contract-set',
-          contract,
-        },
-      ],
-    };
+      data: { contract },
+      messages: commandMessage('next-contract-set', { contract }),
+      effects: commandEffect('package-json-fields-updated', { fields }),
+    });
   } catch (err) {
-    return makeFailure(err && err.message ? err.message : String(err));
+    return commandFailed(err);
   }
 }
 

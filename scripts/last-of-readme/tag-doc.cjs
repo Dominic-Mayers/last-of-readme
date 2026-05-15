@@ -1,28 +1,27 @@
 #!/usr/bin/env node
 
 const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const {
+  commandEffect,
+  commandFailed,
+  commandMessage,
+  commandSucceeded,
+} = require('./core/command-result.cjs');
 
 const ALLOWED_KINDS = new Set(['last-of', 'successor-of', 'correction-of']);
 const MOVABLE_KINDS = new Set(['correction-of']);
-
-function makeFailure(message) {
-  return {
-    ok: false,
-    message,
-  };
-}
 
 function parseTagDocArgs(args, ports) {
   const push = !args.includes('--no-push');
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
   if (positional.length !== 1) {
-    return makeFailure(ports.userInput.formatTagDocUsage());
+    return commandFailed(ports.userInput.formatTagDocUsage());
   }
 
   const kind = positional[0];
   if (!ALLOWED_KINDS.has(kind)) {
-    return makeFailure(ports.userInput.formatUnknownDocTagKind(kind));
+    return commandFailed(ports.userInput.formatUnknownDocTagKind(kind));
   }
 
   return {
@@ -56,38 +55,46 @@ function runTagDocCommand({ args, ports }) {
     const movable = MOVABLE_KINDS.has(kind);
     const annotation = annotationFor(kind, version);
     const messages = [];
+    const effects = [];
 
     if (movable) {
       ports.git.setMovableTagAtCurrentCommit(tag, annotation);
-      messages.push({ kind: 'movable-tag-created', tag });
+      messages.push(commandMessage('movable-tag-created', { tag }));
+      effects.push(commandEffect('movable-tag-created', { tag, annotation }));
     } else {
       ports.git.setTagAtCurrentCommit(tag, annotation);
-      messages.push({ kind: 'tag-created', tag });
+      messages.push(commandMessage('tag-created', { tag }));
+      effects.push(commandEffect('tag-created', { tag, annotation }));
     }
 
     if (push) {
       const remote = ports.npm.configuredRemoteName();
       if (movable) {
         ports.git.publishMovableTag(tag, remote);
-        messages.push({ kind: 'movable-tag-pushed', tag, remote });
+        messages.push(commandMessage('movable-tag-pushed', { tag, remote }));
+        effects.push(commandEffect('movable-tag-pushed', { tag, remote }));
       } else {
         ports.git.publishTag(tag, remote);
-        messages.push({ kind: 'tag-pushed', tag, remote });
+        messages.push(commandMessage('tag-pushed', { tag, remote }));
+        effects.push(commandEffect('tag-pushed', { tag, remote }));
       }
     } else {
-      messages.push({ kind: 'tag-not-pushed' });
+      messages.push(commandMessage('tag-not-pushed'));
     }
 
-    return {
-      ok: true,
-      tag,
-      kind,
-      movable,
-      pushed: push,
+    return commandSucceeded({
+      changed: true,
+      data: {
+        tag,
+        kind,
+        movable,
+        pushed: push,
+      },
       messages,
-    };
+      effects,
+    });
   } catch (err) {
-    return makeFailure(err && err.message ? err.message : String(err));
+    return commandFailed(err);
   }
 }
 
