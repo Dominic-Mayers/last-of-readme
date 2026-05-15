@@ -370,7 +370,9 @@ function deriveGitHubUrlsFromRemoteUrl(remoteUrl) {
  * Prompts the user for consent as part of
  * checkInstallationPreconditionsRequirements(), presenting existing-installation
  * detection results and convenience workflow requirements before the installer
- * proceeds. Throws if the user does not consent.
+ * proceeds.
+ *
+ * Throws when the user does not consent.
  */
 async function assertInstallationPreconditionsConsent({
   existingInstallation,
@@ -378,11 +380,18 @@ async function assertInstallationPreconditionsConsent({
 }) {
   const rl = createInterface();
   try {
-    return await askInstallationPreconditions({
+    const answer = await askInstallationPreconditions({
       askQuestion: (question) => ask(rl, question),
       existingInstallation,
       convenienceNeeds,
     });
+
+    const normalized = (answer || '').trim().toLowerCase();
+    const consented = ['y', 'yes'].includes(normalized);
+
+    if (!consented) {
+      throw new Error('Installation aborted. You can run the installer again when you are ready.');
+    }
   } finally {
     rl.close();
   }

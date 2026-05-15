@@ -211,17 +211,10 @@ async function checkInstallationPreconditionsRequirements(pipelineState = {}) {
     };
   }
 
-  const answer = await assertInstallationPreconditionsConsent({
+  await assertInstallationPreconditionsConsent({
     existingInstallation,
     convenienceNeeds,
   });
-
-  const normalized = (answer || '').trim().toLowerCase();
-  const consented = ['y', 'yes'].includes(normalized);
-
-  if (!consented) {
-    throw new Error('Installation aborted. You can run the installer again when you are ready.');
-  }
 
   return {
     ...pipelineState,
