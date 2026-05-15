@@ -335,7 +335,13 @@ function updateFilesField(
  * Writes the Last of Readme remote configuration to package.json for
  * installRemoteConfigFields().
  *
- * @param {{ remoteName: string, remote: { kind: string, repositoryApiUrl: string, repositoryBrowserUrl: string } }} params
+ * @param {object} params
+ * @param {string} params.remoteName - Git remote name selected by the remote
+ * configuration cycle.
+ * @param {object} params.remote - Repository remote configuration.
+ * @param {string} params.remote.kind - Remote repository adapter kind.
+ * @param {string} params.remote.repositoryApiUrl - Resolver API endpoint URL.
+ * @param {string} params.remote.repositoryBrowserUrl - Browser URL for docs.
  * @returns {void}
  */
 function writeRemoteConfig({ remoteName, remote }) {
@@ -355,7 +361,16 @@ function writeRemoteConfig({ remoteName, remote }) {
  * The files-field update also applies the decision to remove a previous
  * package file from the npm files field, collected earlier by
  * collectPackageFilePathInput().
- * @param {{ packageFilePath: string, repositoryUrlPath: string | undefined, previousPackageFilePath: string | undefined, removePreviousPackageFileFromFiles: boolean }} params
+ *
+ * @param {object} params
+ * @param {string} params.packageFilePath - Documentation file path selected by
+ * the doc-link configuration cycle.
+ * @param {string | undefined} params.repositoryUrlPath - Repository-relative
+ * documentation URL path embedded in generated resolver links.
+ * @param {string | undefined} params.previousPackageFilePath - Previously
+ * installed documentation file path, if any.
+ * @param {boolean} params.removePreviousPackageFileFromFiles - Whether the
+ * previous package file should be removed from the npm files field.
  * @returns {void}
  */
 function writeDocLinkConfig({
@@ -488,7 +503,9 @@ function getLastOfReadmeConfig() {
  * hook command. Used by collectLastOfReadmeOwnedVersionHooksEnvironmentInput()
  * before the user-input step chooses how each hook should be installed.
  *
- * @param {{ hook: string, command: string }} params
+ * @param {object} params
+ * @param {string} params.hook - npm lifecycle hook to inspect.
+ * @param {string} params.command - Last of Readme-owned command to install.
  * @returns {{ hook: string, command: string, rawContent: string, remainingContent: string }}
  */
 function getLastOfReadmeOwnedHookInstallationState({ hook, command }) {
@@ -513,7 +530,11 @@ function getLastOfReadmeOwnedHookInstallationState({ hook, command }) {
  * Installs a Last of Readme-owned command in an npm script hook for
  * installLastOfReadmeOwnedVersionHookCommands().
  *
- * @param {{ hook: string, command: string, remainingContent?: string }} params
+ * @param {object} params
+ * @param {string} params.hook - npm lifecycle hook to update.
+ * @param {string} params.command - Last of Readme-owned command to install.
+ * @param {string} [params.remainingContent] - Existing user-owned hook content
+ * to preserve after the installed Last of Readme command.
  * @returns {void}
  */
 function installLastOfReadmeOwnedHookCommand({ hook, command, remainingContent = '' }) {

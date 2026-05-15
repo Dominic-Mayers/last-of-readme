@@ -14,7 +14,7 @@ const WORKSPACE_ROOT = process.cwd();
 
 /**
  * Asserts the basic Git environment needed by the installer before Git-backed
- * phases such as checkGitRemote() run.
+ * phases such as checkGitRemoteRequirements() run.
  *
  * @returns {void}
  */
@@ -83,15 +83,15 @@ function setMovableTagAtCurrentCommit(tag, annotation) {
 /**
  * Publish a documentation tag to the configured remote. Used by tag-doc.cjs.
  *
- * @param {string} remoteName - The configured Git remote to publish to.
- * @param {string} tagName - The documentation tag to publish.
+ * @param {string} tag - The documentation tag to publish.
+ * @param {string} remote - The configured Git remote to publish to.
  * @returns {void}
  *
  * @configRequirement The remote name supplied at runtime must be installed as
- * Last of Readme package configuration. Configured in installRemotePackageJson().
+ * Last of Readme package configuration. Configured in installRemoteConfigFields().
  *
  * @assertRequirement The configured remote must accept tag publication.
- * Checked during installation by assertCanDryRunPublishTag().
+ * Checked during installation by checkGitRemoteRequirements().
  *
  * @remarks The actual push is still subject to runtime Git, network,
  * authentication, and remote-state failures.
@@ -112,10 +112,10 @@ function publishTag(tag, remote) {
  * @returns {void}
  *
  * @configRequirement The remote name supplied at runtime must be installed as
- * Last of Readme package configuration. Configured in installRemotePackageJson().
+ * Last of Readme package configuration. Configured in installRemoteConfigFields().
  *
  * @assertRequirement The configured remote must accept tag publication.
- * Checked during installation by assertCanDryRunPublishTag().
+ * Checked during installation by checkGitRemoteRequirements().
  *
  * @remarks Used for correction-of tags. The remote tag is force-updated
  * because the tag represents the current correction pointer for a version.
@@ -132,7 +132,7 @@ function publishMovableTag(tag, remote) {
 
 /**
  * Collects the local Git remotes used by collectGitRemotesEnvironmentInput()
- * before checkGitRemote() asks the user to select the Last of Readme remote.
+ * before collectRemoteInput() asks the user to select the Last of Readme remote.
  *
  * @returns {{name: string, url: string}[]} Local Git remotes available for
  * remote-selection prompts.

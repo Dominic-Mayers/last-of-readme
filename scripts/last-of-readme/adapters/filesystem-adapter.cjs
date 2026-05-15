@@ -17,8 +17,8 @@ const {
 /**
  * Assert that the installer is running from the npm package root.
  *
- * This supports the installer logic that still resolves package-file paths from
- * process cwd.
+ * This supports checkCwdIsPackageRootRequirements(), because later filesystem
+ * steps still resolve package-file paths from process cwd.
  *
  * @param {string} packageRoot - The npm package root collected by the npm side
  * of the installer pipeline.
@@ -46,9 +46,9 @@ function assertCwdIsPackageRoot(packageRoot) {
  * Assert that an existing package documentation file selected by the installer
  * is a regular file that Last of Readme can read and write.
  *
- * This supplies the filesystem requirement check used by the package-file and
- * doc-link-placeholder phases before the installer reads or rewrites the
- * selected file.
+ * This supplies the filesystem requirement check used by
+ * checkPackageFilePathRequirements() and checkLinkPlaceholderRequirements()
+ * before the installer reads or rewrites the selected file.
  *
  * @param {string} packageFilePath - Package documentation file path selected
  * for Last of Readme management.
@@ -68,8 +68,9 @@ function validateExistingPackageFile(packageFilePath) {
  * Assert that the selected location can support creation of a missing package
  * documentation file.
  *
- * This supplies the filesystem requirement check used before the installer
- * creates a minimal package documentation file.
+ * This supplies the filesystem requirement check used by
+ * checkLinkPlaceholderRequirements() before createDocLinkFileIfNeeded() creates
+ * a minimal package documentation file.
  *
  * @param {string} packageFilePath - Package documentation file path selected
  * for minimal-file creation.
@@ -106,8 +107,9 @@ function assertPackageFileCanBeCreated(packageFilePath) {
  * Report whether the package documentation file selected by the installer or
  * core updater currently exists.
  *
- * This supplies the filesystem observation used by installer collection logic
- * and by core updater logic that decides whether a managed file is available.
+ * This supplies the filesystem observation used by
+ * collectPackageFilePathEnvironmentInput() and by core updater logic that
+ * decides whether a managed file is available.
  *
  * @param {string} packageFilePath - Package documentation file path selected
  * for Last of Readme management.
@@ -120,9 +122,9 @@ function packageFileExists(packageFilePath) {
 /**
  * Read the package documentation file managed by Last of Readme.
  *
- * During installation, this supplies file content to placeholder-checking logic.
- * At runtime, it supplies file content to the core updater before the managed
- * block is replaced.
+ * During installation, this supplies file content to
+ * collectDocLinkPlaceholderEnvironmentInput(). At runtime, it supplies file
+ * content to the core updater before the managed block is replaced.
  *
  * @param {string} packageFilePath - Package documentation file path to read.
  * @returns {string} UTF-8 file content.
@@ -154,7 +156,8 @@ function writePackageFileContent(packageFilePath, content) {
 
 /**
  * Create the selected package documentation file with minimal Last of Readme
- * content when the installer selected minimal-file creation.
+ * content for createDocLinkFileIfNeeded() when the installer selected
+ * minimal-file creation.
  *
  * @param {string} packageFilePath - Package documentation file path to create.
  * @param {string} content - Initial file content.
