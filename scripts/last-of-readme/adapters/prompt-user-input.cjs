@@ -322,8 +322,11 @@ function printFingerprintedHookPrepended(hook) {
 }
 
 function printConvenienceHookReminder(need) {
-  const { insure } = getConvenienceNeedText(need);
+  const { insure, example } = getConvenienceNeedText(need);
   console.log(`\nℹ️  ${need.hook}: ${insure}`);
+  if (example) {
+    console.log(`   Example: ${example}`);
+  }
 }
 
 /**
