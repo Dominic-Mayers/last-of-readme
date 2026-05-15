@@ -2,8 +2,8 @@
  * Creates the remote-repository adapter used by readme-resolver.html.
  *
  * The returned API is the resolver's boundary to the remote repository:
- * resolveLineageContract() and resolveCorrectionOfContract() use resolveTag()
- * to detect documentation tags, resolveLineageContract() uses
+ * readme-resolver-core.js uses resolveTag()
+ * to detect documentation tags, the lineage resolver uses
  * branchesContaining() to expose branch alternatives, and all contract
  * resolvers use browseDocumentation() to build the final documentation URL.
  *
@@ -16,7 +16,7 @@
  * @param {string} [urlPath=''] - Repository-relative documentation path to open
  * inside the resolved tag or branch.
  * @returns {{ resolveTag: Function, branchesContaining: Function, browseDocumentation: Function }}
- * Remote repository API consumed by readme-resolver.html.
+ * Remote repository port consumed by readme-resolver-core.js.
  */
 function createRemoteRepositoryAPI(remote, urlPath = '') {
   if (!remote || remote.kind !== 'github') {
