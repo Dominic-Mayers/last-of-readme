@@ -195,7 +195,7 @@ function formatExistingInstallationDetails(details) {
  * Presents a unified summary of installation preconditions and asks the user
  * to proceed or abort. Shows:
  * - Existing installation details (if any).
- * - Maintainer-owned workflow responsibilities that Last of Readme depends on.
+ * - Maintainer-owned workflow steps that Last of Readme depends on.
  * Then asks once whether to proceed.
  *
  * @param {object} params
@@ -204,8 +204,8 @@ function formatExistingInstallationDetails(details) {
  * Existing installed Last of Readme footprint detected from lastOfReadme and
  * npm lifecycle hook fields.
  * @param {{ kind: string, hook: string, exampleCommand: string }[]} params.convenienceNeeds -
- * User-owned workflow responsibilities that Last of Readme needs maintainers to
- * satisfy, with example commands shown only as possible implementations.
+ * Maintainer-owned workflow steps that Last of Readme needs maintainers to
+ * implement, with example commands shown only as possible implementations.
  * @returns {Promise<string>} User-entered yes/no answer that
  * assertInstallationPreconditionsConsent() interprets as consent or abort.
  */
@@ -227,15 +227,14 @@ async function askInstallationPreconditions({
     console.log('ℹ️  Last of Readme also depends on maintainer-owned workflow steps.');
     console.log('   These steps are not installed automatically because they belong to');
     console.log('   your package workflow. The examples below show one possible way to');
-    console.log('   satisfy each responsibility.');
+    console.log('   implement each workflow step.');
     for (const need of convenienceNeeds) {
       const { responsibility, example } = getConvenienceNeedText(need);
       console.log(`\n  ${need.hook}:`);
-      console.log(`    Responsibility: ${responsibility}`);
+      console.log(`    Workflow step: ${responsibility}`);
       console.log(`    Example: ${example}`);
     }
-    console.log('\n   You can use these examples, adapt them, or satisfy the responsibilities');
-    console.log('   through an existing workflow.');
+    console.log('\n   You can use these examples or adapt them in a way that fits your workflow.');
     console.log('');
   }
 

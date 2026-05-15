@@ -173,8 +173,8 @@ function normalizeUrl(value) {
 
 
 
-// Maintainer-owned workflow responsibilities that Last of Readme needs to be
-// satisfied. Last of Readme does not install these steps because maintainers own
+// Maintainer-owned workflow steps that Last of Readme depends on.
+// Last of Readme does not install these steps because maintainers own
 // how package files are staged and how commits/tags are pushed.
 // User-visible explanations for these needs live in prompt-user-input.cjs.
 const CONVENIENCE_NEEDS = [
