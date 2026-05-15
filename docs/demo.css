@@ -102,6 +102,18 @@ body {
   background: rgba(175,184,193,0.2);
 }
 
+.empty-readme-note h3 {
+  margin: 0 0 6px;
+}
+
+.empty-readme-note p {
+  margin: 8px 0 0;
+}
+
+.empty-readme-note code {
+  white-space: nowrap;
+}
+
 .editor-textarea {
   width: 100%;
   min-height: 220px;

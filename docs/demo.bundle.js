@@ -8,7 +8,7 @@
     activePane: 'commands',
     installed: true,
     terminalDark: true,
-    selectedNpmVersion: '0.1.0',
+    selectedNpmVersion: null,
     githubSelection: null,
     packageJson: {
       name: '@demo/last-of-readme-package',
@@ -32,18 +32,19 @@
     },
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
-    published: {
-      '0.1.0': { version: '0.1.0', readme: '' },
-    },
+    published: {},
     terminal: [
       'Last of Readme demo ready.',
-      'Step 1: last-of-readme update-readme-link',
-      'Step 2: npm publish',
-      'Step 3: click the README badge in the npm pane.',
+      'No npm version has been published with a Last of Readme badge yet.',
+      'Try this flow:',
+      '  1. last-of-readme update-readme-link',
+      '  2. git add README.md',
+      '  3. git commit',
+      '  4. last-of-readme tag-doc correction-of',
+      '  5. npm publish',
+      'Then click the README badge in the npm pane.',
     ],
   };
-
-  state.published['0.1.0'].readme = state.files['README.md'];
 
   const demoPorts = {
     npm: {
@@ -221,20 +222,39 @@
 
   function renderNpmPane() {
     const versions = Object.keys(state.published).sort();
-    const published = state.published[state.selectedNpmVersion] || state.published[versions[0]];
+    const selectedVersion = state.selectedNpmVersion || versions[versions.length - 1] || null;
+    const published = selectedVersion ? state.published[selectedVersion] : null;
+    const versionControl = versions.length
+      ? `<select class="version-select" data-action="select-version">
+          ${versions.map((v) => `<option value="${v}" ${v === selectedVersion ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>`
+      : '<span class="muted">no published versions</span>';
+    const readmeContent = published
+      ? markdownToHtml(published.readme)
+      : `
+        <div class="empty-readme-note">
+          <h3>No published README yet</h3>
+          <p>
+            The Last of Readme badge will appear in this npm README after the
+            maintainer generates the resolver link and runs the first simulated
+            <code>npm publish</code>.
+          </p>
+          <p class="muted">
+            Suggested flow: run <code>last-of-readme update-readme-link</code>,
+            commit the README, create the documentation tag, then publish.
+          </p>
+        </div>`;
     return `
       <section class="${paneClass('npm')}" data-pane="npm">
         <header class="pane-header npm-header">
           <span>npm package</span>
-          <select class="version-select" data-action="select-version">
-            ${versions.map((v) => `<option value="${v}" ${v === state.selectedNpmVersion ? 'selected' : ''}>${v}</option>`).join('')}
-          </select>
+          ${versionControl}
         </header>
         <div class="pane-body">
           <h2 class="package-title">${escapeHtml(state.packageJson.name)}</h2>
           <div class="muted">Public package page simulation</div>
           <article class="readme-card">
-            ${markdownToHtml(published.readme)}
+            ${readmeContent}
           </article>
         </div>
       </section>`;
@@ -298,7 +318,7 @@
 
   function render() {
     const root = document.getElementById('last-of-readme-demo');
-    root.innerHTML = renderNpmPane() + renderGithubPane() + renderEditorPane() + renderCommandPane();
+    root.innerHTML = renderNpmPane() + renderGithubPane() + renderCommandPane() + renderEditorPane();
   }
 
   document.addEventListener('click', (event) => {
