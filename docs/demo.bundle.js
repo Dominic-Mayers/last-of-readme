@@ -28,7 +28,7 @@
       'README.md': '# Demo Package\n\n[![npm version](https://img.shields.io/npm/v/@demo/last-of-readme-package)](https://www.npmjs.com/package/@demo/last-of-readme-package) <!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n',
     },
     commits: {
-      c1: { id: 'c1', label: 'initial README', files: { 'README.md': '# Demo Package\n\nInitial README published with version 0.1.0.\n' } },
+      c1: { id: 'c1', label: 'add Last of Readme placeholder', files: { 'README.md': '# Demo Package\n\n[![npm version](https://img.shields.io/npm/v/@demo/last-of-readme-package)](https://www.npmjs.com/package/@demo/last-of-readme-package) <!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n' } },
     },
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
