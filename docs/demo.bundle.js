@@ -213,7 +213,7 @@
     const urlPath = url.searchParams.get('urlPath') || '';
     const resolver = window.LastOfReadmeResolver;
     if (!resolver || typeof resolver.resolveReadmeLink !== 'function') {
-      state.terminal.push('resolver core is not available');
+      state.statusMessage = 'resolver core is not available';
       render();
       return;
     }
@@ -226,8 +226,10 @@
 
     if (outcome.action === 'redirect') {
       state.githubSelection = extractTargetFromBrowserUrl(outcome.url);
+      state.statusMessage = 'link resolved — see GitHub pane';
     } else {
       state.githubSelection = { message: outcome.page.message, links: outcome.page.links };
+      state.statusMessage = outcome.page.message || 'no matching version found — see GitHub pane';
     }
     render();
   }
@@ -348,6 +350,14 @@
         ${cmds.map((cmd) => `<button class="cmd-btn${state.commandInput === cmd ? ' is-selected' : ''}" data-action="fill-command" data-command="${escapeHtml(cmd)}">${escapeHtml(cmd)}</button>`).join('')}
       </div>`).join('');
 
+    const outputContent = state.lastCommand
+      ? `$ ${escapeHtml(state.lastCommand)}\n${state.lastOutput.map((l) => escapeHtml(l)).join('\n')}`
+      : '';
+
+    const statusHtml = state.statusMessage
+      ? `<div class="status-line">${escapeHtml(state.statusMessage)}</div>`
+      : `<div class="status-line muted">—</div>`;
+
     return `
       <section class="${paneClass('commands', `terminal-pane ${state.terminalDark ? 'dark' : 'light'}`)}" data-pane="commands">
         <header class="pane-header">
@@ -358,12 +368,13 @@
           </span>
         </header>
         <div class="pane-body">
-          <pre class="terminal-log">${escapeHtml(state.terminal.join('\n'))}</pre>
           <div class="command-palette">${palette}</div>
           <form class="terminal-row" data-action="terminal-form">
             <input name="command" autocomplete="off" value="${escapeHtml(state.commandInput)}" aria-label="Command">
             <button type="submit">Run</button>
           </form>
+          <pre class="command-output">${outputContent}</pre>
+          ${statusHtml}
         </div>
       </section>`;
   }
@@ -382,7 +393,7 @@
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (action === 'toggle-install') {
       state.installed = !state.installed;
-      state.terminal.push(state.installed ? 'last-of-readme installed (demo)' : 'last-of-readme uninstalled (demo)');
+      state.statusMessage = state.installed ? 'last-of-readme installed (demo)' : 'last-of-readme uninstalled (demo)';
       render();
     }
     if (action === 'toggle-terminal-theme') {
@@ -396,7 +407,7 @@
     if (action === 'save-editor') {
       const textarea = document.querySelector('[data-role="editor"]');
       state.files['README.md'] = textarea.value;
-      state.terminal.push('saved README.md locally');
+      state.statusMessage = 'saved README.md locally';
       render();
     }
   });

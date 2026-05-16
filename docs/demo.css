@@ -158,18 +158,32 @@ body {
   border-color: var(--terminal-border);
 }
 
-.terminal-log {
-  flex: 1;
-  min-height: 0;
-  margin: 0 0 10px;
-  padding: 10px;
-  border: 1px solid var(--terminal-border);
+.command-output {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #010409;
-  color: var(--terminal-text);
-  overflow-y: auto;
+  background: rgba(175,184,193,0.1);
+  color: var(--text);
   font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   white-space: pre-wrap;
+  min-height: 4em;
+}
+
+.terminal-pane.dark .command-output {
+  background: #010409;
+  color: var(--terminal-text);
+  border-color: var(--terminal-border);
+}
+
+.status-line {
+  font-size: 12px;
+  padding: 4px 2px;
+  min-height: 1.6em;
+}
+
+.terminal-pane.dark .status-line {
+  color: #8b949e;
 }
 
 .terminal-row {
