@@ -212,7 +212,7 @@
         return [
           `bumped ${previousVersion} → ${nextVersion}`,
           `created commit ${commit} and tag v${nextVersion}`,
-          `last-of-readme not installed — link not updated, Last of Readme tag ${hasLink ? 'not updated' : 'not added'}`,
+          `last-of-readme not installed — link ${hasLink ? 'not updated' : 'not added'}, Last of Readme tag not added`,
         ];
       }
       const result = runUpdateReadmeLink({ args: [], ports: demoPorts });
