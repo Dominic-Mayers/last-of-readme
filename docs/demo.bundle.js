@@ -428,15 +428,6 @@
         ${cmds.map((entry) => { const cmd = typeof entry === 'string' ? entry : entry.cmd; const label = typeof entry === 'string' ? entry : entry.label; return `<button class="cmd-btn${state.commandInput === cmd ? ' is-selected' : ''}" data-action="fill-command" data-command="${escapeHtml(cmd)}">${escapeHtml(label)}</button>`; }).join('')}
       </div>`).join('');
 
-    const hasStagedReadme = Object.prototype.hasOwnProperty.call(state.staged, 'README.md');
-    const repoStatus = `
-      <div class="repo-status">
-        <span>version <strong>${escapeHtml(state.packageJson.version)}</strong></span>
-        <span>main <strong>${escapeHtml(state.branches.main)}</strong></span>
-        <span>${hasStagedReadme ? 'README staged' : 'nothing staged'}</span>
-        <span>${isReadmeCommitted() ? 'working copy clean' : 'local changes'}</span>
-      </div>`;
-
     const outputContent = state.lastCommand
       ? `$ ${escapeHtml(state.lastCommand)}\n${state.lastOutput.map((l) => escapeHtml(l)).join('\n')}`
       : '';
@@ -456,7 +447,6 @@
         </header>
         <div class="pane-body">
           <div class="command-palette">${palette}</div>
-          ${repoStatus}
           <form class="terminal-row" data-action="terminal-form">
             <input name="command" autocomplete="off" value="${escapeHtml(state.commandInput)}" aria-label="Command">
             <button type="submit">Run</button>
