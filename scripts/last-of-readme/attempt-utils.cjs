@@ -8,6 +8,7 @@ const {
   askWhetherToContinueAfterFailure,
   isInteractiveSession,
   displayNonInteractiveFailureWarning,
+  displayLifecycleFailureWarning,
 } = require('./adapters/user-input-adapter.cjs');
 
 async function runAttempt(operationName, callback) {
@@ -24,6 +25,11 @@ async function runAttempt(operationName, callback) {
         throw error;
       }
 
+      return;
+    }
+
+    if (process.env.npm_lifecycle_event) {
+      displayLifecycleFailureWarning({ operationName, error });
       return;
     }
 

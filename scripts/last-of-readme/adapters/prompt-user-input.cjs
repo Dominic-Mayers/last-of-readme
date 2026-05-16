@@ -412,6 +412,10 @@ function displayNonInteractiveFailureWarning({ operationName, policy }) {
   console.warn(`⚠️  Last of Readme failed to ${operationName} (policy: ${policy}). Continuing.`);
 }
 
+function displayLifecycleFailureWarning({ operationName, error }) {
+  console.warn(`⚠️  Last of Readme failed to ${operationName}: ${error.message}. Continuing.`);
+}
+
 const CONTRACT_DESCRIPTIONS = {
   'until-next': describeUntilNext,
   'until-next-warn': describeUntilNextWarn,
@@ -592,6 +596,7 @@ module.exports = {
   printConvenienceHookReminder,
   askWhetherToContinueAfterFailure,
   displayNonInteractiveFailureWarning,
+  displayLifecycleFailureWarning,
   askDocumentationContractConfirmation,
   printNoChangesMade,
   printNextContractSet,

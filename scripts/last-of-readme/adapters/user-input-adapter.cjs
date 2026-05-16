@@ -23,6 +23,7 @@ const {
   printConvenienceHookReminder,
   askWhetherToContinueAfterFailure,
   displayNonInteractiveFailureWarning,
+  displayLifecycleFailureWarning,
 } = require('./prompt-user-input.cjs');
 
 /**
@@ -472,4 +473,5 @@ module.exports = {
   isInteractiveSession,
   askWhetherToContinueAfterFailure: askWhetherToContinueAfterFailureInput,
   displayNonInteractiveFailureWarning,
+  displayLifecycleFailureWarning,
 };
