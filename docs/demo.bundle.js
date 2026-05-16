@@ -212,7 +212,7 @@
         return [
           `bumped ${previousVersion} → ${nextVersion}`,
           `created commit ${commit} and tag v${nextVersion}`,
-          `last-of-readme not installed — link ${hasLink ? 'not updated' : 'not added'}, Last of Readme tag not added`,
+          `last-of-readme not installed — link ${hasLink ? 'not updated' : 'not added'}, successor-of tag not added`,
         ];
       }
       const result = runUpdateReadmeLink({ args: [], ports: demoPorts });
@@ -222,10 +222,12 @@
       }
       const commit = commitLocalReadme(`npm version ${nextVersion}`);
       state.tags[`v${nextVersion}`] = commit;
+      state.tags[`v${previousVersion}-successor-of`] = commit;
       return [
         `bumped ${previousVersion} → ${nextVersion}`,
         `updated README resolver link`,
         `created commit ${commit} and tag v${nextVersion}`,
+        `added successor-of tag for v${previousVersion}`,
       ];
     },
     'npm publish': async () => {

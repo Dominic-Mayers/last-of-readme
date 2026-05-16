@@ -582,6 +582,10 @@ Similarly, every `@assertRequirement` tag should be traceable to an installer ph
 > An @assertRequirement tag should only be used when it is possible to assert the requirement. When the installer already takes care of that, the comment should end with "Asserted in check-assert-requirements ...". Otherwise, we mention the requirement only and it will be understood as a TODO.
 > Similarly, a @configRequirement tag should only be used when it is possible to satisfy the requirement via some configuration. When the installer already takes care of that, the comment should end with "Obtained in check-config-requirements ...". Otherwise, we mention the requirement only and it will be understood as a TODO.
 
+## TODO: 
+
+If the user does not play with the link locally and all bumps are published, it should be the same as the link in the current published npm package, because that link is only modified at version bump. But, you are right, it is not safe because that link could be modified and version bump might not be published. So, if the intention is to add a correction-of tag for the "current" contract, we need to query npm with npm view $(npm pkg get name --no-json) version and look at the table to know what version it is and what was the contract.
+
 ## 📄 License
 
 MIT
