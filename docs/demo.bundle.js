@@ -9,7 +9,7 @@
     installed: true,
     terminalDark: true,
     selectedNpmVersion: null,
-    commandInput: 'last-of-readme update-readme-link',
+    commandInput: 'npm version patch',
     githubSelection: null,
     packageJson: {
       name: '@demo/last-of-readme-package',
@@ -168,6 +168,18 @@
       return [`created commit ${commitLocalReadme('manual README update')} on main`];
     },
     'git push': async () => ['pushed main (simulated)'],
+    'git add README.md && git commit && git push': async () => {
+      if (isReadmeCommitted()) {
+        return ['nothing to commit — edit README.md first'];
+      }
+      delete state.staged['README.md'];
+      const commit = commitLocalReadme('manual README update');
+      return [
+        'staged README.md',
+        `created commit ${commit} on main`,
+        'pushed main (simulated)',
+      ];
+    },
     'last-of-readme tag-doc correction-of': async () => {
       if (!isReadmeCommitted()) {
         return ['README.md has local changes — commit before tagging documentation'];
@@ -421,9 +433,7 @@
     {
       label: 'Corrections',
       commands: [
-        'git add README.md',
-        'git commit',
-        'git push',
+        'git add README.md && git commit && git push',
       ],
     },
     {
