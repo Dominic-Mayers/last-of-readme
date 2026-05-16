@@ -34,7 +34,9 @@
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
     published: {},
-    terminal: [],
+    lastCommand: null,
+    lastOutput: [],
+    statusMessage: null,
   };
 
   const demoPorts = {
@@ -165,34 +167,38 @@
   async function executeTerminalCommand(rawCommand) {
     const command = rawCommand.trim();
     if (!command) return;
-    state.terminal.push(`$ ${command}`);
+
+    state.lastCommand = command;
+    state.lastOutput = [];
+    state.statusMessage = null;
 
     if (!state.installed && command.startsWith('last-of-readme ')) {
-      state.terminal.push('last-of-readme: command not found (demo uninstalled)');
+      state.lastOutput.push('command not found (demo uninstalled)');
       render();
       return;
     }
 
     const suggestion = suggestCommand(command);
     if (suggestion) {
-      state.terminal.push(`this is a demo — try: ${suggestion}`);
+      state.lastOutput.push(`try: ${suggestion}`);
       render();
       return;
     }
 
     const handler = commands[command];
     if (!handler) {
-      state.terminal.push('this is a demo — select a command from the palette below');
+      state.lastCommand = null;
+      state.statusMessage = 'select a command from the palette above';
       render();
       return;
     }
 
     try {
       for (const line of await handler()) {
-        state.terminal.push(line);
+        state.lastOutput.push(line);
       }
     } catch (error) {
-      state.terminal.push(`error: ${error && error.message ? error.message : String(error)}`);
+      state.lastOutput.push(`error: ${error && error.message ? error.message : String(error)}`);
     }
     render();
   }
