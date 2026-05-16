@@ -257,7 +257,7 @@
   };
 
   function suggestCommand(command) {
-    if (/^git add(\s|$)/.test(command) && command !== 'git add README.md') {
+    if (/^git add(\s|$)/.test(command) && command !== 'git add README.md' && command !== 'git add README.md && git commit && git push') {
       return 'git add README.md';
     }
     if (/^git commit(\s|$)/.test(command) && command !== 'git commit') {
