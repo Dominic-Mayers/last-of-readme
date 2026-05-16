@@ -28,7 +28,7 @@
       'README.md': '# Demo Package\n\n[![npm version](https://img.shields.io/npm/v/@demo/last-of-readme-package)](https://www.npmjs.com/package/@demo/last-of-readme-package) <!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n',
     },
     commits: {
-      c1: { id: 'c1', label: 'add Last of Readme placeholder', files: { 'README.md': '# Demo Package\n\n[![npm version](https://img.shields.io/npm/v/@demo/last-of-readme-package)](https://www.npmjs.com/package/@demo/last-of-readme-package) <!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n' } },
+      c1: { id: 'c1', label: 'add Last of Readme placeholder', parents: [], files: { 'README.md': '# Demo Package\n\n[![npm version](https://img.shields.io/npm/v/@demo/last-of-readme-package)](https://www.npmjs.com/package/@demo/last-of-readme-package) <!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n' } },
     },
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
@@ -83,6 +83,21 @@
       .replace(/<\/h([1-3])><\/p>/g, '</h$1>');
   }
 
+  function commitAncestors(commitId) {
+    const visited = new Set();
+    const queue = [commitId];
+    while (queue.length) {
+      const id = queue.shift();
+      if (visited.has(id)) continue;
+      visited.add(id);
+      const commit = state.commits[id];
+      if (commit && commit.parents) {
+        for (const p of commit.parents) queue.push(p);
+      }
+    }
+    return visited;
+  }
+
   function createDemoRemoteRepository(urlPath) {
     function resolveTag(ref) {
       return Promise.resolve(state.tags[ref] || state.branches[ref] || null);
@@ -90,7 +105,7 @@
 
     function branchesContaining(commitId) {
       const branches = Object.entries(state.branches)
-        .filter(([, branchCommit]) => branchCommit === commitId)
+        .filter(([, branchHead]) => commitAncestors(branchHead).has(commitId))
         .map(([branch]) => branch);
       return Promise.resolve(branches);
     }
@@ -107,7 +122,7 @@
 
   function commitLocalReadme(label) {
     const id = `c${Object.keys(state.commits).length + 1}`;
-    state.commits[id] = { id, label, files: { 'README.md': state.files['README.md'] } };
+    state.commits[id] = { id, label, parents: [state.branches.main], files: { 'README.md': state.files['README.md'] } };
     state.branches.main = id;
     return id;
   }
@@ -128,12 +143,11 @@
       return [`created movable tag ${tag} at ${commit}`];
     },
     'npm publish': async () => {
-      state.published[state.packageJson.version] = {
-        version: state.packageJson.version,
-        readme: state.files['README.md'],
-      };
-      state.selectedNpmVersion = state.packageJson.version;
-      return [`published ${state.packageJson.name}@${state.packageJson.version}`];
+      const version = state.packageJson.version;
+      state.published[version] = { version, readme: state.files['README.md'] };
+      state.selectedNpmVersion = version;
+      state.tags[`v${version}`] = state.branches.main;
+      return [`published ${state.packageJson.name}@${version}`, `tagged v${version} at ${state.branches.main}`];
     },
   };
 
@@ -229,7 +243,6 @@
             <li><code>last-of-readme update-readme-link</code></li>
             <li><code>git add README.md</code></li>
             <li><code>git commit</code></li>
-            <li><code>last-of-readme tag-doc correction-of</code></li>
             <li><code>npm publish</code></li>
           </ol>
           <p class="muted">Then click the badge that appears in this README to see the resolver in action.</p>
