@@ -11,6 +11,11 @@ const {
 const ALLOWED_KINDS = new Set(['last-of', 'successor-of', 'correction-of']);
 const MOVABLE_KINDS = new Set(['correction-of']);
 
+function isKindCompatibleWithContract(kind, contract) {
+  if (kind === 'correction-of') return contract === 'correction-of';
+  return contract !== 'correction-of';
+}
+
 function parseTagDocArgs(args, ports) {
   const push = !args.includes('--no-push');
   const positional = args.filter((arg) => !arg.startsWith('--'));
@@ -47,7 +52,7 @@ function annotationFor(kind, version) {
   return `Successor README anchor for version ${version}`;
 }
 
-function runTagDocCommand({ args, ports }) {
+async function runTagDocCommand({ args, ports }) {
   const parsed = parseTagDocArgs(args, ports);
   if (!parsed.ok) {
     return parsed;
@@ -55,13 +60,26 @@ function runTagDocCommand({ args, ports }) {
 
   try {
     const { kind, push } = parsed;
-    const version = ports.npm.currentPackageVersion();
+    const packageName = ports.npm.packageName();
+    const published = await ports.registry.fetchPublishedLink(packageName);
+    if (!published) {
+      return commandFailed(
+        new Error(`No resolver link found in published package '${packageName}'`),
+        { failureKind: 'published-link-not-found' }
+      );
+    }
+    const { version, contract } = published;
+    const messages = [];
+    const effects = [];
+
+    if (!isKindCompatibleWithContract(kind, contract)) {
+      messages.push(commandMessage('contract-kind-mismatch', { kind, contract }));
+    }
+
     const tag = `v${version}-${kind}`;
 
     const movable = MOVABLE_KINDS.has(kind);
     const annotation = annotationFor(kind, version);
-    const messages = [];
-    const effects = [];
 
     if (movable) {
       ports.git.setMovableTagAtCurrentCommit(tag, annotation);
@@ -113,6 +131,9 @@ function printTagDocResult(result, ports) {
   }
 
   for (const message of result.messages || []) {
+    if (message.kind === 'contract-kind-mismatch') {
+      ports.userInput.printContractKindMismatchWarning(message.kind, message.contract);
+    }
     if (message.kind === 'movable-tag-created') {
       ports.userInput.printMovableTagCreated(message.tag);
     }
@@ -131,9 +152,9 @@ function printTagDocResult(result, ports) {
   }
 }
 
-function main() {
+async function main() {
   const ports = createDefaultRuntimePorts();
-  const result = runTagDocCommand({
+  const result = await runTagDocCommand({
     args: process.argv.slice(2),
     ports,
   });

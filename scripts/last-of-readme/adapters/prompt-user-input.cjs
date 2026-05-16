@@ -545,6 +545,17 @@ function printTagNotPushed() {
   console.log('ℹ️ Tag not pushed');
 }
 
+function printContractKindMismatchWarning(kind, contract) {
+  console.warn(`⚠️  ${mismatchMessage(kind, contract)}`);
+}
+
+function mismatchMessage(kind, contract) {
+  if (kind === 'correction-of') {
+    return `The 'correction-of' tag is intended for the 'correction-of' contract, but the published link uses '${contract}'.`;
+  }
+  return `The '${kind}' tag is intended for 'until-*' contracts, but the published link uses '${contract}'.`;
+}
+
 function printPackageFileUpdatedForVersion(documentationPath, version) {
   console.log(`✅ ${documentationPath} updated for version ${version}`);
 }
@@ -600,6 +611,7 @@ module.exports = {
   askDocumentationContractConfirmation,
   printNoChangesMade,
   printNextContractSet,
+  printContractKindMismatchWarning,
   printTagCreated,
   printMovableTagCreated,
   printTagPushed,

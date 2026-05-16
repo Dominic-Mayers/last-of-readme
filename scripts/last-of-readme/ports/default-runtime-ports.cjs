@@ -13,6 +13,7 @@ function createDefaultRuntimePorts() {
     git: require('../adapters/git-adapter.cjs'),
     filesystem: require('../adapters/filesystem-adapter.cjs'),
     userInput: require('../adapters/prompt-user-input.cjs'),
+    registry: require('../adapters/registry-adapter.cjs'),
   };
 }
 
