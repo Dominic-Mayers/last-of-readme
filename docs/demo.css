@@ -221,7 +221,27 @@ button {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-bottom: 6px;
+}
+
+.repo-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.repo-status span {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(175,184,193,0.12);
+}
+
+.terminal-pane.dark .repo-status span {
+  border-color: var(--terminal-border);
+  background: #161b22;
 }
 
 .cmd-group {

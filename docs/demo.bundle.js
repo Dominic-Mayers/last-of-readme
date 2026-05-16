@@ -34,6 +34,7 @@
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
     published: {},
+    staged: {},
     lastCommand: null,
     lastOutput: [],
     statusMessage: null,
@@ -130,39 +131,101 @@
     return id;
   }
 
+  function branchReadme() {
+    const head = state.commits[state.branches.main];
+    return head && head.files ? head.files['README.md'] : null;
+  }
+
+  function isReadmeCommitted() {
+    return state.files['README.md'] === branchReadme();
+  }
+
+  function bumpPatchVersion(version) {
+    const parts = String(version).split('.').map((p) => Number(p));
+    if (parts.length !== 3 || parts.some((p) => !Number.isInteger(p) || p < 0)) {
+      throw new Error(`cannot bump non-semver version ${version}`);
+    }
+    parts[2] += 1;
+    return parts.join('.');
+  }
+
   const commands = {
     'last-of-readme update-readme-link': async () => {
       const result = runUpdateReadmeLink({ args: [], ports: demoPorts });
       if (!result.ok) throw new Error(result.message);
       return [`updated ${result.documentationPath} for ${result.version}`];
     },
-    'git add README.md': async () => ['staged README.md (simulated)'],
-    'git commit': async () => [`created commit ${commitLocalReadme('manual README update')} on main`],
+    'git add README.md': async () => {
+      state.staged['README.md'] = state.files['README.md'];
+      return ['staged README.md'];
+    },
+    'git commit': async () => {
+      if (!Object.prototype.hasOwnProperty.call(state.staged, 'README.md')) {
+        return ['nothing to commit — run git add README.md first'];
+      }
+      state.files['README.md'] = state.staged['README.md'];
+      delete state.staged['README.md'];
+      return [`created commit ${commitLocalReadme('manual README update')} on main`];
+    },
     'git push': async () => ['pushed main (simulated)'],
     'last-of-readme tag-doc correction-of': async () => {
+      if (!isReadmeCommitted()) {
+        return ['README.md has local changes — commit before tagging documentation'];
+      }
       const commit = state.branches.main;
       const tag = `v${state.packageJson.version}-correction-of`;
       state.tags[tag] = commit;
       return [`created movable tag ${tag} at ${commit}`];
     },
     'last-of-readme tag-doc last-of': async () => {
+      if (!isReadmeCommitted()) {
+        return ['README.md has local changes — commit before tagging documentation'];
+      }
       const commit = state.branches.main;
       const tag = `v${state.packageJson.version}-last-of`;
       state.tags[tag] = commit;
       return [`created movable tag ${tag} at ${commit}`];
     },
     'last-of-readme tag-doc successor-of': async () => {
+      if (!isReadmeCommitted()) {
+        return ['README.md has local changes — commit before tagging documentation'];
+      }
       const commit = state.branches.main;
       const tag = `v${state.packageJson.version}-successor-of`;
       state.tags[tag] = commit;
       return [`created movable tag ${tag} at ${commit}`];
     },
+    'npm version patch': async () => {
+      if (!isReadmeCommitted()) {
+        return ['README.md has local changes — commit or discard before npm version patch'];
+      }
+      const previousVersion = state.packageJson.version;
+      const nextVersion = bumpPatchVersion(previousVersion);
+      state.packageJson.version = nextVersion;
+      const result = runUpdateReadmeLink({ args: [], ports: demoPorts });
+      if (!result.ok) {
+        state.packageJson.version = previousVersion;
+        throw new Error(result.message);
+      }
+      const commit = commitLocalReadme(`npm version ${nextVersion}`);
+      state.tags[`v${nextVersion}`] = commit;
+      return [
+        `bumped ${previousVersion} → ${nextVersion}`,
+        `updated README resolver link`,
+        `created commit ${commit} and tag v${nextVersion}`,
+      ];
+    },
     'npm publish': async () => {
+      if (!isReadmeCommitted()) {
+        return ['README.md has local changes — commit before npm publish so npm and GitHub stay aligned'];
+      }
       const version = state.packageJson.version;
-      state.published[version] = { version, readme: state.files['README.md'] };
+      state.published[version] = { version, readme: branchReadme() };
       state.selectedNpmVersion = version;
-      state.tags[`v${version}`] = state.branches.main;
-      return [`published ${state.packageJson.name}@${version}`, `tagged v${version} at ${state.branches.main}`];
+      if (!state.tags[`v${version}`]) {
+        state.tags[`v${version}`] = state.branches.main;
+      }
+      return [`published ${state.packageJson.name}@${version}`, `npm README came from commit ${state.branches.main}`];
     },
   };
 
@@ -273,11 +336,9 @@
       : `
         <div class="empty-readme-note">
           <h3>No published README yet</h3>
-          <p>Run these commands in the terminal to publish the first version with a resolver badge:</p>
+          <p>Run these two commands to publish the first version with a resolver badge:</p>
           <ol>
-            <li><code>last-of-readme update-readme-link</code></li>
-            <li><code>git add README.md</code></li>
-            <li><code>git commit</code></li>
+            <li><code>npm version patch</code> — bumps to 0.1.1, inserts the link, commits and tags</li>
             <li><code>npm publish</code></li>
           </ol>
           <p class="muted">Then click the badge that appears in this README to see the resolver in action.</p>
@@ -338,16 +399,22 @@
     {
       label: 'Normal flow',
       commands: [
-        'last-of-readme update-readme-link',
-        'git add README.md',
-        'git commit',
+        'npm version patch',
         'npm publish',
       ],
     },
     {
-      label: 'Additional',
+      label: 'Corrections',
       commands: [
+        'last-of-readme update-readme-link',
+        'git add README.md',
+        'git commit',
         'git push',
+      ],
+    },
+    {
+      label: 'Tags',
+      commands: [
         'last-of-readme tag-doc correction-of',
         'last-of-readme tag-doc last-of',
         'last-of-readme tag-doc successor-of',
@@ -361,6 +428,15 @@
         <span class="cmd-group-label">${escapeHtml(label)}</span>
         ${cmds.map((cmd) => `<button class="cmd-btn${state.commandInput === cmd ? ' is-selected' : ''}" data-action="fill-command" data-command="${escapeHtml(cmd)}">${escapeHtml(cmd)}</button>`).join('')}
       </div>`).join('');
+
+    const hasStagedReadme = Object.prototype.hasOwnProperty.call(state.staged, 'README.md');
+    const repoStatus = `
+      <div class="repo-status">
+        <span>version <strong>${escapeHtml(state.packageJson.version)}</strong></span>
+        <span>main <strong>${escapeHtml(state.branches.main)}</strong></span>
+        <span>${hasStagedReadme ? 'README staged' : 'nothing staged'}</span>
+        <span>${isReadmeCommitted() ? 'working copy clean' : 'local changes'}</span>
+      </div>`;
 
     const outputContent = state.lastCommand
       ? `$ ${escapeHtml(state.lastCommand)}\n${state.lastOutput.map((l) => escapeHtml(l)).join('\n')}`
@@ -381,6 +457,7 @@
         </header>
         <div class="pane-body">
           <div class="command-palette">${palette}</div>
+          ${repoStatus}
           <form class="terminal-row" data-action="terminal-form">
             <input name="command" autocomplete="off" value="${escapeHtml(state.commandInput)}" aria-label="Command">
             <button type="submit">Run</button>
