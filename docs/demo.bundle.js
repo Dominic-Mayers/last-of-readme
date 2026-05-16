@@ -33,7 +33,9 @@
     },
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
-    published: {},
+    published: {
+      '0.1.0': { version: '0.1.0', readme: '# Demo Package\n\n<!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n' },
+    },
     staged: {},
     lastCommand: null,
     lastOutput: [],
@@ -227,6 +229,11 @@
           `last-of-readme not installed — link ${hasLink ? 'not updated' : 'not added'}, successor-of tag not added`,
         ];
       }
+      const prevReadme = state.files['README.md'];
+      const psi = prevReadme.indexOf(START_MARKER);
+      const pei = psi !== -1 ? prevReadme.indexOf(END_MARKER, psi + START_MARKER.length) : -1;
+      const prevHadLink = psi !== -1 && pei !== -1 && prevReadme.slice(psi + START_MARKER.length, pei).trim().length > 0;
+
       const result = runUpdateReadmeLink({ args: [], ports: demoPorts });
       if (!result.ok) {
         state.packageJson.version = previousVersion;
@@ -234,13 +241,16 @@
       }
       const commit = commitLocalReadme(`npm version ${nextVersion}`);
       state.tags[`v${nextVersion}`] = commit;
-      state.tags[`v${previousVersion}-successor-of`] = commit;
-      return [
+      const output = [
         `bumped ${previousVersion} → ${nextVersion}`,
         `updated README resolver link`,
         `created commit ${commit} and tag v${nextVersion}`,
-        `added successor-of tag for v${previousVersion}`,
       ];
+      if (prevHadLink) {
+        state.tags[`v${previousVersion}-successor-of`] = commit;
+        output.push(`added successor-of tag for v${previousVersion}`);
+      }
+      return output;
     },
     'npm publish': async () => {
       if (!isReadmeCommitted()) {
