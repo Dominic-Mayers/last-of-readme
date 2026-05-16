@@ -406,18 +406,17 @@
     {
       label: 'Corrections',
       commands: [
-        'last-of-readme update-readme-link',
         'git add README.md',
         'git commit',
         'git push',
       ],
     },
     {
-      label: 'Tags',
+      label: 'Add tags',
       commands: [
-        'last-of-readme tag-doc correction-of',
-        'last-of-readme tag-doc last-of',
-        'last-of-readme tag-doc successor-of',
+        { cmd: 'last-of-readme tag-doc correction-of', label: 'correction-of' },
+        { cmd: 'last-of-readme tag-doc last-of', label: 'last-of' },
+        { cmd: 'last-of-readme tag-doc successor-of', label: 'successor-of' },
       ],
     },
   ];
@@ -426,7 +425,7 @@
     const palette = commandGroups.map(({ label, commands: cmds }) => `
       <div class="cmd-group">
         <span class="cmd-group-label">${escapeHtml(label)}</span>
-        ${cmds.map((cmd) => `<button class="cmd-btn${state.commandInput === cmd ? ' is-selected' : ''}" data-action="fill-command" data-command="${escapeHtml(cmd)}">${escapeHtml(cmd)}</button>`).join('')}
+        ${cmds.map((entry) => { const cmd = typeof entry === 'string' ? entry : entry.cmd; const label = typeof entry === 'string' ? entry : entry.label; return `<button class="cmd-btn${state.commandInput === cmd ? ' is-selected' : ''}" data-action="fill-command" data-command="${escapeHtml(cmd)}">${escapeHtml(label)}</button>`; }).join('')}
       </div>`).join('');
 
     const hasStagedReadme = Object.prototype.hasOwnProperty.call(state.staged, 'README.md');
