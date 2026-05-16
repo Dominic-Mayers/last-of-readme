@@ -9,6 +9,7 @@
     installed: true,
     terminalDark: true,
     selectedNpmVersion: null,
+    commandInput: 'last-of-readme update-readme-link',
     githubSelection: null,
     packageJson: {
       name: '@demo/last-of-readme-package',
@@ -151,6 +152,16 @@
     },
   };
 
+  function suggestCommand(command) {
+    if (/^git add(\s|$)/.test(command) && command !== 'git add README.md') {
+      return 'git add README.md';
+    }
+    if (/^git commit(\s|$)/.test(command) && command !== 'git commit') {
+      return 'git commit';
+    }
+    return null;
+  }
+
   async function executeTerminalCommand(rawCommand) {
     const command = rawCommand.trim();
     if (!command) return;
@@ -162,9 +173,16 @@
       return;
     }
 
+    const suggestion = suggestCommand(command);
+    if (suggestion) {
+      state.terminal.push(`this is a demo — try: ${suggestion}`);
+      render();
+      return;
+    }
+
     const handler = commands[command];
     if (!handler) {
-      state.terminal.push(`demo: unsupported command: ${command}`);
+      state.terminal.push('this is a demo — select a command from the palette below');
       render();
       return;
     }
@@ -201,12 +219,9 @@
     });
 
     if (outcome.action === 'redirect') {
-      const target = extractTargetFromBrowserUrl(outcome.url);
-      state.githubSelection = target;
-      state.terminal.push(`resolver redirected to ${outcome.url}`);
+      state.githubSelection = extractTargetFromBrowserUrl(outcome.url);
     } else {
       state.githubSelection = { message: outcome.page.message, links: outcome.page.links };
-      state.terminal.push(`resolver rendered: ${outcome.page.message}`);
     }
     render();
   }
@@ -299,7 +314,34 @@
       </section>`;
   }
 
+  const commandGroups = [
+    {
+      label: 'Normal flow',
+      commands: [
+        'last-of-readme update-readme-link',
+        'git add README.md',
+        'git commit',
+        'npm publish',
+      ],
+    },
+    {
+      label: 'Additional',
+      commands: [
+        'git push',
+        'last-of-readme tag-doc correction-of',
+        'last-of-readme tag-doc last-of',
+        'last-of-readme tag-doc successor-of',
+      ],
+    },
+  ];
+
   function renderCommandPane() {
+    const palette = commandGroups.map(({ label, commands: cmds }) => `
+      <div class="cmd-group">
+        <span class="cmd-group-label">${escapeHtml(label)}</span>
+        ${cmds.map((cmd) => `<button class="cmd-btn${state.commandInput === cmd ? ' is-selected' : ''}" data-action="fill-command" data-command="${escapeHtml(cmd)}">${escapeHtml(cmd)}</button>`).join('')}
+      </div>`).join('');
+
     return `
       <section class="${paneClass('commands', `terminal-pane ${state.terminalDark ? 'dark' : 'light'}`)}" data-pane="commands">
         <header class="pane-header">
@@ -311,8 +353,9 @@
         </header>
         <div class="pane-body">
           <pre class="terminal-log">${escapeHtml(state.terminal.join('\n'))}</pre>
+          <div class="command-palette">${palette}</div>
           <form class="terminal-row" data-action="terminal-form">
-            <input name="command" autocomplete="off" value="last-of-readme update-readme-link" aria-label="Command">
+            <input name="command" autocomplete="off" value="${escapeHtml(state.commandInput)}" aria-label="Command">
             <button type="submit">Run</button>
           </form>
         </div>
@@ -340,6 +383,10 @@
       state.terminalDark = !state.terminalDark;
       render();
     }
+    if (action === 'fill-command') {
+      const cmd = event.target.closest('[data-command]')?.dataset.command;
+      if (cmd) { state.commandInput = cmd; render(); }
+    }
     if (action === 'save-editor') {
       const textarea = document.querySelector('[data-role="editor"]');
       state.files['README.md'] = textarea.value;
@@ -352,7 +399,9 @@
     const form = event.target.closest('[data-action="terminal-form"]');
     if (!form) return;
     event.preventDefault();
-    executeTerminalCommand(new FormData(form).get('command'));
+    const cmd = new FormData(form).get('command');
+    state.commandInput = cmd;
+    executeTerminalCommand(cmd);
   });
 
   document.addEventListener('change', (event) => {
