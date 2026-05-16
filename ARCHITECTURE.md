@@ -475,6 +475,10 @@ As previously mentioned, we distinguish between two kinds of installation requir
 
 The installation requirements can be grouped in terms of the part of the environment to which they apply. In the design of the installer, we try to discover these requirements by analysing what  the individual adapter functions that cross the boundary toward a part of the environment requires from this part of the environment.
 
+Although the filesystem is treated architecturally as an environment part behind adapters, its role differs from tools such as Git. Git is an external environment service whose existence must be asserted explicitly by Last of Readme. In contrast, filesystem capabilities are embedded in the Node runtime platform itself. Last of Readme therefore assumes the existence of Node filesystem services in the same way it assumes JavaScript execution, while still treating filesystem access as an adapter boundary for architectural purposes. The distinction is therefore between:
+
+- the architectural role of a part as an environment boundary;
+- the operational/runtime role of a part in the execution platform.
 
 ### Use of JSDoc tags
 In the `*-adapter.cjs` scripts, we identify these requirements using specific JSDoc tags: @configRequirement and @assertRequirement.
@@ -584,7 +588,7 @@ Similarly, every `@assertRequirement` tag should be traceable to an installer ph
 
 ## TODO: 
 
-If the user does not play with the link locally and all bumps are published, it should be the same as the link in the current published npm package, because that link is only modified at version bump. But, you are right, it is not safe because that link could be modified and version bump might not be published. So, if the intention is to add a correction-of tag for the "current" contract, we need to query npm with npm view $(npm pkg get name --no-json) version and look at the table to know what version it is and what was the contract.
+If the user does not play with the link locally and all bumps are published, it should be the same as the link in the current published npm package, because that link is only modified at version bump. But, it is not safe because that link could be modified and version bump might not be published. So, if the intention is to add a correction-of tag for the "current" contract, we need to query npm with npm view $(npm pkg get name --no-json) version and look at the table to know what version it is and what was the contract.
 
 ## 📄 License
 
