@@ -202,6 +202,19 @@
       const previousVersion = state.packageJson.version;
       const nextVersion = bumpPatchVersion(previousVersion);
       state.packageJson.version = nextVersion;
+      if (!state.installed) {
+        const commit = commitLocalReadme(`npm version ${nextVersion}`);
+        state.tags[`v${nextVersion}`] = commit;
+        const readme = state.files['README.md'];
+        const si = readme.indexOf(START_MARKER);
+        const ei = si !== -1 ? readme.indexOf(END_MARKER, si + START_MARKER.length) : -1;
+        const hasLink = si !== -1 && ei !== -1 && readme.slice(si + START_MARKER.length, ei).trim().length > 0;
+        return [
+          `bumped ${previousVersion} → ${nextVersion}`,
+          `created commit ${commit} and tag v${nextVersion}`,
+          `last-of-readme not installed — link not updated, Last of Readme tag ${hasLink ? 'not updated' : 'not added'}`,
+        ];
+      }
       const result = runUpdateReadmeLink({ args: [], ports: demoPorts });
       if (!result.ok) {
         state.packageJson.version = previousVersion;
