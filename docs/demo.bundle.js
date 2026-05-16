@@ -145,6 +145,18 @@
       state.tags[tag] = commit;
       return [`created movable tag ${tag} at ${commit}`];
     },
+    'last-of-readme tag-doc last-of': async () => {
+      const commit = state.branches.main;
+      const tag = `v${state.packageJson.version}-last-of`;
+      state.tags[tag] = commit;
+      return [`created movable tag ${tag} at ${commit}`];
+    },
+    'last-of-readme tag-doc successor-of': async () => {
+      const commit = state.branches.main;
+      const tag = `v${state.packageJson.version}-successor-of`;
+      state.tags[tag] = commit;
+      return [`created movable tag ${tag} at ${commit}`];
+    },
     'npm publish': async () => {
       const version = state.packageJson.version;
       state.published[version] = { version, readme: state.files['README.md'] };
