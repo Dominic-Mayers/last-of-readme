@@ -64,14 +64,17 @@ function renderResolutionPage(page) {
     return;
   }
 
-  const remoteRepository = createRemoteRepositoryAPI({
+  const remote = {
     kind: 'github',
     repositoryApiUrl,
     repositoryBrowserUrl,
-  }, urlPath);
+  };
+  const remoteRepository = createRemoteRepositoryAPI(remote);
+  const repositoryPage = createRepositoryPageAPI(remote, urlPath);
 
   const outcome = await LastOfReadmeResolver.resolveReadmeLink({
     remoteRepository,
+    repositoryPage,
     version,
     contract,
   });

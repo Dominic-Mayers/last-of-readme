@@ -6,11 +6,16 @@
  * responsibilities belong to runtime drivers such as readme-resolver.html, a
  * test harness, or a future browser demo.
  *
- * The resolver core depends only on the remoteRepository port:
+ * The resolver core depends on two small ports:
  *
+ * remoteRepository:
  *   {
  *     resolveTag(tag): Promise<string | null>,
- *     branchesContaining(repoNode): Promise<string[]>,
+ *     branchesContaining(repoNode): Promise<string[]>
+ *   }
+ *
+ * repositoryPage:
+ *   {
  *     browseDocumentation(target): string
  *   }
  */
@@ -23,7 +28,7 @@
     return { action: 'render', page };
   }
 
-  async function resolveLineageContract(remoteRepository, version, {
+  async function resolveLineageContract(remoteRepository, repositoryPage, version, {
     hasWarning,
     successorPriority,
   }) {
@@ -52,12 +57,12 @@
 
       return singleLinkOutcome({
         label: next,
-        url: remoteRepository.browseDocumentation(next),
+        url: repositoryPage.browseDocumentation(next),
       });
     }
 
     if (await remoteRepository.resolveTag(last)) {
-      return redirectOutcome(remoteRepository.browseDocumentation(last));
+      return redirectOutcome(repositoryPage.browseDocumentation(last));
     }
 
     if (successorPriority === 'before-branches') {
@@ -90,7 +95,7 @@
     if (containingBranches.length === 1) {
       return singleLinkOutcome({
         label: containingBranches[0],
-        url: remoteRepository.browseDocumentation(containingBranches[0]),
+        url: repositoryPage.browseDocumentation(containingBranches[0]),
       });
     }
 
@@ -102,55 +107,55 @@
           : 'multiple branches: ' + containingBranches.join(', '),
         links: containingBranches.map((branch) => ({
           label: branch,
-          url: remoteRepository.browseDocumentation(branch),
+          url: repositoryPage.browseDocumentation(branch),
         })),
       });
     }
 
     return singleLinkOutcome({
       label: base,
-      url: remoteRepository.browseDocumentation(base),
+      url: repositoryPage.browseDocumentation(base),
     });
   }
 
-  async function resolveUntilNextContract(remoteRepository, version) {
-    return resolveLineageContract(remoteRepository, version, {
+  async function resolveUntilNextContract(remoteRepository, repositoryPage, version) {
+    return resolveLineageContract(remoteRepository, repositoryPage, version, {
       successorPriority: 'before-branches',
       hasWarning: false,
     });
   }
 
-  async function resolveUntilNextWarnContract(remoteRepository, version) {
-    return resolveLineageContract(remoteRepository, version, {
+  async function resolveUntilNextWarnContract(remoteRepository, repositoryPage, version) {
+    return resolveLineageContract(remoteRepository, repositoryPage, version, {
       successorPriority: 'before-branches',
       hasWarning: true,
     });
   }
 
-  async function resolveUntilBranchWarnContract(remoteRepository, version) {
-    return resolveLineageContract(remoteRepository, version, {
+  async function resolveUntilBranchWarnContract(remoteRepository, repositoryPage, version) {
+    return resolveLineageContract(remoteRepository, repositoryPage, version, {
       successorPriority: 'after-branches',
       hasWarning: true,
     });
   }
 
-  async function resolveUntilBranchContract(remoteRepository, version) {
-    return resolveLineageContract(remoteRepository, version, {
+  async function resolveUntilBranchContract(remoteRepository, repositoryPage, version) {
+    return resolveLineageContract(remoteRepository, repositoryPage, version, {
       successorPriority: 'after-branches',
       hasWarning: false,
     });
   }
 
-  async function resolveCorrectionOfContract(remoteRepository, version) {
+  async function resolveCorrectionOfContract(remoteRepository, repositoryPage, version) {
     const base = `v${version}`;
     const correction = `${base}-correction-of`;
 
     if (await remoteRepository.resolveTag(correction)) {
-      return redirectOutcome(remoteRepository.browseDocumentation(correction));
+      return redirectOutcome(repositoryPage.browseDocumentation(correction));
     }
 
     if (await remoteRepository.resolveTag(base)) {
-      return redirectOutcome(remoteRepository.browseDocumentation(base));
+      return redirectOutcome(repositoryPage.browseDocumentation(base));
     }
 
     return renderOutcome({
@@ -168,9 +173,13 @@
     'correction-of': resolveCorrectionOfContract,
   };
 
-  async function resolveReadmeLink({ remoteRepository, version, contract = 'until-next' }) {
+  async function resolveReadmeLink({ remoteRepository, repositoryPage, version, contract = 'until-next' }) {
     if (!remoteRepository) {
       throw new Error('remoteRepository is required');
+    }
+
+    if (!repositoryPage) {
+      throw new Error('repositoryPage is required');
     }
 
     if (!version) {
@@ -190,7 +199,7 @@
       });
     }
 
-    return contractResolver(remoteRepository, version);
+    return contractResolver(remoteRepository, repositoryPage, version);
   }
 
   global.LastOfReadmeResolver = {

@@ -104,7 +104,7 @@
     return visited;
   }
 
-  function createDemoRemoteRepository(urlPath) {
+  function createDemoRemoteRepository() {
     function resolveTag(ref) {
       return Promise.resolve(state.tags[ref] || state.branches[ref] || null);
     }
@@ -116,6 +116,10 @@
       return Promise.resolve(branches);
     }
 
+    return { resolveTag, branchesContaining };
+  }
+
+  function createDemoRepositoryPage(urlPath) {
     function browseDocumentation(target) {
       const remote = state.packageJson.lastOfReadme.remote;
       const normalizedPath = String(urlPath || '').replace(/^\/+/, '');
@@ -123,7 +127,7 @@
       return normalizedPath ? `${base}/${normalizedPath}` : base;
     }
 
-    return { resolveTag, branchesContaining, browseDocumentation };
+    return { browseDocumentation };
   }
 
   function commitLocalReadme(label) {
@@ -331,9 +335,10 @@
     }
 
     const outcome = await resolver.resolveReadmeLink({
+      remoteRepository: createDemoRemoteRepository(),
+      repositoryPage: createDemoRepositoryPage(urlPath),
       version,
       contract,
-      remoteRepository: createDemoRemoteRepository(urlPath),
     });
 
     if (outcome.action === 'redirect') {

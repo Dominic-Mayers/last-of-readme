@@ -1,36 +1,32 @@
 /**
- * Creates the remote-repository adapter used by readme-resolver.html.
+ * Creates the remote-repository service adapter used by readme-resolver.html.
  *
- * The returned API is the resolver's boundary to the remote repository:
+ * The returned API is the resolver's boundary to repository state:
  * readme-resolver-core.js uses resolveTag()
  * to detect documentation tags, the lineage resolver uses
- * branchesContaining() to expose branch alternatives, and all contract
- * resolvers use browseDocumentation() to build the final documentation URL.
+ * branchesContaining() to expose branch alternatives.
+ *
+ * Browser/documentation presentation is handled separately by the repository
+ * page adapter created with createRepositoryPageAPI().
  *
  * @param {object} remote
  * @param {string} remote.kind - Remote adapter kind. Currently only `github`
  * is supported.
  * @param {string} remote.repositoryApiUrl - GitHub repository API endpoint used
  * for tag, branch, and comparison queries.
- * @param {string} remote.repositoryBrowserUrl - Browser URL for the repository.
- * @param {string} [urlPath=''] - Repository-relative documentation path to open
- * inside the resolved tag or branch.
- * @returns {{ resolveTag: Function, branchesContaining: Function, browseDocumentation: Function }}
- * Remote repository port consumed by readme-resolver-core.js.
+ * @returns {{ resolveTag: Function, branchesContaining: Function }}
+ * Remote repository service port consumed by readme-resolver-core.js.
  */
-function createRemoteRepositoryAPI(remote, urlPath = '') {
+function createRemoteRepositoryAPI(remote) {
   if (!remote || remote.kind !== 'github') {
     throw new Error('A GitHub remote is required');
   }
 
-  if (!remote.repositoryApiUrl || !remote.repositoryBrowserUrl) {
-    throw new Error(
-      'A GitHub remote with repositoryApiUrl and repositoryBrowserUrl is required'
-    );
+  if (!remote.repositoryApiUrl) {
+    throw new Error('A GitHub remote with repositoryApiUrl is required');
   }
 
   const repositoryApiUrl = String(remote.repositoryApiUrl).replace(/\/+$/, '');
-  const repositoryBrowserUrl = String(remote.repositoryBrowserUrl).replace(/\/+$/, '');
 
   const api = (path) => `${repositoryApiUrl}${path}`;
 
@@ -88,11 +84,42 @@ function createRemoteRepositoryAPI(remote, urlPath = '') {
     return result;
   }
 
+  return {
+    resolveTag,
+    branchesContaining,
+  };
+}
+
+/**
+ * Creates the repository page adapter used by readme-resolver.html.
+ *
+ * This adapter is the resolver's boundary to the repository browser/page. The
+ * production implementation builds GitHub browser URLs. Other environments,
+ * such as a demo, can provide an adapter that maps documentation targets to
+ * local display instructions instead.
+ *
+ * @param {object} remote
+ * @param {string} remote.kind - Repository page kind. Currently only `github`
+ * is supported.
+ * @param {string} remote.repositoryBrowserUrl - Browser URL for the repository.
+ * @param {string} [urlPath=''] - Repository-relative documentation path to open
+ * inside the resolved tag or branch.
+ * @returns {{ browseDocumentation: Function }}
+ * Repository page port consumed by readme-resolver-core.js.
+ */
+function createRepositoryPageAPI(remote, urlPath = '') {
+  if (!remote || remote.kind !== 'github') {
+    throw new Error('A GitHub repository page is required');
+  }
+
+  if (!remote.repositoryBrowserUrl) {
+    throw new Error('A GitHub repository page with repositoryBrowserUrl is required');
+  }
+
+  const repositoryBrowserUrl = String(remote.repositoryBrowserUrl).replace(/\/+$/, '');
+
   /**
-   * Builds the browser URL for documentation at a resolved tag or branch.
-   *
-   * Used by all readme-resolver.html contract resolvers when they redirect or
-   * render documentation alternatives.
+   * Builds the browser destination for documentation at a resolved tag or branch.
    *
    * @param {string} target - Resolved documentation tag or branch name.
    * @returns {string} Browser URL for the selected documentation target.
@@ -103,9 +130,5 @@ function createRemoteRepositoryAPI(remote, urlPath = '') {
     return normalizedPath ? `${baseUrl}/${normalizedPath}` : baseUrl;
   }
 
-  return {
-    resolveTag,
-    branchesContaining,
-    browseDocumentation,
-  };
+  return { browseDocumentation };
 }
