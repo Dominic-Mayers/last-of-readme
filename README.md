@@ -11,6 +11,10 @@ Instead of linking directly to a mutable README location, Last of Readme maintai
 >
 > `ARCHITECTURE.md` is also currently used as a structured architectural context for AI-assisted code analysis and development.
 
+## Interactive demo
+
+An [interactive demo](https://dominic-mayers.github.io/last-of-readme/demo.html) lets you explore the full workflow in the browser: bumping a version, inserting a resolver link, publishing, and clicking the badge to see how the resolver selects the right README.
+
 ## Documentation contracts
 
 Last of Readme manages README resolver links through documentation contracts.
