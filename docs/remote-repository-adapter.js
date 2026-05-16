@@ -1,5 +1,5 @@
 /**
- * Creates the remote-repository service adapter used by readme-resolver.html.
+ * Creates the remote-repository service adapter used by readme-resolver-driver.html.
  *
  * The returned API is the resolver's boundary to repository state:
  * readme-resolver-core.js uses resolveTag()
@@ -91,7 +91,7 @@ function createRemoteRepositoryAPI(remote) {
 }
 
 /**
- * Creates the repository page adapter used by readme-resolver.html.
+ * Creates the repository page adapter used by readme-resolver-driver.html.
  *
  * This adapter is the resolver's boundary to the repository browser/page. The
  * production implementation builds GitHub browser URLs. Other environments,

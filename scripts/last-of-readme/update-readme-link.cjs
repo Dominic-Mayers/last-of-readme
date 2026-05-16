@@ -2,7 +2,7 @@
 
 // Phase 1: centralized resolver (try-it mode)
 // Must NOT depend on target repository hosting
-const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
+const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver-driver.html';
 
 const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
 const {

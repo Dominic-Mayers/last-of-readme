@@ -49,7 +49,7 @@ The broader real-world meaning of those policies belongs to the maintainer's wor
     |-- ARCHITECTURE.md
     |-- docs
     |   |-- readme-resolver-core.js
-    |   |-- readme-resolver.html
+    |   |-- readme-resolver-driver.html
     |   `-- remote-repository-adapter.js
     |-- nbproject
     |   |-- private
@@ -123,12 +123,12 @@ The core of Last of Readme consists of
 * `update-readme-link.cjs`: Create and insert a link to be resolved by the resolver.
 * `tag-doc.cjs`: Create correction-of, last-of or successor-of tags, which are used by the resolver.
 * `readme-resolver-core.js`: The testable contract resolution logic, exposed as a cross-environment IIFE module.
-* `readme-resolver.html`: The browser entry point that drives `readme-resolver-core.js` and dispatches the resolution outcome.
+* `readme-resolver-driver.html`: The browser entry point that drives `readme-resolver-core.js` and dispatches the resolution outcome.
 
 The resolver logic and its browser driver are deliberately separated:
 
 * `readme-resolver-core.js` contains all contract-specific logic — the four lineage resolvers, the `correction-of` path, and the shared `resolveLineageContract` helper. It exposes a `LastOfReadmeResolver` global that can be loaded in a browser or in a test environment without any browser-specific dependencies.
-* `readme-resolver.html` is a thin driver: it reads URL parameters, calls `LastOfReadmeResolver.resolveReadmeLink(...)`, and dispatches the resulting outcome to `dispatchOutcome`, which either redirects or renders a resolution page. It contains no contract logic of its own.
+* `readme-resolver-driver.html` is a thin driver: it reads URL parameters, calls `LastOfReadmeResolver.resolveReadmeLink(...)`, and dispatches the resulting outcome to `dispatchOutcome`, which either redirects or renders a resolution page. It contains no contract logic of its own.
 
 This split allows the resolution logic to be unit-tested in isolation, independently of a live browser or remote repository.
 

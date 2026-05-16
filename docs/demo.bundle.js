@@ -320,7 +320,7 @@
   }
 
   async function resolveNpmLink(event) {
-    const anchor = event.target.closest('a[href*="readme-resolver.html"]');
+    const anchor = event.target.closest('a[href*="readme-resolver-driver.html"]');
     if (!anchor) return;
     event.preventDefault();
     const url = new URL(anchor.href);

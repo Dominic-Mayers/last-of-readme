@@ -3,7 +3,7 @@
  *
  * This file intentionally does not create a concrete remote repository adapter,
  * read from location.search, mutate the DOM, or redirect the browser. Those
- * responsibilities belong to runtime drivers such as readme-resolver.html, a
+ * responsibilities belong to runtime drivers such as readme-resolver-driver.html, a
  * test harness, or a future browser demo.
  *
  * The resolver core depends on two small ports:

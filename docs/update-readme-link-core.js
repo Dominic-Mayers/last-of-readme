@@ -29,7 +29,7 @@
   const END_MARKER = '<!-- DOC-LINK-END -->';
   const EXAMPLE_START_MARKER = '<!-- DOC-LINK-EXAMPLE-START -->';
   const EXAMPLE_END_MARKER = '<!-- DOC-LINK-EXAMPLE-END -->';
-  const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver.html';
+  const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver-driver.html';
 
   function encodeBadgeField(value) {
     return encodeURIComponent(value).replace(/-/g, '--');
