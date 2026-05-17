@@ -4,10 +4,10 @@ const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
 
 /**
- * Reads the resolver link from the npm registry document for the package.
+ * Reads the resolver link from the npm registry package document.
  *
- * The registry document exposes the readme of the most recently published
- * version. This is the authoritative source for the version and contract
+ * The registry package document exposes the README field as published.
+ * This is the authoritative source for the version and contract
  * that are currently in effect for users who installed that version.
  *
  * @param {string} packageName - Scoped or unscoped npm package name.

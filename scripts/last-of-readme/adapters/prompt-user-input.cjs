@@ -572,7 +572,7 @@ function formatContractUsage() {
 }
 
 function formatTagDocUsage() {
-  return 'Usage: last-of-readme tag-doc <last-of|successor-of|correction-of> [--no-push]';
+  return 'Usage: last-of-readme tag-doc <last-of|successor-of|correction-of> [version] [--no-push]';
 }
 
 function formatUpdateReadmeLinkUsage() {
