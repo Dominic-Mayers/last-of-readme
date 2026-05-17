@@ -456,7 +456,6 @@
       commands: [
         { cmd: 'last-of-readme tag-doc correction-of', label: 'correction-of' },
         { cmd: 'last-of-readme tag-doc last-of', label: 'last-of' },
-        { cmd: 'last-of-readme tag-doc successor-of', label: 'successor-of' },
       ],
     },
   ];
