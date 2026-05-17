@@ -1,17 +1,15 @@
 /**
- * Helpers for application-command results.
+ * Return-value helpers for Last of Readme core commands.
  *
- * A command result is the small contract between the Last of Readme core and
- * its drivers.  The CLI driver prints the messages and exits with a status
- * code.  Tests can assert on the messages/effects.  A browser demo can render
- * the same result without reimplementing command behavior.
+ * Core commands return structured values; their callers (CLI entry points,
+ * driving adapters, the demo) decide what to print and how to exit.
  *
  * Message objects describe what should be communicated to the user.
  * Effect objects describe what the command changed or observed in the
  * environment through its ports.
  *
  * Failure objects describe why a command failed in a stable, machine-readable
- * way while preserving the user-facing message used by CLI drivers.
+ * way while preserving the user-facing message used by callers.
  */
 
 function normalizeList(value) {
@@ -89,7 +87,7 @@ function commandEffect(kind, details = {}) {
   };
 }
 
-module.exports = {
+globalThis.LastOfReadmeCommandResult = {
   commandEffect,
   commandFailed,
   commandFailure,

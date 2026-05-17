@@ -81,7 +81,11 @@ The broader real-world meaning of those policies belongs to the maintainer's wor
             |   `-- last-of-readme.cjs
             |-- check-contract.cjs
             |-- core
-            |   `-- command-result.cjs
+            |   |-- check-contract.js
+            |   |-- command-result.js
+            |   |-- last-of-readme-contract.js
+            |   |-- tag-doc.js
+            |   `-- update-readme-link.js
             |-- install
             |   |-- basic-requirements.cjs
             |   |-- check-cwd-is-package-root.cjs
@@ -118,19 +122,15 @@ The files are available in [Last of Readme GitHub repo](https://github.com/Domin
 
 ## The core of Last of Readme
 
-The core of Last of Readme consists of the logic that implements package README link creation, documentation tagging, contract checking, and resolver semantics:
+The core of Last of Readme consists of plain JavaScript files in the `core/` directory. Each file assigns its exports to a named `globalThis` property, making it loadable in any JavaScript environment — by a `<script>` tag in a browser, or by a Node.js `.cjs` entry point that pulls from `globalThis` after loading the file. The core files contain no `require` calls, no `module.exports`, and no IIFE tricks.
 
-* `update-readme-link.cjs`: Create and insert a link to be resolved by the resolver.
-* `tag-doc.cjs`: Create `correction-of`, `last-of`, or `successor-of` tags, which are used by the resolver.
-* `check-contract.cjs`: Validate the selected documentation contract.
-* `readme-resolver-core.js`: The testable contract resolution logic, exposed as a cross-environment IIFE module.
+* `core/command-result.js`: Helpers for constructing structured command results. Required by all other core files.
+* `core/update-readme-link.js`: Logic for building and inserting the resolver link in a documentation file.
+* `core/tag-doc.js`: Logic for creating `last-of`, `successor-of`, and `correction-of` documentation tags.
+* `core/check-contract.js`: Logic for validating the configured documentation contract before a version bump.
+* `core/last-of-readme-contract.js`: Logic for setting the documentation contract in `package.json`.
 
-The resolver logic is deliberately separated from its browser driver:
-
-* `readme-resolver-core.js` contains all contract-specific logic — the four lineage resolvers, the `correction-of` path, and the shared `resolveLineageContract` helper. It exposes a `LastOfReadmeResolver` global that can be loaded in a browser or in a test environment without any browser-specific dependencies.
-* `readme-resolver-driver.html` is not part of the core. It belongs to the driving adapter layer described below. It reads URL parameters, calls `LastOfReadmeResolver.resolveReadmeLink(...)`, and dispatches the resulting outcome to browser-specific behavior.
-
-This split allows the resolution logic to be unit-tested in isolation, independently of a live browser, a browser page, or a remote repository.
+The resolver logic lives separately in `docs/readme-resolver-core.js`. Its scope is narrower: it contains the contract resolution algorithms used by the browser-hosted resolver and is not invoked by the command scripts above. The deliberate separation between `readme-resolver-core.js` and its browser driver `readme-resolver-driver.html` is described in the driving adapters section below.
 
 The four lineage contracts are thin parameterizations of a shared lineage-resolution flow, while `correction-of` remains a separate resolver path.
 
@@ -432,11 +432,21 @@ The function `createRemoteRepositoryAPI(remote, urlPath = '')` constructs the pr
 
 ## The `core/` module
 
-The `core/` directory contains modules that are independent of any particular environment or adapter. They can be imported freely from command scripts, orchestrators, or tests without crossing any boundary.
+The `core/` directory contains the command logic of Last of Readme as plain JavaScript files. Each file defines its functions and assigns them to a named `globalThis` property. There are no `require` calls, no `module.exports`, and no IIFE tricks inside these files — they are plain JavaScript that runs in a browser or under Node.js without modification.
 
-### `command-result.cjs`
+The five files and their `globalThis` export names:
 
-`command-result.cjs` defines the contract between a command's logic layer and its drivers (CLI entry points, tests, future UIs). A command's logic function (`runXxxCommand`) returns a structured result; its driver interprets that result to produce output and exit codes.
+* `command-result.js` → `LastOfReadmeCommandResult`
+* `update-readme-link.js` → `LastOfReadmeUpdateReadmeLink`
+* `tag-doc.js` → `LastOfReadmeTagDoc`
+* `check-contract.js` → `LastOfReadmeCheckContract`
+* `last-of-readme-contract.js` → `LastOfReadmeContract`
+
+`command-result.js` must be loaded before any other core file, because the others destructure `commandSucceeded`, `commandFailed`, `commandMessage`, and `commandEffect` from `globalThis.LastOfReadmeCommandResult` at load time. In browser contexts, script tags control this order. In Node.js, each `.cjs` entry point explicitly requires `command-result.js` first.
+
+### `command-result.js`
+
+`command-result.js` provides the return-value helpers used by every command. A command's logic function (`runXxxCommand`) returns a structured result; its caller interprets that result to produce output and exit codes.
 
 The helpers it provides:
 
@@ -447,6 +457,10 @@ The helpers it provides:
 * `commandFailure(kind, details)` — constructs the `failure` sub-object carried inside a failed result.
 
 All list fields (`messages`, `effects`) accept a single object or an array; `normalizeList` wraps single objects automatically.
+
+### Node.js integration
+
+The Node.js integration is handled entirely by the `.cjs` entry-point files outside `core/`. Each entry point explicitly loads `command-result.js` and the relevant command file as side effects, destructures from `globalThis`, and exposes the result via `module.exports`. The CommonJS concern stays at the adapter boundary, not in the core.
 
 ## The `ports/` module
 
@@ -469,7 +483,7 @@ The `ports/` directory contains the composition root for runtime adapter injecti
 
 The runtime scripts (`check-contract.cjs`, `tag-doc.cjs`, `update-readme-link.cjs`, `last-of-readme-contract.cjs`) each follow a uniform pattern:
 
-1. **`runXxxCommand({ args, ports })`** — pure logic function. Parses arguments, calls adapter functions through `ports`, and returns a structured result built with helpers from `command-result.cjs`. It never writes to stdout or stderr directly.
+1. **`runXxxCommand({ args, ports })`** — pure logic function. Parses arguments, calls adapter functions through `ports`, and returns a structured result built with helpers from `command-result.js`. It never writes to stdout or stderr directly.
 
 2. **`printXxxResult(result, ports)`** — output dispatcher. Iterates over `result.messages` and calls the appropriate `ports.userInput.*` function for each message kind. It contains no logic about what happened — only about how to present it.
 
