@@ -104,7 +104,7 @@ This contract supports workflows where documentation associated with a package v
 Install Last of Readme in a package repository:
 
 ```bash
-npm install --save-dev last-of-readme
+npm i --save-dev @dominic.mayers/last-of-readme
 ```
 
 Then run:
