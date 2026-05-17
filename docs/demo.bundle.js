@@ -420,7 +420,20 @@
         <div class="muted">${escapeHtml(state.githubSelection.url)}</div>
         <article class="readme-card">${markdownToHtml(file || 'README not found at selected target.')}</article>`;
     } else if (state.githubSelection && state.githubSelection.message) {
-      content = `<p>${escapeHtml(state.githubSelection.message)}</p>`;
+      const links = Array.isArray(state.githubSelection.links)
+        ? state.githubSelection.links
+        : [];
+      const linksHtml = links.length
+        ? `<ul class="resolver-links">
+            ${links.map((link) => `
+              <li>
+                <button class="link-button" data-action="select-github-target" data-url="${escapeHtml(link.url)}">
+                  ${escapeHtml(link.label)}
+                </button>
+              </li>`).join('')}
+          </ul>`
+        : '';
+      content = `<p>${escapeHtml(state.githubSelection.message)}</p>${linksHtml}`;
     }
 
     return `
@@ -540,6 +553,14 @@
     if (action === 'fill-command') {
       const cmd = event.target.closest('[data-command]')?.dataset.command;
       if (cmd) { state.commandInput = cmd; render(); }
+    }
+    if (action === 'select-github-target') {
+      const url = event.target.closest('[data-url]')?.dataset.url;
+      if (url) {
+        state.githubSelection = extractTargetFromBrowserUrl(url);
+        state.statusMessage = 'selected documentation target — see GitHub pane';
+        render();
+      }
     }
     if (action === 'save-editor') {
       const textarea = document.querySelector('[data-role="editor"]');
