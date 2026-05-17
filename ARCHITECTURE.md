@@ -118,19 +118,19 @@ The files are available in [Last of Readme GitHub repo](https://github.com/Domin
 
 ## The core of Last of Readme
 
-The core of Last of Readme consists of
+The core of Last of Readme consists of the logic that implements package README link creation, documentation tagging, contract checking, and resolver semantics:
 
 * `update-readme-link.cjs`: Create and insert a link to be resolved by the resolver.
-* `tag-doc.cjs`: Create correction-of, last-of or successor-of tags, which are used by the resolver.
+* `tag-doc.cjs`: Create `correction-of`, `last-of`, or `successor-of` tags, which are used by the resolver.
+* `check-contract.cjs`: Validate the selected documentation contract.
 * `readme-resolver-core.js`: The testable contract resolution logic, exposed as a cross-environment IIFE module.
-* `readme-resolver-driver.html`: The browser entry point that drives `readme-resolver-core.js` and dispatches the resolution outcome.
 
-The resolver logic and its browser driver are deliberately separated:
+The resolver logic is deliberately separated from its browser driver:
 
 * `readme-resolver-core.js` contains all contract-specific logic — the four lineage resolvers, the `correction-of` path, and the shared `resolveLineageContract` helper. It exposes a `LastOfReadmeResolver` global that can be loaded in a browser or in a test environment without any browser-specific dependencies.
-* `readme-resolver-driver.html` is a thin driver: it reads URL parameters, calls `LastOfReadmeResolver.resolveReadmeLink(...)`, and dispatches the resulting outcome to `dispatchOutcome`, which either redirects or renders a resolution page. It contains no contract logic of its own.
+* `readme-resolver-driver.html` is not part of the core. It belongs to the driving adapter layer described below. It reads URL parameters, calls `LastOfReadmeResolver.resolveReadmeLink(...)`, and dispatches the resulting outcome to browser-specific behavior.
 
-This split allows the resolution logic to be unit-tested in isolation, independently of a live browser or remote repository.
+This split allows the resolution logic to be unit-tested in isolation, independently of a live browser, a browser page, or a remote repository.
 
 The four lineage contracts are thin parameterizations of a shared lineage-resolution flow, while `correction-of` remains a separate resolver path.
 
@@ -276,48 +276,68 @@ last-of-readme contract
 
 The purpose of the dispatcher is to keep hooks wired in `package.json` independent from the internal structure of the package.
 
-### Runtime management wrappers and the driving/driven distinction
+### Driving adapters: runtime management wrappers and browser resolver driver
 
 The adapter-zone primarily models Last of Readme as a consumer of environmental services such as npm configuration, Git operations, filesystem access, user interaction, and remote repository APIs.
 
-This corresponds to the driven side of Hexagonal Architecture (also called secondary/output adapters): Last of Readme drives these external systems through adapter functions.
+This corresponds to the driven side of Hexagonal Architecture, also called secondary or output adapters: Last of Readme drives these external systems through adapter functions.
 
-At runtime, however, Last of Readme is also itself driven by external processes such as:
+At runtime, however, Last of Readme is also itself driven by external processes and hosts such as:
 
 * npm lifecycle hooks,
 * CLI invocation,
 * package-manager workflows,
-* CI execution.
+* CI execution,
+* browser navigation to a resolver URL.
 
-The `attempt-*.cjs` layer acts as a lightweight runtime-management wrapper between these external drivers and the core runtime commands.
+The driving adapter layer contains the code that adapts those external entry points to the core logic. It includes:
+
+* the `attempt-*.cjs` scripts, which adapt npm lifecycle and CLI execution to command behavior, failure handling, and interactive/non-interactive continuation policy;
+* `readme-resolver-driver.html`, which adapts browser URL navigation to the resolver core by reading URL parameters, constructing the remote repository/page adapters, invoking `readme-resolver-core.js`, and rendering or redirecting according to the result.
 
 For example:
 
-    npm lifecycle hook
-        ↓
-    attempt-*.cjs
-        ↓
-    core runtime command
-        ↓
-    *-adapter.cjs
-        ↓
-    environmental service
+```txt
+npm lifecycle hook
+    ↓
+attempt-*.cjs
+    ↓
+core runtime command
+    ↓
+*-adapter.cjs
+    ↓
+environmental service
+```
 
-The attempt-*.cjs scripts adapt Last of Readme behavior to runtime-management concerns such as:
+And, for browser resolution:
+
+```txt
+browser navigation to resolver URL
+    ↓
+readme-resolver-driver.html
+    ↓
+readme-resolver-core.js
+    ↓
+remote-repository-adapter.js
+    ↓
+GitHub API / GitHub browser URL
+```
+
+The `attempt-*.cjs` scripts adapt Last of Readme behavior to runtime-management concerns such as:
 
 * interactive vs non-interactive execution,
 * continuation vs abort policies,
 * lifecycle-hook ergonomics,
 * user confirmation after failure.
 
-This corresponds loosely to the driving side of Hexagonal Architecture (also called primary/input adapters), although Last of Readme does not currently formalize these wrappers as a separate adapter subsystem.
+The browser resolver driver adapts Last of Readme behavior to browser-hosted resolver concerns such as:
 
-An important asymmetry exists between the two directions:
+* parsing URL parameters,
+* constructing browser-side repository adapters,
+* redirecting to documentation targets,
+* rendering resolver choice or warning pages.
 
-* when Last of Readme is being driven, the core runtime logic is comparatively detached from the details of how the request originated;
-* when Last of Readme drives environmental services, the core runtime logic remains more coupled to the semantics and constraints of those services.
-
-This asymmetry explains why the driven side (`*-adapter.cjs`) is structurally richer and more explicit than the driving side (`attempt-*.cjs`).
+This driving adapter layer corresponds to the driving side of Hexagonal Architecture, also called primary or input adapters. The core runtime logic remains comparatively detached from the details of how the request originated, whether from npm, a CLI, CI, or browser navigation.
 
 ## The adapter APIs on which Last of Readme is built
 
