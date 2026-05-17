@@ -161,6 +161,11 @@
       if (!result.ok) throw new Error(result.message);
       return [`updated ${result.documentationPath} for ${result.version}`];
     },
+    'last-of-readme contract until-next': async () => setNextContract('until-next'),
+    'last-of-readme contract until-next-warn': async () => setNextContract('until-next-warn'),
+    'last-of-readme contract until-branch': async () => setNextContract('until-branch'),
+    'last-of-readme contract until-branch-warn': async () => setNextContract('until-branch-warn'),
+    'last-of-readme contract correction-of': async () => setNextContract('correction-of'),
     'git add README.md': async () => {
       state.staged['README.md'] = state.files['README.md'];
       return ['staged README.md'];
@@ -269,6 +274,11 @@
       return [`published ${state.packageJson.name}@${version}`, `npm README came from commit ${state.branches.main}`];
     },
   };
+
+  function setNextContract(contract) {
+    state.packageJson.lastOfReadme.nextContract = contract;
+    return [`set next documentation contract to ${contract}`];
+  }
 
   function suggestCommand(command) {
     if (/^git add(\s|$)/.test(command) && command !== 'git add README.md' && command !== 'git add README.md && git commit && git push') {
@@ -438,6 +448,16 @@
   }
 
   const commandGroups = [
+    {
+      label: 'Choose contract',
+      commands: [
+        { cmd: 'last-of-readme contract until-next', label: 'until-next' },
+        { cmd: 'last-of-readme contract until-next-warn', label: 'until-next-warn' },
+        { cmd: 'last-of-readme contract until-branch', label: 'until-branch' },
+        { cmd: 'last-of-readme contract until-branch-warn', label: 'until-branch-warn' },
+        { cmd: 'last-of-readme contract correction-of', label: 'correction-of' },
+      ],
+    },
     {
       label: 'Normal flow',
       commands: [
