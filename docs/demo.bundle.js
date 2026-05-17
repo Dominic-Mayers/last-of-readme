@@ -4,18 +4,25 @@
 
   const { START_MARKER, END_MARKER, runUpdateReadmeLink } = window.LastOfReadmeLinkUpdater;
 
+  const initialReadme = '# Demo Package\n\n<!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver-driver.html?mode=last&pkg=%40demo%2Flast-of-readme-package&contract=until-next&repositoryApiUrl=demo%3A%2F%2Fapi%2FDominic-Mayers%2Flast-of-readme-demo&repositoryBrowserUrl=https%3A%2F%2Fgithub.com%2FDominic-Mayers%2Flast-of-readme-demo&v=0.1.0&urlPath=README.md"><img alt="README until-next 0.1.0" src="https://img.shields.io/badge/README-until--next%200.1.0-blue?logo=github"></a><!-- DOC-LINK-END -->\n\nExperiment as the package maintainer: edit this README, save your changes, then publish or retag the documentation.\n\nAfter clicking the package README badge in the npm pane, the GitHub pane will immediately show the documentation target selected by the resolver.\n';
+
   const state = {
     activePane: 'commands',
     installed: true,
     terminalDark: true,
     selectedNpmVersion: null,
     commandInput: 'npm version patch',
-    githubSelection: null,
+    githubSelection: {
+      ref: 'v0.1.0',
+      commit: 'c1',
+      path: 'README.md',
+      url: 'https://example.invalid/last-of-readme-demo/tree/v0.1.0/README.md',
+    },
     packageJson: {
       name: '@demo/last-of-readme-package',
       version: '0.1.0',
       lastOfReadme: {
-        nextContract: 'correction-of',
+        nextContract: 'until-next',
         packageFilePath: 'README.md',
         repositoryUrlPath: 'README.md',
         remote: {
@@ -26,15 +33,20 @@
       },
     },
     files: {
-      'README.md': '# Demo Package\n\n<!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n',
+      'README.md': initialReadme,
     },
     commits: {
-      c1: { id: 'c1', label: 'add Last of Readme placeholder', parents: [], files: { 'README.md': '# Demo Package\n\n<!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n' } },
+      c1: {
+        id: 'c1',
+        label: 'publish v0.1.0 with until-next README link',
+        parents: [],
+        files: { 'README.md': initialReadme },
+      },
     },
     branches: { main: 'c1' },
     tags: { 'v0.1.0': 'c1' },
     published: {
-      '0.1.0': { version: '0.1.0', readme: '# Demo Package\n\n<!-- DOC-LINK-START --><!-- DOC-LINK-END -->\n\nThis small README is controlled by the simulated maintainer.\n' },
+      '0.1.0': { version: '0.1.0', readme: initialReadme },
     },
     staged: {},
     lastCommand: null,
