@@ -29,6 +29,10 @@ async function runAttempt(operationName, callback) {
     }
 
     if (process.env.npm_lifecycle_event) {
+      const config = getLastOfReadmeConfig();
+      if ((config.nonInteractiveFailurePolicy || 'continue') === 'abort') {
+        throw error;
+      }
       displayLifecycleFailureWarning({ operationName, error });
       return;
     }

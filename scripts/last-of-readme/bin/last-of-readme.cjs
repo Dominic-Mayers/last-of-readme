@@ -21,7 +21,7 @@ function usage() {
     'Commands:',
     '  install',
     '  check-contract',
-    '  tag-doc <last-of|successor-of|correction-of> [--no-push]',
+    '  tag-doc <last-of|successor-of|correction-of> [version] [--no-push]',
     '  update-readme-link [documentation-path] [url-path]',
     '  contract <until-next|until-next-warn|until-branch|until-branch-warn|correction-of>',
     '  attempt-check-contract',

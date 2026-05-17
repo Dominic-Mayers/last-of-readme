@@ -3,6 +3,17 @@
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';
 
+/**
+ * Reads the resolver link from the npm registry document for the package.
+ *
+ * The registry document exposes the readme of the most recently published
+ * version. This is the authoritative source for the version and contract
+ * that are currently in effect for users who installed that version.
+ *
+ * @param {string} packageName - Scoped or unscoped npm package name.
+ * @returns {Promise<{ version: string, contract: string } | null>}
+ * Parsed version and contract from the managed link, or null if none is found.
+ */
 async function fetchPublishedLink(packageName) {
   let data;
   try {

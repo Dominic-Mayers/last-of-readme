@@ -20,7 +20,7 @@ function parseTagDocArgs(args, ports) {
   const push = !args.includes('--no-push');
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
-  if (positional.length !== 1) {
+  if (positional.length < 1 || positional.length > 2) {
     return commandFailed(ports.userInput.formatTagDocUsage(), {
       failureKind: 'invalid-tag-doc-arguments',
       data: { positional },
@@ -39,6 +39,7 @@ function parseTagDocArgs(args, ports) {
     ok: true,
     kind,
     push,
+    version: positional[1] || null,
   };
 }
 
@@ -59,21 +60,26 @@ async function runTagDocCommand({ args, ports }) {
   }
 
   try {
-    const { kind, push } = parsed;
-    const packageName = ports.npm.packageName();
-    const published = await ports.registry.fetchPublishedLink(packageName);
-    if (!published) {
-      return commandFailed(
-        new Error(`No resolver link found in published package '${packageName}'`),
-        { failureKind: 'published-link-not-found' }
-      );
-    }
-    const { version, contract } = published;
+    const { kind, push, version: explicitVersion } = parsed;
     const messages = [];
     const effects = [];
 
-    if (!isKindCompatibleWithContract(kind, contract)) {
-      messages.push(commandMessage('contract-kind-mismatch', { kind, contract }));
+    let version;
+    if (explicitVersion) {
+      version = explicitVersion;
+    } else {
+      const packageName = ports.npm.packageName();
+      const published = await ports.registry.fetchPublishedLink(packageName);
+      if (!published) {
+        return commandFailed(
+          new Error(`No resolver link found in published package '${packageName}'`),
+          { failureKind: 'published-link-not-found' }
+        );
+      }
+      version = published.version;
+      if (!isKindCompatibleWithContract(kind, published.contract)) {
+        messages.push(commandMessage('contract-kind-mismatch', { tagKind: kind, contract: published.contract }));
+      }
     }
 
     const tag = `v${version}-${kind}`;
@@ -132,7 +138,7 @@ function printTagDocResult(result, ports) {
 
   for (const message of result.messages || []) {
     if (message.kind === 'contract-kind-mismatch') {
-      ports.userInput.printContractKindMismatchWarning(message.kind, message.contract);
+      ports.userInput.printContractKindMismatchWarning(message.tagKind, message.contract);
     }
     if (message.kind === 'movable-tag-created') {
       ports.userInput.printMovableTagCreated(message.tag);
