@@ -1,10 +1,3 @@
-const {
-  commandEffect,
-  commandFailed,
-  commandMessage,
-  commandSucceeded,
-} = globalThis.LastOfReadmeCommandResult;
-
 const SUPPORTED_CONTRACTS = new Set([
   'until-next',
   'until-next-warn',
@@ -39,6 +32,7 @@ function formatMissingContractBeforeVersion(error) {
 }
 
 function runCheckContract({ ports }) {
+  const { commandEffect, commandFailed, commandMessage, commandSucceeded } = globalThis.LastOfReadmeCommandResult;
   try {
     const contract = ports.npm.configuredNextDocumentationContract();
 

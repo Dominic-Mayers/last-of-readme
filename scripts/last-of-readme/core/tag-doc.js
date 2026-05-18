@@ -1,10 +1,3 @@
-const {
-  commandEffect,
-  commandFailed,
-  commandMessage,
-  commandSucceeded,
-} = globalThis.LastOfReadmeCommandResult;
-
 const ALLOWED_KINDS = new Set(['last-of', 'successor-of', 'correction-of']);
 const MOVABLE_KINDS = new Set(['correction-of']);
 
@@ -14,6 +7,7 @@ function isKindCompatibleWithContract(kind, contract) {
 }
 
 function parseTagDocArgs(args, ports) {
+  const { commandFailed } = globalThis.LastOfReadmeCommandResult;
   const push = !args.includes('--no-push');
   const positional = args.filter((arg) => !arg.startsWith('--'));
 
@@ -51,6 +45,7 @@ function annotationFor(kind, version) {
 }
 
 async function runTagDocCommand({ args, ports }) {
+  const { commandEffect, commandFailed, commandMessage, commandSucceeded } = globalThis.LastOfReadmeCommandResult;
   const parsed = parseTagDocArgs(args, ports);
   if (!parsed.ok) {
     return parsed;

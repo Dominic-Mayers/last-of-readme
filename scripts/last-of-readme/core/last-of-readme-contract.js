@@ -1,10 +1,3 @@
-const {
-  commandEffect,
-  commandFailed,
-  commandMessage,
-  commandSucceeded,
-} = globalThis.LastOfReadmeCommandResult;
-
 const SUPPORTED_CONTRACTS = new Set([
   'until-next',
   'until-next-warn',
@@ -14,6 +7,7 @@ const SUPPORTED_CONTRACTS = new Set([
 ]);
 
 async function runContractCommand({ args, ports }) {
+  const { commandEffect, commandFailed, commandMessage, commandSucceeded } = globalThis.LastOfReadmeCommandResult;
   const contract = args[0];
 
   if (!contract) {

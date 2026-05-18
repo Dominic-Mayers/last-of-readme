@@ -1,13 +1,6 @@
 // Phase 1: centralized resolver (try-it mode)
 // Must NOT depend on target repository hosting
 
-const {
-  commandEffect,
-  commandFailed,
-  commandMessage,
-  commandSucceeded,
-} = globalThis.LastOfReadmeCommandResult;
-
 const CENTRAL_RESOLVER_URL = 'https://dominic-mayers.github.io/last-of-readme/readme-resolver-driver.html';
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
@@ -108,6 +101,7 @@ function replaceManagedBlock(content, replacement) {
 }
 
 function runUpdateReadmeLink({ args, ports }) {
+  const { commandEffect, commandFailed, commandMessage, commandSucceeded } = globalThis.LastOfReadmeCommandResult;
   try {
     const { documentationPath, urlPath } = resolveInputs({ args, ports });
     const version = ports.npm.currentPackageVersion();
