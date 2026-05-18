@@ -2,7 +2,9 @@
 (function () {
   'use strict';
 
-  const { START_MARKER, END_MARKER, runUpdateReadmeLink } = window.LastOfReadmeLinkUpdater;
+  const { START_MARKER, END_MARKER, runUpdateReadmeLink } = window.LastOfReadmeUpdateReadmeLink;
+  const { runTagDocCommand } = window.LastOfReadmeTagDoc;
+  const { runContractCommand } = window.LastOfReadmeContract;
 
   const initialReadme = '# Demo Package\n\n<!-- DOC-LINK-START --><a href="https://dominic-mayers.github.io/last-of-readme/readme-resolver-driver.html?mode=last&pkg=%40demo%2Flast-of-readme-package&contract=until-next&repositoryApiUrl=demo%3A%2F%2Fapi%2FDominic-Mayers%2Flast-of-readme-demo&repositoryBrowserUrl=https%3A%2F%2Fgithub.com%2FDominic-Mayers%2Flast-of-readme-demo&v=0.1.0&urlPath=README.md"><img alt="README until-next 0.1.0" src="https://img.shields.io/badge/README-until--next%200.1.0-blue?logo=github"></a><!-- DOC-LINK-END -->\n\nExperiment as the package maintainer: edit this README, save your changes, then publish or retag the documentation.\n\nAfter clicking the package README badge in the npm pane, the GitHub pane will immediately show the documentation target selected by the resolver.\n';
 
@@ -62,12 +64,45 @@
       configuredNextDocumentationContract: () => state.packageJson.lastOfReadme.nextContract,
       packageFilePath: () => state.packageJson.lastOfReadme.packageFilePath,
       repositoryUrlPath: () => state.packageJson.lastOfReadme.repositoryUrlPath,
+      updatePackageJsonFields: (fields) => {
+        if (Object.prototype.hasOwnProperty.call(fields, 'lastOfReadme.nextContract')) {
+          state.packageJson.lastOfReadme.nextContract = fields['lastOfReadme.nextContract'];
+        }
+      },
+    },
+    git: {
+      setTagAtCurrentCommit: (tag) => { state.tags[tag] = state.branches.main; },
+      setMovableTagAtCurrentCommit: (tag) => { state.tags[tag] = state.branches.main; },
     },
     filesystem: {
       readPackageFileContent: (path) => state.files[path],
       writePackageFileContent: (path, content) => { state.files[path] = content; },
     },
+    userInput: {
+      formatTagDocUsage: () => 'Usage: last-of-readme tag-doc <kind> [version] [--no-push]',
+      formatUnknownDocTagKind: (kind) => `Unknown doc tag kind: ${kind}`,
+      formatContractUsage: () => 'Usage: last-of-readme contract <contract>',
+      formatUnsupportedContract: (contract) => `Unsupported contract: ${contract}`,
+      askDocumentationContractConfirmation: () => Promise.resolve(true),
+      printAbortMessage: () => {},
+    },
   };
+
+  function outputFromTagDocMessages(messages) {
+    return messages.flatMap((m) => {
+      if (m.kind === 'tag-created') return [`created tag ${m.tag}`];
+      if (m.kind === 'movable-tag-created') return [`created movable tag ${m.tag}`];
+      return [];
+    });
+  }
+
+  function outputFromContractMessages(messages) {
+    return messages.flatMap((m) => {
+      if (m.kind === 'next-contract-set') return [`set next documentation contract to ${m.contract}`];
+      if (m.kind === 'no-changes') return ['no changes made'];
+      return [];
+    });
+  }
 
   function escapeHtml(value) {
     return String(value)
@@ -173,11 +208,11 @@
       if (!result.ok) throw new Error(result.message);
       return [`updated ${result.documentationPath} for ${result.version}`];
     },
-    'last-of-readme contract until-next': async () => setNextContract('until-next'),
-    'last-of-readme contract until-next-warn': async () => setNextContract('until-next-warn'),
-    'last-of-readme contract until-branch': async () => setNextContract('until-branch'),
-    'last-of-readme contract until-branch-warn': async () => setNextContract('until-branch-warn'),
-    'last-of-readme contract correction-of': async () => setNextContract('correction-of'),
+    'last-of-readme contract until-next': async () => { const r = await runContractCommand({ args: ['until-next'], ports: demoPorts }); if (!r.ok) throw new Error(r.message); return outputFromContractMessages(r.messages); },
+    'last-of-readme contract until-next-warn': async () => { const r = await runContractCommand({ args: ['until-next-warn'], ports: demoPorts }); if (!r.ok) throw new Error(r.message); return outputFromContractMessages(r.messages); },
+    'last-of-readme contract until-branch': async () => { const r = await runContractCommand({ args: ['until-branch'], ports: demoPorts }); if (!r.ok) throw new Error(r.message); return outputFromContractMessages(r.messages); },
+    'last-of-readme contract until-branch-warn': async () => { const r = await runContractCommand({ args: ['until-branch-warn'], ports: demoPorts }); if (!r.ok) throw new Error(r.message); return outputFromContractMessages(r.messages); },
+    'last-of-readme contract correction-of': async () => { const r = await runContractCommand({ args: ['correction-of'], ports: demoPorts }); if (!r.ok) throw new Error(r.message); return outputFromContractMessages(r.messages); },
     'git add README.md': async () => {
       state.staged['README.md'] = state.files['README.md'];
       return ['staged README.md'];
@@ -204,31 +239,22 @@
       ];
     },
     'last-of-readme tag-doc correction-of': async () => {
-      if (!isReadmeCommitted()) {
-        return ['README.md has local changes — commit before tagging documentation'];
-      }
-      const commit = state.branches.main;
-      const tag = `v${state.packageJson.version}-correction-of`;
-      state.tags[tag] = commit;
-      return [`created movable tag ${tag} at ${commit}`];
+      if (!isReadmeCommitted()) return ['README.md has local changes — commit before tagging documentation'];
+      const r = await runTagDocCommand({ args: ['correction-of', state.packageJson.version, '--no-push'], ports: demoPorts });
+      if (!r.ok) throw new Error(r.message);
+      return outputFromTagDocMessages(r.messages);
     },
     'last-of-readme tag-doc last-of': async () => {
-      if (!isReadmeCommitted()) {
-        return ['README.md has local changes — commit before tagging documentation'];
-      }
-      const commit = state.branches.main;
-      const tag = `v${state.packageJson.version}-last-of`;
-      state.tags[tag] = commit;
-      return [`created movable tag ${tag} at ${commit}`];
+      if (!isReadmeCommitted()) return ['README.md has local changes — commit before tagging documentation'];
+      const r = await runTagDocCommand({ args: ['last-of', state.packageJson.version, '--no-push'], ports: demoPorts });
+      if (!r.ok) throw new Error(r.message);
+      return outputFromTagDocMessages(r.messages);
     },
     'last-of-readme tag-doc successor-of': async () => {
-      if (!isReadmeCommitted()) {
-        return ['README.md has local changes — commit before tagging documentation'];
-      }
-      const commit = state.branches.main;
-      const tag = `v${state.packageJson.version}-successor-of`;
-      state.tags[tag] = commit;
-      return [`created movable tag ${tag} at ${commit}`];
+      if (!isReadmeCommitted()) return ['README.md has local changes — commit before tagging documentation'];
+      const r = await runTagDocCommand({ args: ['successor-of', state.packageJson.version, '--no-push'], ports: demoPorts });
+      if (!r.ok) throw new Error(r.message);
+      return outputFromTagDocMessages(r.messages);
     },
     'npm version patch': async () => {
       if (!isReadmeCommitted()) {
@@ -286,11 +312,6 @@
       return [`published ${state.packageJson.name}@${version}`, `npm README came from commit ${state.branches.main}`];
     },
   };
-
-  function setNextContract(contract) {
-    state.packageJson.lastOfReadme.nextContract = contract;
-    return [`set next documentation contract to ${contract}`];
-  }
 
   function suggestCommand(command) {
     if (/^git add(\s|$)/.test(command) && command !== 'git add README.md' && command !== 'git add README.md && git commit && git push') {
