@@ -5,13 +5,13 @@ const { spawnSync } = require('child_process');
 
 const COMMANDS = {
   install: 'install/install.cjs',
-  'check-contract': 'check-contract.cjs',
-  'tag-doc': 'tag-doc.cjs',
-  'update-readme-link': 'update-readme-link.cjs',
-  contract: 'last-of-readme-contract.cjs',
-  'attempt-check-contract': 'attempt-check-contract.cjs',
-  'attempt-successor-tag': 'attempt-successor-tag.cjs',
-  'attempt-readme-link': 'attempt-readme-link.cjs',
+  'check-contract': 'driving-adapters/check-contract.cjs',
+  'tag-doc': 'driving-adapters/tag-doc.cjs',
+  'update-readme-link': 'driving-adapters/update-readme-link.cjs',
+  contract: 'driving-adapters/last-of-readme-contract.cjs',
+  'attempt-check-contract': 'driving-adapters/attempt-check-contract.cjs',
+  'attempt-successor-tag': 'driving-adapters/attempt-successor-tag.cjs',
+  'attempt-readme-link': 'driving-adapters/attempt-readme-link.cjs',
 };
 
 function usage() {

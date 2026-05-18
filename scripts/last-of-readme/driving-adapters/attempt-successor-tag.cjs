@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { runAttempt } = require('./attempt-utils.cjs');
-const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const { createDefaultRuntimePorts } = require('../ports/default-runtime-ports.cjs');
 const { runTagDocCommand, printTagDocResult } = require('./tag-doc.cjs');
 
 runAttempt('add successor-of tag', async () => {

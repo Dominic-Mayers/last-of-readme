@@ -13,7 +13,7 @@ const {
   writeRemoteConfig,
   writeDocLinkConfig,
   writeNonInteractivePolicyIfAbsent,
-} = require('../adapters/npm-adapter.cjs');
+} = require('../driven-adapters/npm-adapter.cjs');
 
 function collectNpmPackageRootEnvironmentInput(pipelineState = {}) {
   return {

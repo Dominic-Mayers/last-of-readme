@@ -2,7 +2,7 @@
 
 const {
   printConvenienceHookReminder,
-} = require('../adapters/user-input-adapter.cjs');
+} = require('../driven-adapters/user-input-adapter.cjs');
 
 function remindAboutConvenienceHooks(pipelineState) {
   const convenienceNeeds = (pipelineState.control || {}).convenienceNeeds || [];

@@ -66,26 +66,31 @@ The broader real-world meaning of those policies belongs to the maintainer's wor
     `-- scripts
         |-- git-add-readme.cjs
         `-- last-of-readme
-            |-- adapters
-            |   |-- filesystem-adapter.cjs
-            |   |-- git-adapter.cjs
-            |   |-- npm-adapter.cjs
-            |   |-- prompt-user-input.cjs
-            |   |-- user-input-adapter.cjs
-            |   `-- user-input-utils.cjs
-            |-- attempt-check-contract.cjs
-            |-- attempt-readme-link.cjs
-            |-- attempt-successor-tag.cjs
-            |-- attempt-utils.cjs
             |-- bin
             |   `-- last-of-readme.cjs
-            |-- check-contract.cjs
             |-- core
             |   |-- check-contract.js
             |   |-- command-result.js
             |   |-- last-of-readme-contract.js
             |   |-- tag-doc.js
             |   `-- update-readme-link.js
+            |-- driven-adapters
+            |   |-- filesystem-adapter.cjs
+            |   |-- git-adapter.cjs
+            |   |-- npm-adapter.cjs
+            |   |-- prompt-user-input.cjs
+            |   |-- registry-adapter.cjs
+            |   |-- user-input-adapter.cjs
+            |   `-- user-input-utils.cjs
+            |-- driving-adapters
+            |   |-- attempt-check-contract.cjs
+            |   |-- attempt-readme-link.cjs
+            |   |-- attempt-successor-tag.cjs
+            |   |-- attempt-utils.cjs
+            |   |-- check-contract.cjs
+            |   |-- last-of-readme-contract.cjs
+            |   |-- tag-doc.cjs
+            |   `-- update-readme-link.cjs
             |-- install
             |   |-- basic-requirements.cjs
             |   |-- check-cwd-is-package-root.cjs

@@ -2,14 +2,14 @@
 
 const {
   getLastOfReadmeConfig,
-} = require('./adapters/npm-adapter.cjs');
+} = require('../driven-adapters/npm-adapter.cjs');
 
 const {
   askWhetherToContinueAfterFailure,
   isInteractiveSession,
   displayNonInteractiveFailureWarning,
   displayLifecycleFailureWarning,
-} = require('./adapters/user-input-adapter.cjs');
+} = require('../driven-adapters/user-input-adapter.cjs');
 
 async function runAttempt(operationName, callback) {
   try {

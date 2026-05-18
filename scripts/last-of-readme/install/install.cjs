@@ -6,7 +6,7 @@ const { runInstallationPerSe } = require('./run-installation-per-se.cjs');
 const {
   printAbortMessage,
   printBasicRequirementsSatisfied,
-} = require('../adapters/prompt-user-input.cjs');
+} = require('../driven-adapters/prompt-user-input.cjs');
 
 async function main() {
   checkBasicRequirements();

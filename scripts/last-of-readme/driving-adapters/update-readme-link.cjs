@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-require('./core/command-result.js');
-require('./core/update-readme-link.js');
+require('../core/command-result.js');
+require('../core/update-readme-link.js');
 
 const {
   CENTRAL_RESOLVER_URL,
@@ -18,7 +18,7 @@ const {
   runUpdateReadmeLink,
 } = globalThis.LastOfReadmeUpdateReadmeLink;
 
-const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const { createDefaultRuntimePorts } = require('../ports/default-runtime-ports.cjs');
 
 function main() {
   const ports = createDefaultRuntimePorts();

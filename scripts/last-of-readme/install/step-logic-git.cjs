@@ -3,7 +3,7 @@
 const {
   assertCanDryRunPublishTag,
   getRemotesFromGit,
-} = require('../adapters/git-adapter.cjs');
+} = require('../driven-adapters/git-adapter.cjs');
 
 function collectGitRemotesEnvironmentInput(pipelineState = {}) {
   return {

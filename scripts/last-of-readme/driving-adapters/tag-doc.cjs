@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-require('./core/command-result.js');
-require('./core/tag-doc.js');
+require('../core/command-result.js');
+require('../core/tag-doc.js');
 
 const {
   ALLOWED_KINDS,
@@ -12,7 +12,7 @@ const {
   runTagDocCommand,
 } = globalThis.LastOfReadmeTagDoc;
 
-const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const { createDefaultRuntimePorts } = require('../ports/default-runtime-ports.cjs');
 
 async function main() {
   const ports = createDefaultRuntimePorts();

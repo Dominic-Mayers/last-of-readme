@@ -10,7 +10,7 @@ const {
   packageFileExists,
   readPackageFileContent,
   createPackageFileIfAbsent,
-} = require('../adapters/filesystem-adapter.cjs');
+} = require('../driven-adapters/filesystem-adapter.cjs');
 
 const START_MARKER = '<!-- DOC-LINK-START -->';
 const END_MARKER = '<!-- DOC-LINK-END -->';

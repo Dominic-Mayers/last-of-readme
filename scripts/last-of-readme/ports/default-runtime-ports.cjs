@@ -9,11 +9,11 @@
 
 function createDefaultRuntimePorts() {
   return {
-    npm: require('../adapters/npm-adapter.cjs'),
-    git: require('../adapters/git-adapter.cjs'),
-    filesystem: require('../adapters/filesystem-adapter.cjs'),
-    userInput: require('../adapters/prompt-user-input.cjs'),
-    registry: require('../adapters/registry-adapter.cjs'),
+    npm: require('../driven-adapters/npm-adapter.cjs'),
+    git: require('../driven-adapters/git-adapter.cjs'),
+    filesystem: require('../driven-adapters/filesystem-adapter.cjs'),
+    userInput: require('../driven-adapters/prompt-user-input.cjs'),
+    registry: require('../driven-adapters/registry-adapter.cjs'),
   };
 }
 

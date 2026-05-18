@@ -14,7 +14,7 @@ const {
   interactivelyInstallFingerprintedHook,
   printFingerprintedHookInstalled,
   printFingerprintedHookPrepended,
-} = require('../adapters/user-input-adapter.cjs');
+} = require('../driven-adapters/user-input-adapter.cjs');
 
 function prepareRemoteInput(pipelineState = {}) {
   const control = pipelineState.control || {};

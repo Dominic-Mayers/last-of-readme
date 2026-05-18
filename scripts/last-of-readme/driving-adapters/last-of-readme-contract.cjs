@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-require('./core/command-result.js');
-require('./core/last-of-readme-contract.js');
+require('../core/command-result.js');
+require('../core/last-of-readme-contract.js');
 
 const {
   SUPPORTED_CONTRACTS,
@@ -9,7 +9,7 @@ const {
   runContractCommand,
 } = globalThis.LastOfReadmeContract;
 
-const { createDefaultRuntimePorts } = require('./ports/default-runtime-ports.cjs');
+const { createDefaultRuntimePorts } = require('../ports/default-runtime-ports.cjs');
 
 async function main() {
   const ports = createDefaultRuntimePorts();
