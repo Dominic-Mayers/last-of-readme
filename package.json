@@ -3,7 +3,7 @@
   "devDependencies": {
     "@dominic.mayers/last-of-readme": "file:"
   },
-  "version": "0.1.79",
+  "version": "0.1.80",
   "description": "Resolve README to last relevant commit based on npm version",
   "author": "Dominic Mayers",
   "license": "MIT",
