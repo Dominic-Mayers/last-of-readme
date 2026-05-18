@@ -9,7 +9,7 @@ const {
   runContractCommand,
 } = globalThis.LastOfReadmeContract;
 
-const { createDefaultRuntimePorts } = require('../ports/default-runtime-ports.cjs');
+const { createDefaultRuntimePorts } = require('../driven-adapters/default-runtime-ports.cjs');
 
 async function main() {
   const ports = createDefaultRuntimePorts();

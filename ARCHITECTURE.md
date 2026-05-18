@@ -75,6 +75,7 @@ The broader real-world meaning of those policies belongs to the maintainer's wor
             |   |-- tag-doc.js
             |   `-- update-readme-link.js
             |-- driven-adapters
+            |   |-- default-runtime-ports.cjs
             |   |-- filesystem-adapter.cjs
             |   |-- git-adapter.cjs
             |   |-- npm-adapter.cjs
@@ -116,12 +117,7 @@ The broader real-world meaning of those policies belongs to the maintainer's wor
             |   |-- step-logic-npm.cjs
             |   |-- step-logic-user-input.cjs
             |   `-- utils.cjs
-            |-- last-of-readme-contract.cjs
-            |-- ports
-            |   `-- default-runtime-ports.cjs
-            |-- runNpmPkg.cjs
-            |-- tag-doc.cjs
-            `-- update-readme-link.cjs
+            `-- runNpmPkg.cjs
 
 The files are available in [Last of Readme GitHub repo](https://github.com/Dominic-Mayers/last-of-readme).
 
@@ -447,7 +443,7 @@ The five files and their `globalThis` export names:
 * `check-contract.js` → `LastOfReadmeCheckContract`
 * `last-of-readme-contract.js` → `LastOfReadmeContract`
 
-`command-result.js` must be loaded before any other core file, because the others destructure `commandSucceeded`, `commandFailed`, `commandMessage`, and `commandEffect` from `globalThis.LastOfReadmeCommandResult` at load time. In browser contexts, script tags control this order. In Node.js, each `.cjs` entry point explicitly requires `command-result.js` first.
+`command-result.js` must be loaded before any other core file is used, because the other core files destructure `commandSucceeded`, `commandFailed`, `commandMessage`, and `commandEffect` from `globalThis.LastOfReadmeCommandResult` inside their functions. In browser contexts, script-tag order controls this. In Node.js, each `.cjs` entry point explicitly requires `command-result.js` first.
 
 ### `command-result.js`
 
@@ -467,22 +463,25 @@ All list fields (`messages`, `effects`) accept a single object or an array; `nor
 
 The Node.js integration is handled entirely by the `.cjs` entry-point files outside `core/`. Each entry point explicitly loads `command-result.js` and the relevant command file as side effects, destructures from `globalThis`, and exposes the result via `module.exports`. The CommonJS concern stays at the adapter boundary, not in the core.
 
-## The `ports/` module
+## The composition root
 
-The `ports/` directory contains the composition root for runtime adapter injection.
+In JavaScript, ports are implicit: a port is simply the shape of the `ports` parameter that a core function expects. There is no separate port-definition file — any object that satisfies the expected shape works.
 
-### `default-runtime-ports.cjs`
-
-`default-runtime-ports.cjs` assembles the set of adapters used at runtime into a single `ports` object. Command scripts and orchestrators receive this object rather than importing adapters directly, which keeps them decoupled from the adapter implementations and allows tests to inject alternative ports.
+The file `driven-adapters/default-runtime-ports.cjs` is the composition root for runtime adapter injection. It assembles the production driven adapters into a single `ports` object and is the only place that names all the adapters together:
 
 ```js
-{
-  npm:        require('../adapters/npm-adapter.cjs'),
-  git:        require('../adapters/git-adapter.cjs'),
-  filesystem: require('../adapters/filesystem-adapter.cjs'),
-  userInput:  require('../adapters/prompt-user-input.cjs'),
+function createDefaultRuntimePorts() {
+  return {
+    npm:        require('./npm-adapter.cjs'),
+    git:        require('./git-adapter.cjs'),
+    filesystem: require('./filesystem-adapter.cjs'),
+    userInput:  require('./prompt-user-input.cjs'),
+    registry:   require('./registry-adapter.cjs'),
+  };
 }
 ```
+
+Driving adapters call `createDefaultRuntimePorts()` to obtain the ports object. Tests or alternative environments (such as the demo) construct their own ports object with the same shape, without involving this file.
 
 ## The runtime command pattern
 

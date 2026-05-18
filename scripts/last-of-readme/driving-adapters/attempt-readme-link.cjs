@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const { runAttempt } = require('./attempt-utils.cjs');
-const { createDefaultRuntimePorts } = require('../ports/default-runtime-ports.cjs');
+const { createDefaultRuntimePorts } = require('../driven-adapters/default-runtime-ports.cjs');
 const { runUpdateReadmeLink, printUpdateReadmeLinkResult } = require('./update-readme-link.cjs');
 
 runAttempt('update README resolver link', async () => {
