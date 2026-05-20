@@ -1,0 +1,51 @@
+User 1: [Share Chat with Claude 5.] In this discussion with ChatGpt, I realize that I had not explained correctly what I meant by defining applications by "droping components". I should have said by "droping driven adapters".  What do you think ?
+
+Claude 1 : The correction is right and the distinction the ChatGPT discussion arrives at is precise.
+
+Dropping an environment component tests whether the environment is adequate for the same application — the application's requirements haven't changed, the environment just fails to satisfy them. That is a different experiment from what you intended. Dropping driven adapter functions changes the application's operational boundary, which is what actually defines a different application in this architecture.
+
+There is one residual subtlety worth keeping in mind. Dropping a single driven adapter function does not always create a new application — it might only remove one strategy for satisfying a requirement, leaving the requirement itself intact. To genuinely reduce the application to one with fewer requirements, you need to drop all the adapter functions that operationalize a given requirement. A single dropped function might instead be testing whether the requirement can be satisfied through a different operational path, which is closer to strategy variation than application variation. The cleanest way to create a new application is to drop everything associated with one requirement — all the adapter functions, the associated constraints, the collection steps — so that the requirement itself disappears from the application's boundary.
+
+This also clarifies the two experimental axes precisely:
+
+
+Application variation:    drop driven adapter functions (or full requirement clusters)
+                         → genuinely different application, tests installer generality
+
+Environment variation:    remove or misconfigure environment parts
+                         → same application, tests whether environment is adequate
+The first is what you need to test whether the installer is becoming application-independent. The second is a separate and also useful test — it checks whether the installer's requirement checking correctly detects environment failures — but it does not create new applications for the installer to handle.
+
+User 2 : I need to turn this idea of droping adapters to create new applications as a way to suggest the design of an installer that manages more than a single application. The idea is that we should be able to determine  what is the orchestration needed for each application, because it will most likely be a subset of the existing orchestration. The difference is that the tool must somehow figure out these orchestration as if they were inferred in the code from known dependencies. The tool will be picking the correct phases given the initial adapter functions needs.  Does that make any sense ?
+
+Claude 2 : Yes, it makes complete sense, and it follows naturally from what we have been building toward.
+
+The core idea is: each adapter function an application declares has preconditions — values that must be established before that function can be called with valid arguments. Phases exist precisely to establish those values. If the tool knows, for each phase, what it requires and what it produces, and if it knows what each adapter function requires, it can work backwards from the application's declared adapter functions to select only the phases needed to satisfy their preconditions, and order those phases by their own dependency relationships.
+
+The "dropping adapters" methodology makes this concrete. Drop the git adapter functions and their preconditions disappear from the goal set. The phases that exist solely to satisfy git-related preconditions — checkGitRemote, assertInGitRepository — are no longer reachable from any remaining precondition. The tool would not select them. The orchestration for the reduced application is automatically a subset of the full orchestration, without any manual adjustment.
+
+What makes this currently impossible is that the dependency relationships are implicit. The fact that checkGitRemote must follow checkRemoteNameConfig is encoded in the fixed sequence, not declared anywhere the tool can read. Making those relationships explicit is the step that unlocks automatic phase selection. The "dropping adapters" tests are a way to discover what those relationships are empirically — each reduced application reveals which phases are truly load-bearing for which adapter functions.
+
+So the path is coherent:
+
+
+Now:       hardcoded phase sequence, implicit dependencies
+Near term: reduced applications reveal which phases serve which adapters
+Later:     dependencies made explicit, tool infers phase selection automatically
+The tool's job at the general stage is goal-directed planning: given the application's adapter declarations as a goal set, find the minimal phase sequence that satisfies all preconditions, respecting phase dependencies. The phases do not change — only whether they are selected changes. That is the right division of responsibility between tool and application.
+
+User 3: To allow even more flexibility at the application level, we should separate the constraints on configuration in two parts : a part that is irrelevant for dependencies and a part that is relevant, the latest being less related, if related in any way, to Last of Readme. The constraints related to Last of Readme must be known by the installer, but because of that separation, the installer would work as well for other constraints that do not affect the dependencies.
+
+Claude 3: Yes, and the separation is precise.
+
+A constraint on component configuration has two parts:
+
+The structural part: the condition that, when satisfied, establishes a value or binding that other phases depend on. This is what the installer must understand to build the dependency graph. It determines which phases are prerequisite to which others. It must be expressible in an installer-general language — not because its content is generic, but because the installer needs to reason about it structurally.
+
+The predicate part: the validation condition on the established value. This does not create new dependencies — it either passes or fails within an already-selected phase. The installer does not need to understand its content. It executes it opaquely and propagates the result.
+
+The architectural consequence is important. The installer's generality is constrained only by how well it can express and reason about structural constraints. Predicate constraints can be arbitrarily application-specific — LOR-specific URL validation, LOR-specific marker detection, LOR-specific policy values — without limiting the installer's ability to handle other applications. Any application can supply arbitrary predicates; the installer just runs them without inspecting them.
+
+This separation is already implicit in the current architecture. pipelineState.config carries the structural part — the established values that later phases depend on. The check-requirements steps carry the predicate part — validation logic that runs within a phase but does not reshape the dependency graph. The generalization step is making that implicit separation explicit, so the installer can use the structural part for phase selection while remaining indifferent to the predicate part.
+
+Concretely in LOR: "a remote name must be established before the remote can be asserted" is structural — it creates a dependency edge and the installer must understand it. "The remote URL must be parseable as a GitHub URL" is a predicate — it runs within the remote-assertion phase, is LOR-specific, and the installer need not understand it. Both are constraints on the remote configuration, but only the first shapes the orchestration.
