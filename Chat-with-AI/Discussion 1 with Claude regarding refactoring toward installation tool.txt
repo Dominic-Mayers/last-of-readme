@@ -1,0 +1,491 @@
+1-User: Leveraging the importance given to the installer in Last of Readme, I am planning to refactor it into a completely different project. The new project changes the perspective and views the installer as the tool and Last of Readme as an example of its application. We will not worry too much about the universality of the tool in this refactoring. The universality of the tool will require further enhancements of the project. The core of Last of Readme should not change in this refactoring, except perhaps minimally, but such modifications should follow a natural universal architecture principle. The driving adapters will not be seen as a part of the installer tool, but remains adapter that depends on Last of Readme (and the environment). The case of the driven adapters is more subtle. The adapters driven by the installer are considered separately from the adapters driven by Last of Readme. The former will remain as they are and continue to play their usual role in the big picture. The latter is where some thoughts are needed, because they must become, at the least partially, a part of the installer tool. This is a reasonable goal, because there cannot be so many different ways every given component of the environment can be driven and there are a limited number of different components to drive.
+
+1-Claude: The user is describing a significant architectural refactoring. Let me understand the key points:
+
+New perspective: The installer becomes the tool (the product), and Last of Readme is just an example application of that tool.
+
+Core unchanged: core/*.js stays as-is (or minimally changes following universal principles).
+
+Driving adapters: These remain Last of Readme-specific (they depend on Last of Readme + environment), not part of the installer tool.
+
+Driven adapters: This is where the interesting split happens:
+
+Adapters driven by the installer → become part of the installer tool (universal)
+Adapters driven by Last of Readme (the runtime commands) → remain Last of Readme-specific
+Now I'm mapping out which driven adapters belong where. The npm, git, and filesystem adapters are used by both the installer and runtime, so they need to live in the installer tool. The registry adapter is only for runtime commands, so that stays with Last of Readme. The user-input adapter is installer-specific, so it goes with the tool.
+
+For the helper utilities, user-input-utils.cjs supports the user-input adapter, and default-runtime-ports.cjs is the composition root for runtime commands, so that one clearly belongs with Last of Readme. The tricky one is prompt-user-input.cjs — it's used by both, but the messages are Last of Readme-specific, so I need to think about whether the pattern itself is universal enough to extract.
+
+The user's point is that the installer shouldn't have dozens of different ways to interact with the same environment. The adapters the installer uses — filesystem, git, npm basics, user interaction — should be generic and reusable across any application, not just Last of Readme. The registry lookups and LOR-specific npm config fields stay with the runtime. So the split is really about what's a general installation concern versus what's specific to this application's commands. We will not worry too much about the universality of the tool in this refactoring. So we don't need to make everything perfectly universal right now.
+
+Let me think about what analysis to present:
+
+The new project structure would be:
+
+Installer tool (the new project perspective):
+
+The installation framework: pipeline orchestration, phase structure, step logic
+The driven adapters used by the installer: filesystem, npm (basic), git (basic), user-input
+These become "universal" parts of the tool
+Last of Readme application:
+
+core/*.js — unchanged
+Driving adapters — unchanged (LOR-specific)
+LOR-specific driven adapters (runtime): registry-adapter, LOR-specific npm fields, default-runtime-ports.cjs
+The LOR-specific installer configuration (what hooks to install, what to check) becomes the "application layer" on top of the installer tool
+The subtle question about driven adapters:
+
+npm-adapter.cjs currently serves both installer (reading/writing config, hooks) and runtime commands (version, contract, etc.)
+git-adapter.cjs serves both installer (checking remotes) and runtime (tagging)
+filesystem-adapter.cjs serves both
+prompt-user-input.cjs is all LOR-specific strings but the pattern is universal
+The real challenge is figuring out which functions from each adapter belong in the universal installer tool versus which are LOR-specific. Looking at npm-adapter specifically, the installer needs functions like reading the package manifest, finding the npm root, getting the package name, reading the configured remote, and updating package.json fields. I need to identify which npm functions are truly universal installer concerns versus which ones are specific to Last of Readme, and recognize that some adapters like the npm module might need to be split across both domains.
+
+Let me read a bit more before presenting, to make sure the analysis is grounded in the current adapter functions.
+
+Read npm-adapter.cjs
+Read git-adapter.cjs
+Read filesystem-adapter.cjs
+Read registry-adapter.cjs
+Now I have a clear picture of all the driven adapters. Let me analyze them in the context of the user's plan.
+
+The user's plan in a nutshell:
+
+Flip the perspective: the installer is the product/tool, and Last of Readme is an application of it
+Core (core/*.js) stays as-is
+Driving adapters stay as Last of Readme-specific (they depend on LOR + environment)
+Driven adapters split into two categories:
+Adapters driven by the installer → become part of the installer tool (universal, reusable)
+Adapters driven by Last of Readme (runtime commands) → remain LOR-specific
+Now I'm categorizing each driven adapter function. For git-adapter.cjs, the installer-driven functions like checking if we're in a git repository, listing remotes for configuration, and validating dry-run capabilities are universal and should move to the installer. The runtime-driven functions like tagging commits and publishing are specific to Last of Readme's command execution and should stay put.
+
+For npm-adapter.cjs, most of the installer-driven functions handle basic npm requirements and package manifest updates, though checking for existing installation fingerprints is actually Last of Readme-specific since it looks for the lastOfReadme field and hook markers. Now I'm looking at the runtime-driven methods that LOR uses during execution — these handle package metadata, documentation contracts, remote configuration, and file paths that get queried by commands like tag-doc and update-readme-link.
+
+Moving on to the filesystem adapter functions, I see there are installer-specific checks for validating the package root and file creation, plus shared utilities for reading and writing package files that both the installer and runtime depend on. The registry adapter then handles fetching published links, which is purely a runtime concern for the tag-doc command.
+
+For the user input adapter, I'm categorizing functions by whether they're universal installer concerns like checking for interactive sessions and handling failures, versus LOR-specific functions that deal with collecting remote configurations, package paths, and doc link placeholders during installation.
+
+The prompt user input module follows a universal pattern where all output flows through a single adapter, though the actual messages are LOR-specific. The default runtime ports module assembles all the LOR runtime dependencies—npm, git, filesystem, user input, and registry—into a cohesive system.
+
+Now I'm distinguishing between what any installer tool would need versus what's specific to LOR's application layer. The universal adapters cover generic npm operations like reading and updating package.json, git operations like checking repository state and remotes, filesystem operations, and user interaction patterns. The LOR-specific layer sits on top, handling things like the lastOfReadme field reads and writes that are particular to this tool's domain.
+
+Then there's the runtime-driven adapters that LOR uses when actually executing—the registry adapter, version checking, documentation contracts, git tagging and pushing, and port configuration. The tricky part is figuring out which of these runtime adapters need to be partially absorbed into the installer tool itself, since some of them are currently tightly coupled to the runtime but the installer will need access to similar functionality.
+
+The user's point about not worrying too much about universality right now suggests the goal isn't to extract a pristine, reusable npm package yet, but rather to make the architectural layers clear in how the code is organized. So the installer becomes the foundational tool layer, and LOR-specific logic sits on top of it as the application layer. The directory structure should reflect this separation, even if some code isn't perfectly universal.
+
+Looking at the current npm-adapter.cjs and similar files, I need to identify which functions are truly universal installer utilities versus which ones are LOR-specific. Some functions like assertPackageManifestReadableByNpm and npmPackageRoot seem like they could be universal...
+
+but then I see things like getExistingInstallationFingerprint that explicitly check for last-of-readme in the hooks, which is clearly application-specific. The hook install and strip mechanism itself is actually generic—it's just about reading and writing script hooks for any owned command, not just LOR's. So the real insight is that the way you interact with npm, git, and the filesystem is consistent across applications, but the fingerprinting and specific hook names are what varies. setMovableTagAtCurrentCommit, publishTag, publishMovableTag` — these are the runtime operations that actually manipulate git tags for LOR. The filesystem-adapter splits similarly between generic file validation and reading utilities versus the LOR-specific write operation. User input follows the same pattern: the adapter provides the interactive primitives while the installer layer handles LOR's particular prompts and data collection.
+
+The key insight is that the "installer tool" boundary isn't about creating new adapters — it's about recognizing which operations belong to the tool's orchestration layer versus which stay in the driven adapters. The npm-adapter is the tricky one because it's doing both: some functions are genuinely tool-level concerns (like determining what to publish), while others are runtime operations that should probably live in the LOR application layer instead.
+
+Here is the analysis.
+
+The perspective shift
+
+Currently the project is named and scoped as Last of Readme, with an installer inside it. The refactoring flips that: the installer becomes the product (the tool), and Last of Readme is one application of it. The tool provides a general framework for npm-package installation; Last of Readme provides the application-specific configuration, hooks, and content that the tool installs.
+
+What does not change
+
+core/*.js — unchanged, or only minimally so under universal principles.
+Driving adapters — they depend on both Last of Readme and the environment (they know about LOR commands, LOR hook names, LOR's CLI surface). They remain LOR-specific.
+The driven adapter split
+
+This is where the substance of the refactoring lives. Driven adapters currently live in one directory and mix two concerns. The distinction you draw is:
+
+Installer-driven adapters: the tool's own boundary with the environment — the mechanisms for reading and writing npm config, asserting git state, checking the filesystem. These are general enough to belong to the tool. The same mechanisms would be needed by any installer of any npm-backed application.
+LOR runtime-driven adapters: driven by the LOR core commands at runtime — fetching from the npm registry, tagging commits, reading LOR-specific configuration fields. These remain LOR-specific.
+Mapping the current adapters:
+
+git-adapter.cjs splits cleanly:
+
+Tool: assertInGitRepository, getRemotesFromGit, assertCanDryRunPublishTag
+LOR runtime: setTagAtCurrentCommit, setMovableTagAtCurrentCommit, publishTag, publishMovableTag
+filesystem-adapter.cjs is almost entirely installer-tool territory:
+
+Tool: assertCwdIsPackageRoot, validateExistingPackageFile, assertPackageFileCanBeCreated, packageFileExists, readPackageFileContent, createPackageFileIfAbsent
+Both (installer and LOR runtime): writePackageFileContent
+registry-adapter.cjs is entirely LOR runtime:
+
+LOR runtime: fetchPublishedLink (npm registry, LOR-specific link parsing)
+npm-adapter.cjs is the most entangled. It mixes:
+
+Tool-level mechanisms: assertPackageManifestReadableByNpm, npmPackageRoot, updatePackageJsonFields, getCurrentFilesField, the generic hook read/write/strip primitives
+LOR installer application layer: everything that references lastOfReadme.* fields (writeRemoteConfig, writeDocLinkConfig, writeNonInteractivePolicyIfAbsent, getCurrentConfiguredRemoteName, getExistingInstallationFingerprint, getLastOfReadmeConfig, getLastOfReadmeOwnedHookInstallationState, installLastOfReadmeOwnedHookCommand)
+LOR runtime: currentPackageVersion, packageName, configuredRemoteName, configuredNextDocumentationContract, remoteConfiguration, packageFilePath, repositoryUrlPath, and their getCurrent* companions
+The mechanism of installing an owned command into a hook (installLastOfReadmeOwnedHookCommand, stripLastOfReadmeOwnedHookCommand) is generic — any installer tool would need to own and manage fingerprinted hook commands. The content (the last-of-readme commands, the lastOfReadme.* fields) is LOR-specific.
+
+user-input-adapter.cjs also mixes:
+
+Tool: isInteractiveSession, askWhetherToContinueAfterFailure, displayNonInteractiveFailureWarning
+LOR installer application: all the LOR-specific collection functions (collectRemoteInput, collectPackageFilePathInput, collectDocLinkPlaceholderInput, assertInstallationPreconditionsConsent, interactivelyInstallFingerprintedHook, etc.)
+prompt-user-input.cjs is entirely LOR-specific text, but the architectural pattern — all user-facing output goes through one output adapter — is a universal tool rule. The tool itself would need a minimal output adapter for its own framework messages; the application provides its own for LOR-specific messages.
+
+The install/ directory
+
+Currently install/ mixes the universal pipeline machinery with LOR-specific phases and step logic. Under the new perspective:
+
+The pipeline structure (run-pre-installation-pipeline.cjs, run-installation-per-se.cjs, the phase/step model, pipelineState) belongs to the tool.
+The phases and step logic that encode LOR specifics (check-link-placeholder.cjs, install-remote-config.cjs, the step-logic-npm.cjs functions that read/write lastOfReadme.* fields, etc.) belong to the LOR application layer.
+Summary of the split
+
+Layer	Contains
+Installer tool	Pipeline machinery, universal adapter mechanisms (npm basics, git basics, filesystem basics, generic interactive/non-interactive session management, generic owned-hook management)
+LOR application (installer side)	LOR-specific phases, LOR-specific step logic, LOR-specific npm config fields, LOR-specific user input collection, LOR-specific output messages
+LOR application (runtime side)	core/*.js (unchanged), driving adapters, LOR runtime adapter functions (tagging, registry, LOR config reads), default-runtime-ports.cjs
+The main structural work is splitting npm-adapter.cjs and user-input-adapter.cjs, separating the generic pipeline infrastructure from the LOR-specific phases in install/, and deciding where the tool's boundary with the environment is drawn. The git-adapter.cjs, filesystem-adapter.cjs, and registry-adapter.cjs splits are cleaner and less entangled.
+
+2-User:  I read until "The runtime-driven functions like tagging commits and publishing are specific to Last of Readme's command execution and should stay put.", which referred to git-adapter.cjs. Adapter functions are designed to receive only logic that we do not want in Last of Readme. Thus, by construction, they have some level of generality. Yet, they are also designed so that they are meaningful in Last of Readme logic. This double role corresponds to the fact that they exist at the boundary.  This suggests that some refactoring of the functions themselves should be possible. That refactoring might consist in making a call to an inner function that has more general arguments. For example, tagging commits is sufficiently general to be considered not specific to Last of Readme.  You also notices that the prompts follow general patterns. This seems to be a similar principle.
+
+2- Claude: The user is making a subtle architectural point. Let me understand it carefully.
+
+The key insight is:
+
+Adapter functions live at the boundary — they are designed to have one foot in Last of Readme's logic (meaningful in LOR terms) and one foot in the environment (general environmental operations). This double role is by construction.
+
+This double role suggests decomposition: Each adapter function could potentially be split into:
+
+An inner function with more general arguments (pure environmental operation, no LOR semantics) → belongs to the installer tool
+The outer adapter function that calls the inner with LOR-specific arguments → belongs to the LOR application layer
+The tagging example illustrates this well — the actual mechanics of setting a tag are generic, but what makes it LOR-specific is the tag name and annotation format being passed in, which are computed upstream in the core logic.
+
+Input collection follows the same pattern — prompts and validation are general operations, with the LOR-specific details being the actual question text and rules.
+
+The refactoring approach is to extract inner functions that are general enough to belong in the tool layer, while the outer function handles LOR-specific concerns like naming conventions and validation logic.
+
+Looking at the git adapter, functions like setTagAtCurrentCommit, setMovableTagAtCurrentCommit, and publishTag are already at the right abstraction level — they're general git operations that don't need to know about LOR's specific tagging conventions or versioning schemes.
+
+For the npm adapter, the same principle applies: reading hook content and stripping commands is a general mechanism, while which hooks and commands matter is determined by the step logic layer.
+
+The fingerprint checking function is where LOR-specificity becomes unavoidable—it's looking for lastOfReadme fields and last-of-readme command strings. But I could generalize this pattern to accept configurable field names and command strings, making it reusable across different tools while the application layer provides the LOR-specific values.
+
+For the config writing functions, they're mostly wrappers around the existing updatePackageJsonFields utility. writeRemoteConfig and writeDocLinkConfig both just know how to map LOR data into the right package.json structure, and writeNonInteractivePolicyIfAbsent follows the same pattern of conditionally writing a field. The reader functions like configuredNextDocumentationContract and packageFilePath are pulling values back out of that same LOR structure.
+
+So the npm-adapter layer should expose the low-level primitives—things like assertPackageManifestReadableByNpm, npmPackageRoot, updatePackageJsonFields, and helpers to read the current scripts and hooks state—while the LOR application layer sits on top and handles the LOR-specific field names and fingerprinting logic.
+
+Now looking at the user-input-adapter, the collection functions seem to follow consistent patterns too.
+
+Each one does the same thing: show context, ask a question, validate the answer, return the result. The LOR-specific part is the question text and validation rules, but the interaction mechanism itself—the readline session, displaying options, collecting input—is general. So I could decompose each function into a generic inner function like promptWithOptions that handles the mechanics, and then have the LOR-specific outer functions assemble the question text and call it.
+
+The same principle applies to the prompt-user-input module. All those functions are printing LOR-specific messages, but the underlying pattern is general: given a message type, format and print it. The tool could expose a general message routing mechanism while the LOR application provides the actual message text.
+
+What the user is really pointing out is that these adapter functions split into two layers: a general mechanism (the environmental operation, the interaction pattern) that belongs in the tool, and LOR-specific arguments or field names that parameterize it, which belong in the application. The refactoring makes this decomposition explicit—the general mechanisms become tool functions, and the LOR-specific parts become calls to those functions with LOR-specific arguments. The boundary isn't between which files belong where, but within each function itself.
+
+Looking at the concrete cases: git-adapter.cjs is already at the right level since it's general. npm-adapter.cjs needs splitting—the generic field-read/write/hook primitives should move to the tool while LOR-specific wrappers stay in the application. filesystem-adapter.cjs is already fairly general. user-input-adapter.cjs needs the same treatment: generic interaction primitives like prompt and readline session management go to the tool, while LOR-specific collection functions stay in the application. prompt-user-input.cjs is entirely LOR-specific, though the output-adapter pattern itself is universal.
+
+This is a precise and important observation. Let me articulate what it implies.
+
+The boundary principle, restated
+
+Adapter functions are designed with a double role: they are general environmental operations (things the environment can do), parameterized by arguments that carry LOR semantics. The LOR-specificity lies in the arguments chosen, not necessarily in the operation itself. This means that wherever an adapter function looks LOR-specific, the question to ask is: is the specificity in the function body, or in the arguments supplied to it?
+
+If the specificity is only in the arguments, then the function body is already a general inner function — it already belongs to the tool layer. The application layer is the caller that supplies LOR-specific arguments.
+
+Applied to git-adapter.cjs
+
+setTagAtCurrentCommit(tag, annotation) takes a tag name and annotation string. The tag name convention (v${version}-last-of, etc.) and the annotation text are computed in tag-doc.js (core). The adapter function body itself — assert we are in a work tree, check tag does not exist, run git tag -a — is fully general. The same is true for setMovableTagAtCurrentCommit, publishTag, publishMovableTag.
+
+Conclusion: all of git-adapter.cjs's exported functions are already general. The LOR-specific arguments are supplied by the core. The git adapter as a whole belongs to the tool layer, without modification.
+
+Applied to npm-adapter.cjs
+
+Here the split runs through the function bodies themselves. Consider:
+
+updatePackageJsonFields(updates) — already fully general; the LOR-specific field names appear only in callers.
+getLastOfReadmeOwnedHookInstallationState({ hook, command }) — the body reads a hook, strips a specific command, returns remainder. General operation; the LOR-specific hook names and command strings are supplied by step logic. Rename to getOwnedHookInstallationState and it belongs to the tool.
+installLastOfReadmeOwnedHookCommand({ hook, command, remainingContent }) — same: installs any owned command in any hook. Rename to installOwnedHookCommand, belongs to the tool.
+getExistingInstallationFingerprint() — here the LOR-specificity is inside the body: it hard-codes the lastOfReadme field name and the last-of-readme command string. A general inner function would take those as parameters: getInstallationFingerprint({ configField, commandPrefix }). The LOR application calls it with LOR-specific values.
+writeRemoteConfig(...), writeDocLinkConfig(...), writeNonInteractivePolicyIfAbsent() — these are pure LOR application wrappers over updatePackageJsonFields. The inner function (the tool primitive) is already updatePackageJsonFields; these wrappers assemble LOR-specific field paths and values.
+configuredNextDocumentationContract(), packageFilePath(), etc. — these read a specific lastOfReadme.* field and fail if absent. The general inner function is something like getRequiredConfigField(fieldPath). The LOR application supplies the field path.
+Applied to user-input-adapter.cjs and prompt-user-input.cjs
+
+The user input collection functions all follow a general pattern: establish a readline session, display context, present choices, collect and validate a response. The LOR-specific parts are the question text, the option labels, and the validation rules — all of which are arguments. A general inner layer of interaction primitives (prompt with options, prompt for free text, confirm yes/no) would belong to the tool. The LOR application assembles those primitives with LOR-specific text and wires the results into pipelineState.
+
+prompt-user-input.cjs is similar: the output-adapter pattern (all user-facing output passes through one module) is universal. The tool would own that pattern as a structural rule; the LOR application provides its own implementation of it with LOR-specific message strings.
+
+The general principle
+
+The refactoring is not primarily about moving files between directories. It is about identifying the inner general function hiding inside each apparently LOR-specific adapter function — the general function is the tool's asset, the outer wrapper that supplies LOR-specific arguments is the application's asset. In some cases (all of git-adapter.cjs, most of filesystem-adapter.cjs) the adapter function is already at the general level and no inner extraction is needed. In others (npm-adapter.cjs, user input collection) the general function needs to be made explicit, either by renaming or by extracting a parameterized inner function that the LOR wrapper calls.
+
+3- User: The key question is whether the orchestration depends or not on the specific of Last of Readme in the adapter functions. If it does not depend on the specific of Last of Readme, the refactoring will work smoothly, because the orchestration will not have to change.  Otherwise, a lot more thinking will be required. Can you see whether the orchestration will have to change, by looking at some cases ?
+
+3- Claude: The user is asking a very precise question: does the orchestration (the pipeline orchestrator, phase orchestrators, step functions) depend on LOR-specific arguments that are passed to adapter functions, or are those LOR-specific arguments already assembled within the adapter functions themselves?
+
+If the orchestration passes LOR-generic arguments to adapter functions, and the adapter functions internally supply the LOR-specific field names/values, then the orchestration doesn't need to change — the LOR-specificity lives entirely in the adapter layer.
+
+If the orchestration itself assembles LOR-specific values (field names, command strings, hook names) and passes them to adapter functions, then making the adapter functions more generic means the LOR-specific arguments would need to come from somewhere in the orchestration layer — which would then need to change.
+
+Let me trace through the step logic files and phase orchestrators to see where the LOR-specific arguments are actually being constructed. I need to check how the npm step functions call the npm adapter, and whether they're passing LOR-specific values directly or letting the adapter handle that internally.
+
+Let me look at the step logic files and phase orchestrators, since that is where the orchestration lives.
+
+Read step-logic-npm.cjs
+Read step-logic-user-input.cjs
+Now I can see clearly. Let me trace through the key cases.
+
+Case 1: The hook management (LAST_OF_README_OWNED_VERSION_HOOKS)
+
+In step-logic-npm.cjs, at line 99-109:
+
+
+const LAST_OF_README_OWNED_VERSION_HOOKS = [
+  {
+    hook: 'preversion',
+    command: 'last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag',
+  },
+  {
+    hook: 'version',
+    command: 'last-of-readme attempt-readme-link',
+  },
+];
+This constant lives in the step-logic, not in the adapter. The adapter functions getLastOfReadmeOwnedHookInstallationState and installLastOfReadmeOwnedHookCommand just receive hook and command as parameters — they don't know the specific LOR commands. So collectLastOfReadmeOwnedVersionHooksEnvironmentInput (line 174-189) maps over this constant, calling the adapter with the LOR-specific hook and command values. The adapter itself is generic and doesn't depend on knowing what those commands actually do.
+
+The adapter functions are already general-purpose tools. The LOR-specific content lives in step-logic-npm.cjs, which is the application layer that supplies the specific arguments to the generic adapter. This is a clean separation — no changes needed to the orchestration here.
+
+Now looking at the next case with writeRemoteConfig, writeDocLinkConfig, and writeNonInteractivePolicyIfAbsent in step-logic-npm.cjs.
+
+These functions are called from the step-logic with values from pipelineState.config and pipelineState.control, but they're hardcoded with LOR-specific field names like lastOfReadme.remoteName and lastOfReadme.packageFilePath. If I make these adapters truly generic by replacing them with something like updatePackageJsonFields that takes explicit field paths as arguments, the LOR-specific field mappings would move up to the step-logic layer instead of being buried in the adapter.
+
+I'm weighing two approaches: either the step-logic itself knows about the npm field paths and passes them directly to the generic adapter, or I create LOR-specific wrapper functions in the application layer that handle the mapping and call the generic adapters. Since the step-logic already understands LOR concepts like config.remoteName, having it also know where those values get stored in package.json is just more application-layer knowledge. The orchestration layer above this would remain unchanged either way.
+
+Now looking at getExistingInstallationFingerprint — the adapter currently hard-codes knowledge about the lastOfReadme field, which means it's tightly coupled to LOR-specific concerns.
+
+If I generalize this to accept configField and commandPrefix as parameters, the call site in step-logic would just pass those values explicitly rather than relying on the adapter to know about them. That's a minimal change to the step-logic layer, and the orchestration stays untouched.
+
+For writeNonInteractivePolicyIfAbsent, I'd replace the LOR-specific function with a generic field-writing utility that takes the field name and value as arguments, keeping the change localized to step-logic.
+
+Now looking at CONVENIENCE_NEEDS in step-logic-user-input...
+
+The orchestration layer uses this content, but it's embedded in the step-logic itself rather than in a separate phase orchestrator, so the phase orchestrators don't need to change.
+
+For the user input collection functions like collectRemoteInput and collectPackageFilePathInput, they're called directly by phase orchestrators without passing prompt details as arguments. If I made these generic, the phase orchestrators would need to supply the LOR-specific prompts and options, which means they'd have to change slightly to pass those parameters along.
+
+Let me trace back through the phase orchestrators to see exactly where these functions are being called.
+
+Let me also check the phase orchestrators that call these step functions, and one user-input adapter function.
+
+Read check-remote-name-config.cjs
+Read user-input-adapter.cjs
+Now I have a clear picture. Let me think about the key question: does the orchestration depend on LOR specifics in the adapter functions?
+
+Let me trace through the cases carefully:
+
+Case 1: Hook management (the clearest case)
+
+In step-logic-npm.cjs:
+
+
+const LAST_OF_README_OWNED_VERSION_HOOKS = [
+  { hook: 'preversion', command: 'last-of-readme attempt-check-contract && last-of-readme attempt-successor-tag' },
+  { hook: 'version', command: 'last-of-readme attempt-readme-link' },
+
+
+];
+
+function collectLastOfReadmeOwnedVersionHooksEnvironmentInput(pipelineState = {}) {
+  const lastOfReadmeOwnedVersionHookStates =
+    LAST_OF_README_OWNED_VERSION_HOOKS.map(({ hook, command }) =>
+      getLastOfReadmeOwnedHookInstallationState({ hook, command })
+    );
+  ...
+}
+The LOR-specific hook definitions live in step-logic-npm.cjs, and the collection function maps over them to check installation state. The adapter functions that check and install these hooks are already abstracted away from the orchestration logic.
+
+If I rename those adapter functions to be more generic, the step-logic import changes but the orchestrator and other modules stay untouched. The orchestration layer doesn't care about the implementation details.
+
+Now looking at the config writing functions — writeRemoteConfig, writeDocLinkConfig, and writeNonInteractivePolicyIfAbsent are called from within installRemoteConfigFields, passing in the relevant configuration objects. The adapter would shift to getInstallationFingerprint({ configField, commandPrefix }), so the step-logic function would pass LOR-specific values like configField: 'lastOfReadme' and commandPrefix: 'last-of-readme', but the function signature and orchestrator calls remain unchanged. For user input collection, collectRemoteInput is imported and re-exported through the step-logic layer, with the phase orchestrator calling it directly—the interesting part is how this function knows about LOR-specific prompts inside the adapter...
+
+If I generalize it to collectPromptInput({ question, options }, pipelineState), the phase orchestrator would need to pass LOR-specific content, which means moving that content out of the adapter layer. But the step-logic layer is already the LOR application layer, so it makes sense for LOR-specific details to live there rather than in a generic adapter. The real question is which layer should own the LOR-specific prompt content. Right now it's in the adapter layer, but if I move it to step-logic or phase orchestrator, both of which are already LOR-specific, the responsibility shifts up into the application layer where it probably belongs.
+
+The key insight is that the orchestration layers—top-level, pipeline, and phase orchestrators—don't actually need to change. What changes is how step-logic wraps the generic interaction primitives and supplies LOR-specific arguments to the adapter functions below it.
+
+But there's a wrinkle: collectRemoteInput is re-exported from a dedicated step-logic module...
+
+Continuing with the summary across all the cases I've examined...
+
+The core realization is that orchestration itself—the sequence of steps within phase orchestrators, phases within the pipeline orchestrator, and pipelines within the install flow—never actually depends on LOR-specific details. Those details always get filtered through step-logic functions, which call adapters with the right arguments. Phase orchestrators invoke step-logic by name, and step-logic handles the LOR-specific knowledge before delegating to adapters.
+
+The shift is purely about where that LOR-specific knowledge resides: it's currently scattered across adapter implementations, but it could move into step-logic function bodies instead, leaving adapters generic. The orchestration layer remains completely untouched.
+
+There's one case already handled correctly—CONVENIENCE_NEEDS in step-logic-user-input.cjs is already at the application layer where it belongs, so no refactoring needed there.
+
+Looking at whether the top-level orchestrators would actually need changes, I'm not finding any scenarios where they would.  The step-logic layer already serves as the perfect mediation point between orchestration and adapters, absorbing all the LOR-specific arguments without requiring the orchestrators themselves to change. This actually validates the architecture—the boundaries are already in the right place.
+
+Now I can give a grounded answer across several cases.
+
+Case 1: hook management — orchestration clearly unchanged
+
+LAST_OF_README_OWNED_VERSION_HOOKS (the LOR-specific hook names and last-of-readme commands) already lives in step-logic-npm.cjs, not in the adapter. The adapter functions getLastOfReadmeOwnedHookInstallationState and installLastOfReadmeOwnedHookCommand already receive hook and command as parameters — they are already generic in their bodies. The step-logic maps over the LOR constant and passes the LOR-specific values to the generic adapter.
+
+The phase orchestrator install-owned-version-hooks.cjs calls collectLastOfReadmeOwnedVersionHooksEnvironmentInput(pipelineState). It sees nothing about hook names or command strings. No change.
+
+Case 2: writeRemoteConfig, writeDocLinkConfig — orchestration unchanged
+
+These adapter functions embed LOR field paths (lastOfReadme.remoteName, lastOfReadme.remote.*, etc.) in their bodies. The step-logic functions that call them (installRemoteConfigFields, installDocLinkConfigFields) pass config values from pipelineState but do not know the field paths — those are hidden inside the adapter.
+
+If the field paths move from the adapter body up into the step-logic body (calling the generic updatePackageJsonFields directly with explicit LOR field paths), the step-logic function signatures stay the same. The phase orchestrator install-remote-config.cjs calls installRemoteConfigFields(pipelineState) and sees nothing. No change.
+
+Case 3: user input collection — orchestration unchanged, but boundary shifts
+
+collectRemoteInput is currently defined in the adapter and re-exported verbatim from step-logic-user-input.cjs (a pass-through). The phase orchestrator check-remote-name-config.cjs calls collectRemoteInput(pipelineState) on the step-logic.
+
+If collectRemoteInput in the adapter were replaced by a generic interaction primitive (ask question, present options, collect response), the LOR-specific prompt text would need to move out of the adapter and into the step-logic. The step-logic would then wrap the generic primitive and supply the LOR-specific text. The step-logic function collectRemoteInput(pipelineState) would still exist with the same signature — the phase orchestrator sees no change. No change.
+
+The same applies to collectPackageFilePathInput, collectDocLinkPlaceholderInput, and the others. Currently re-exported pass-throughs; after the refactoring, proper step-logic wrappers that supply LOR-specific content to generic tool primitives.
+
+The consistent pattern
+
+Across all cases, the LOR-specific content is either:
+
+already in the step-logic (hook/command constants, CONVENIENCE_NEEDS, config values from pipelineState), or
+in the adapter body and needs to move up one level into the step-logic.
+In neither case does it reach the phase orchestrators or the pipeline orchestrator. The step-logic is the mediation layer that already separates the orchestration from the adapters. The orchestration calls step-logic functions by name; step-logic functions call adapter functions with (LOR-specific) arguments.
+
+The refactoring moves LOR-specific content from adapter bodies into step-logic, where it already conceptually belongs. The orchestration — phase orchestrators, pipeline orchestrator, install.cjs — does not need to change.
+
+This is great ! It seems to mean that all this orchestration work can be made general !
+The user is drawing a conclusion from the analysis. Let me think carefully about whether this conclusion is fully correct.
+
+The claim is: since the orchestration doesn't depend on LOR-specific content in the adapter functions, the orchestration can be made general (part of the installer tool).
+
+Let me think about what "the orchestration" means:
+
+install.cjs — the top-level orchestrator. It calls basic-requirements.cjs, run-pre-installation-pipeline.cjs, run-installation-per-se.cjs. These calls are by function name. Are those function names LOR-specific? Well, they're generic names (runPreInstallationPipeline, runInstallationPerSe).
+But the actual implementation of those functions is deeply tied to LOR — they invoke a hardcoded sequence of LOR-specific phases. The pipeline orchestrators don't just call generic functions; they know exactly which LOR phases to run and in what order. So while the orchestration structure might be generic, the content is LOR-specific. The real question is whether we can extract the orchestration pattern itself while parameterizing the phases it orchestrates. The step-logic functions themselves don't need to change since LOR-specific details shift from adapters into them, but the phase orchestrators and their sequences are fundamentally application-layer code tied to LOR's needs. So while the pipeline machinery—the pipelineState pattern, the phase/step model, the pre-installation to installation flow—can be generalized into the tool, the actual sequences of which phases and steps to run remain LOR-specific and can't be abstracted away. The pipelineState structure carries LOR-specific config and control values, so that can't be generalized either. But wait — maybe the user's point is narrower: that the orchestration code itself doesn't need modification during refactoring because LOR-specificity gets extracted into adapters and step logic without touching the orchestration layer. That's really a claim about refactoring cost, not about the orchestration becoming universally general. Re-reading their message though, they seem to be suggesting the orchestration itself could be part of a general tool, which would require parameterizing the phase and step sequences — essentially letting the application supply a configuration that defines which phases run in what order.
+
+That's actually a pipeline framework architecture: the tool provides the execution machinery (threading state through phases, handling errors, managing abort/continue logic), while the application provides the phase and step definitions. The key insight is that the pipeline execution framework is fully general, but the phase and step functions themselves remain LOR-specific — the refactoring's cleanliness comes from the function signatures not needing to change, not from the functions becoming general.
+
+Now I'm reconsidering whether the user meant something narrower: that the orchestration work itself is reusable because it doesn't require modification, making it a general asset that can live in the tool layer. That's mostly right, but there's still a distinction between the general execution machinery and the LOR-specific logic embedded in the steps themselves.
+
+Yes, but with a distinction worth making precise, because two different things are present in the orchestration.
+
+What is truly general: the pipeline execution machinery
+
+The framework itself — the concept of pipelineState threading through phases, the pre-installation pipeline followed by installation-per-se, the collect/prepare/check-requirements/finalize step model — contains no LOR specifics. Nothing in this machinery knows about remote names, doc link placeholders, or last-of-readme commands. This is the part that cleanly belongs to the tool and can be offered to any application.
+
+What remains LOR-specific: the phase and step sequences
+
+The pipeline orchestrator knows which phases to run — checkCwdIsPackageRoot, checkRemoteNameConfig, checkGitRemote, checkLinkPlaceholder, and so on. The phase orchestrators know which steps to run in what order. These sequences encode what Last of Readme needs to install. A different application would supply a different set of phases and steps.
+
+So the picture is:
+
+
+Tool layer:              Pipeline execution framework
+                         (pipelineState threading, phase/step model,
+                          abort/continue policies, finalize protocol)
+
+Application layer:       Phase sequences (which phases, in what order)
+                         Step sequences within each phase
+                         Phase orchestrators (check-remote-name-config.cjs, etc.)
+                         Step-logic functions (which call generic tool adapters
+                         with LOR-specific arguments)
+What the analysis confirms
+
+The clean finding is that there are no entanglements crossing that boundary. The execution machinery does not look inside the phase or step functions; the phase and step functions do not depend on being wired together in any particular way. The refactoring can separate them without either side needing to change. That is the smooth path you anticipated.
+
+4- User: Phase sequences (which phases, in what order): this can be derived just by knowing the dependencies, which are independent of the application layer. Once the installer adapters needed are fixed, the order follows independently of the application layer.
+
+4- Claude: The user is making a more subtle point. Let me think about it carefully.
+
+The user is saying that the ORDER of phases is not an arbitrary LOR-specific decision — it follows from the dependencies between what the phases need. For example:
+
+checkCwdIsPackageRoot must come before checkRemoteNameConfig because the remote name config depends on being in the package root
+
+checkRemoteNameConfig must come before checkRemoteUrlsConfig because the URLs depend on the remote
+
+checkGitRemote must come after checkRemoteNameConfig because you need to know which remote to check
+
+and so on.
+
+These dependency orderings are determined by what each phase needs as input and what it produces as output — which are properties of the phases themselves, not of some higher-level LOR-specific sequencing decision. If the phases define their inputs and outputs through their collect/check/finalize structure, then the valid orderings are fully determined by those dependencies. The pipeline orchestrator doesn't need explicit instructions to run A then B then C — it can derive the correct topological sort from the dependency graph of the phases themselves.
+
+This means the orchestrator could function as a general dependency-resolution engine: the application provides the phases with their input and output declarations, and the tool automatically computes the execution order. The application defines what the phases do; the tool figures out how to sequence them. This is elegant because it means the ordering logic moves from the application layer into the tool layer. The application supplies the phases and their dependencies; the tool handles the ordering. The phase sequences aren't arbitrary choices — they're constrained by the dependencies that emerge from the phase definitions themselves. This is similar to how build systems like Make work. The key insight is that phases need to formally declare their prerequisites and postconditions — what they require from pipelineState before running and what they contribute afterward — so the tool layer can automatically derive the correct execution order through topological sorting rather than having it hardcoded in the application.
+
+That is a sharp observation, and it goes further than what I said.
+
+The explicit sequence in run-pre-installation-pipeline.cjs — run checkCwdIsPackageRoot, then checkRemoteNameConfig, then checkGitRemote, and so on — is not an arbitrary LOR-specific choice. It is the only valid ordering given the dependencies between phases: checkGitRemote must follow checkRemoteNameConfig because it needs the remote name that phase resolves; checkPackageFilePath must follow checkPackageFilePathConfig because it needs the path that phase collects; and so on. Those dependencies are determined entirely by what each phase reads from pipelineState and what it writes back.
+
+That means the ordering is not application knowledge — it is a consequence of the phases' dependency structure. A tool that could accept a set of phases with declared inputs and outputs would compute the valid topological ordering itself. The application contributes the phases; the tool derives the sequence.
+
+So the revised picture is:
+
+
+Tool layer:       Pipeline execution framework
+                  Dependency-based phase ordering (topological sort)
+                  Universal adapter mechanisms
+
+Application layer: The phases themselves — their step logic,
+                   what they read from pipelineState,
+                   what they write back
+The application layer reduces to just the phases. Everything above them — the ordering, the execution loop, the state threading — belongs to the tool once the dependency structure of the phases is made explicit. Currently those dependencies are implicit in the step structure (a collect step writes, a later step reads). Making them explicit declarations is what would allow the tool to own the orchestration fully.
+
+5- User: The user is making an important architectural distinction. Let me understand it carefully.
+
+The user is saying:
+
+The application layer declares requirements — what conditions must hold for the installation to succeed. These are LOR-specific: "a git remote must be configured", "a package file path must be set", "the npm package manifest must be readable", etc.
+
+The tool derives phases from requirements — the tool is responsible for organizing the checking of requirements into phases, determining their order, and orchestrating the execution. The application layer should not need to know or care that requirements are checked in "phases" or that there is a "pre-installation pipeline."
+
+The tool translates requirements into phases and orchestrates their checking — the application declares what needs to be true, and the tool figures out how to verify it, in what order, and how to structure that verification. This is fundamentally different from the current approach where the application defines phases and the tool just executes them. It's more like how a constraint solver or dependency injection framework works.
+
+So "Last of Readme needs" becomes a list of requirements — a readable npm package manifest, a git remote capable of tag publication, configured documentation paths, and so on — and the tool's engine takes that list, determines which phases are needed to check each requirement, and orders them based on their dependencies. The phases themselves become invisible implementation details.
+
+This creates a clean separation: the application layer just declares requirements and provides the adapter functions to check them, while the tool provides the framework and the orchestration engine that plans and executes the whole process.
+
+That is a cleaner and more fundamental way to state it.
+
+The application layer's responsibility is to declare requirements — what conditions must hold for the installation to succeed, and what actions must be taken to satisfy them. For Last of Readme that means things like: a readable npm package manifest must exist, a git remote capable of tag publication must be configured, a documentation file path must be established, a link placeholder must be present. The application does not organize these into phases or sequences. It simply states what is required.
+
+The tool's responsibility is to take that requirement declaration and figure out the orchestration — which checks to run, in what order, grouped how. Phases are a tool concept: an internal mechanism for organizing requirement checking and satisfaction. The application is not aware of them.
+
+This makes the application layer genuinely thin:
+
+
+Application layer:   Requirement declarations
+                     Adapter functions that check and satisfy each requirement
+                     (the LOR-specific content — field names, hook commands,
+                     prompt text, etc., supplied to tool-layer primitives)
+
+Tool layer:          Requirement-checking engine
+                     (derives phases, determines order, threads state,
+                     manages abort/continue, handles interactive/non-interactive)
+                     Universal adapter primitives
+                     (generic npm, git, filesystem, user-input mechanisms)
+The phases, the pipeline structure, and the orchestration logic entirely disappear from the application layer's view. What remains on the application side is a declaration of what must hold and the specific implementations of the checks that enforce it.
+
+There are two kind of driven-adapter functions: the ones of the application layer and the ones of the installer. The current driven adapter functions of the application will be refactored into some driven-adapter functions of the installer and simpler new driven-adapter of the application.  It might be the case that once the new driven driven-adapter of the application are fixed, every thing else, including all the requirements follows, but I don't know exactly how. It just seems natural for that to be the case.
+The user is making a very interesting observation about the relationship between the application's driven-adapter functions and the requirements. Let me think about this carefully.
+
+The user is saying:
+
+Current driven-adapter functions serve two roles (mixed):
+
+Functions that are really installer tool primitives (general mechanisms)
+Functions that are LOR-specific application adapters
+After refactoring:
+
+The general mechanisms become installer-tool driven adapters
+Simpler, thinner LOR-specific functions become the application's driven adapters
+The key insight the user is gesturing at: once you fix the application's driven-adapter functions, the requirements follow naturally.
+
+So why would this be true? Each driven-adapter function essentially declares what environmental preconditions must hold for the application to work. When I look at something like writeRemoteConfig, it implicitly requires npm to be available, the package.json to exist and be writable, and certain fields to be valid. Similarly, fetchPublishedLink needs network access and a reachable registry, while setTagAtCurrentCommit requires an initialized git repository. The requirements are really just making explicit what these adapter functions already assume about the environment.
+
+This means the adapter functions themselves are the source of truth — once I define what the application actually needs from the environment, the requirement list follows directly from that. The tool then uses that list to orchestrate the necessary checks. It's elegant: the driven-adapter layer determines the requirements, which determines the orchestration, which determines everything else. The application's interface with the environment is the single point from which the entire architecture cascades. I can already see this partially reflected in the JSDoc tags decorating these functions.
+
+That connection seems natural for the following reason.
+
+The application's driven-adapter functions are exactly the primitive commitments the application makes about how it interacts with the environment — what it reads, what it writes, what it asserts. Each such function implicitly carries preconditions: for it to fulfill its purpose, certain things must already be true about the environment. Those preconditions are precisely the requirements.
+
+So once the application's driven-adapter functions are fixed — once you know what LOR needs to do to the environment and in what form — the requirements are not a separate declaration. They are just the preconditions of those functions, read off directly. The installer tool's job is then to ensure all those preconditions hold before the functions are invoked.
+
+This is already partially recognized in the codebase through the @configRequirement and @assertRequirement JSDoc tags on the adapter functions. Those tags are an informal statement of exactly that relationship — each tag on a function says "this function requires condition X, and condition X must be established before this runs." The requirement traceability the architecture already aims for is the same idea, just not yet formalized to the point where the tool could derive the requirement list automatically from the adapter declarations.
+
+If that formalization were completed, the full derivation chain would be:
+
+
+Application's driven-adapter functions
+    → their preconditions = the requirements
+        → requirements determine what the tool must check and satisfy
+            → the tool derives the orchestration from that
+The application layer fixes the adapter functions; everything above that point — requirements, phases, orchestration — follows without the application needing to specify it.
